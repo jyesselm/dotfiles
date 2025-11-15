@@ -1,35 +1,160 @@
 # ~/.zsh/aliases.zsh
+# Command aliases and shortcuts
 
-# Safer ls (you’re using lsd)
-alias ls='lsd'
-alias la='ls -A'
-alias l='ls -CF'
-alias lt='ls -lt | head'
+# ============================================================
+# File Listing (lsd if available, fallback to ls)
+# ============================================================
+if command -v lsd &> /dev/null; then
+  alias ls='lsd'
+  alias la='lsd -A'
+  alias ll='lsd -lh'
+  alias l='lsd -CF'
+  alias lt='lsd -lt | head'
+  alias tree='lsd --tree'
+else
+  # Fallback to standard ls with colors
+  alias ls='ls --color=auto'
+  alias la='ls -A'
+  alias ll='ls -lh'
+  alias l='ls -CF'
+  alias lt='ls -lt | head'
+fi
 
+# ============================================================
 # Editors
-alias vi='nvim'
-alias vim='nvim'
+# ============================================================
+if command -v nvim &> /dev/null; then
+  alias vi='nvim'
+  alias vim='nvim'
+  export EDITOR='nvim'
+  export VISUAL='nvim'
+else
+  export EDITOR='vim'
+  export VISUAL='vim'
+fi
 
-# Directories
+# ============================================================
+# Directory Navigation
+# ============================================================
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias -- -='cd -'  # Go to previous directory
 
-# RNA tools
-alias rnafoldp='rnafold -p --noLP -d2'
+# ============================================================
+# Git Aliases
+# ============================================================
+alias g='git'
+alias ga='git add'
+alias gaa='git add --all'
+alias gap='git add --patch'
+alias gb='git branch'
+alias gba='git branch --all'
+alias gc='git commit'
+alias gcm='git commit -m'
+alias gco='git checkout'
+alias gd='git diff'
+alias gdc='git diff --cached'
+alias gl='git log --oneline --graph --decorate'
+alias gla='git log --oneline --graph --decorate --all'
+alias gp='git push'
+alias gpl='git pull'
+alias gs='git status'
+alias gst='git stash'
+alias gstp='git stash pop'
 
-# Zip dir
-alias zip-dir='function _zipdir(){ zip -r "${1%/}.zip" "$1"; }; _zipdir'
+# ============================================================
+# System & Utilities
+# ============================================================
+alias df='df -h'                    # Human-readable disk usage
+alias du='du -h'                     # Human-readable directory sizes
+alias free='free -h'                 # Human-readable memory (Linux)
+alias psg='ps aux | grep'           # Process grep
+alias h='history'                    # History shortcut
+alias hg='history | grep'            # History grep
+alias c='clear'                      # Clear screen
+alias reload='source ~/.zshrc'       # Reload zsh config
+alias path='echo $PATH | tr ":" "\n"' # Pretty print PATH
 
-# TSV → CSV
-alias tsv2csv='function _tsv2csv(){ local filename="${1%.*}"; awk -v OFS="," -F"\t" '\''{ $1=$1; print }'\'' "$1" > "${filename}.csv"; }; _tsv2csv'
+# ============================================================
+# macOS Specific
+# ============================================================
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  alias showfiles='defaults write com.apple.finder AppleShowAllFiles YES; killall Finder /System/Library/CoreServices/Finder.app'
+  alias hidefiles='defaults write com.apple.finder AppleShowAllFiles NO; killall Finder /System/Library/CoreServices/Finder.app'
+  alias cleanup='find . -type f -name "*.DS_Store" -ls -delete'  # Remove .DS_Store files
+  alias updatedb='sudo /usr/libexec/locate.updatedb'             # Update locate database
+fi
 
-alias z='zoxide'
-alias zl='zoxide query -l | head -10'
+# ============================================================
+# Development Tools
+# ============================================================
+# Python
+alias py='python3'
+alias pip='pip3'
+alias venv='python3 -m venv'
+alias activate='source venv/bin/activate'
 
-# Config shortcuts
+# Docker
+if command -v docker &> /dev/null; then
+  alias d='docker'
+  alias dc='docker-compose'
+  alias dps='docker ps'
+  alias dpa='docker ps -a'
+  alias di='docker images'
+  alias dex='docker exec -it'
+fi
+
+# ============================================================
+# RNA/Bioinformatics Tools
+# ============================================================
+if command -v rnafold &> /dev/null; then
+  alias rnafoldp='rnafold -p --noLP -d2'
+fi
+
+# ============================================================
+# File Operations
+# ============================================================
+# Zip directory (remove alias if it exists, then define function)
+unalias zip-dir 2>/dev/null || true
+zip-dir() {
+  local dir="${1:-.}"
+  local name="${2:-$(basename "$dir")}"
+  zip -r "${name}.zip" "$dir"
+}
+
+# TSV → CSV conversion (remove alias if it exists, then define function)
+unalias tsv2csv 2>/dev/null || true
+tsv2csv() {
+  local file="$1"
+  if [[ -z "$file" ]]; then
+    echo "Usage: tsv2csv <file.tsv>"
+    return 1
+  fi
+  local filename="${file%.*}"
+  awk -v OFS="," -F"\t" '{ $1=$1; print }' "$file" > "${filename}.csv"
+  echo "Converted $file to ${filename}.csv"
+}
+
+# ============================================================
+# zoxide (if installed)
+# ============================================================
+if command -v zoxide &> /dev/null; then
+  alias z='zoxide'
+  alias zl='zoxide query -l | head -10'
+  alias zi='zoxide query -i'  # Interactive
+fi
+
+# ============================================================
+# Configuration File Shortcuts
+# ============================================================
 alias ez='nvim ~/.zshrc'
 alias eza='nvim ~/.zsh/aliases.zsh'
 alias ezp='nvim ~/.zsh/paths.zsh'
+alias ezf='nvim ~/.zsh/functions.zsh'
+alias ezc='nvim ~/.zsh/completion.zsh'
+alias eze='nvim ~/.zsh/env.zsh'
+alias egc='nvim ~/.gitconfig'
 
 
