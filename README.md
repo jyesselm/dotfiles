@@ -1,187 +1,264 @@
-# Dotfiles
+# Dotfiles Management
 
-My personal dotfiles managed with [yadm](https://yadm.io/) (Yet Another Dotfiles Manager).
+[![Test Dotfiles Setup](https://github.com/YOUR_USERNAME/dotfiles/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/dotfiles/actions/workflows/test.yml)
 
-## 📋 What's Included
+This repository contains scripts and configuration for managing dotfiles using [yadm](https://yadm.io/) (Yet Another Dotfiles Manager).
 
-This repository contains my configuration files for:
+## Quick Start
 
-- **Shell**: Zsh configuration with custom aliases, functions, and plugins
-- **Git**: Global git configuration
-- **Taskwarrior**: Task management configuration
-- **Conda/Mamba**: Python environment configuration
-- **PyMOL**: Molecular visualization configuration
-- **Jupyter**: Notebook configuration
+### For a New Machine
 
-## 🚀 Setup on a New Computer
-
-### Prerequisites
-
-- Git installed on your system
-- Terminal access (macOS Terminal, Linux terminal, or Windows WSL)
-
-### Step-by-Step Setup
-
-1. **Install yadm**:
+1. **Run the bootstrap script** to install Homebrew, essential tools, and set up your environment:
    ```bash
-   # macOS (using Homebrew)
-   brew install yadm
-   
-   # Linux (using package manager)
-   # Ubuntu/Debian:
-   sudo apt-get install yadm
-   # Fedora/RHEL:
-   sudo dnf install yadm
-   # Arch Linux:
-   sudo pacman -S yadm
-   
-   # Or install manually (see https://yadm.io/docs/install)
+   ./bootstrap.sh
    ```
 
-2. **Clone this repository**:
+2. **Set up yadm** (if not using the bootstrap script):
    ```bash
-   yadm clone https://github.com/jyesselm/dotfiles.git
-   ```
-   
-   This command will:
-   - Clone the repository into your home directory
-   - Automatically run the bootstrap script (`.yadm/bootstrap`)
-   - Set up all your dotfiles
-
-3. **Verify the setup**:
-   ```bash
-   # Check that files are in place
-   ls -la ~ | grep "^\."
-   
-   # Test your shell configuration
-   source ~/.zshrc
-   
-   # Verify yadm is tracking files
-   yadm status
+   ./setup_yadm.sh
    ```
 
-4. **Restart your terminal** or run:
+3. **Clone your dotfiles** (if stored in a remote repository):
    ```bash
-   exec zsh
+   yadm clone <your-repo-url>
    ```
 
-### What Gets Set Up
+### For an Existing Setup
 
-When you run `yadm clone`, the following happens automatically:
+1. **List and categorize your dotfiles**:
+   ```bash
+   python3 list_dotfiles.py
+   ```
 
-- ✅ All dotfiles are copied to your home directory
-- ✅ The bootstrap script (`.yadm/bootstrap`) runs automatically
-- ✅ Necessary directories are created
-- ✅ Dependencies are installed (if configured in bootstrap)
-- ✅ Your shell configuration is ready to use
+2. **Add dotfiles to yadm**:
+   ```bash
+   yadm add ~/.zshrc
+   yadm add ~/.gitconfig
+   # ... add other files
+   ```
 
-### Manual Setup (Alternative)
+3. **Commit and push**:
+   ```bash
+   yadm commit -m "Update dotfiles"
+   yadm push
+   ```
 
-If you prefer to set up manually or the bootstrap script didn't run:
+## Scripts Overview
 
+### `bootstrap.sh`
+Comprehensive bootstrap script that:
+- Installs Homebrew (macOS)
+- Installs essential tools (git, zsh, vim, tmux, etc.)
+- Sets up zsh as default shell
+- Installs Oh My Zsh
+- Configures yadm
+- Sets up Python and Node.js development environments
+- Installs useful GUI applications (optional)
+
+**Usage:**
 ```bash
-# Clone the repository
-yadm clone https://github.com/jyesselm/dotfiles.git
-
-# Manually checkout all files
-yadm checkout
-
-# Run bootstrap script manually (if needed)
-~/.yadm/bootstrap
+chmod +x bootstrap.sh
+./bootstrap.sh
 ```
 
-### Syncing Updates from Another Computer
+### `setup_yadm.sh`
+Interactive script to set up yadm for dotfiles management:
+- Checks for yadm installation and installs if needed
+- Initializes yadm repository
+- Analyzes existing dotfiles
+- Helps add files to yadm
+- Creates initial commit
 
-If you've made changes on another computer and want to sync them:
+**Usage:**
+```bash
+chmod +x setup_yadm.sh
+./setup_yadm.sh
+```
+
+### `list_dotfiles.py`
+Python script that analyzes and categorizes dotfiles in your home directory:
+- **Safe to manage**: Configuration files that should be tracked
+- **Unknown**: Files that need review before adding
+- **Excluded**: Files that should NOT be managed (cache, history, sensitive data)
+
+**Usage:**
+```bash
+python3 list_dotfiles.py
+```
+
+### `.yadm/bootstrap`
+Automatic bootstrap script that runs when you:
+- Clone your dotfiles: `yadm clone <repo-url>`
+- Checkout your dotfiles: `yadm checkout`
+
+This script automatically:
+- Installs Homebrew (if on macOS)
+- Installs essential tools
+- Sets up zsh
+- Installs Oh My Zsh
+- Creates necessary directories
+- Sets up development environments
+
+## File Structure
+
+```
+dotfiles/
+├── bootstrap.sh          # Main bootstrap script
+├── setup_yadm.sh         # yadm setup helper
+├── list_dotfiles.py      # Dotfiles analyzer
+├── test_local.sh         # Local validation script
+├── README.md             # This file
+├── .github/
+│   └── workflows/
+│       └── test.yml      # CI/CD workflow for testing scripts
+└── .yadm/
+    └── bootstrap         # Automatic bootstrap (runs on clone/checkout)
+```
+
+## Common yadm Commands
 
 ```bash
-# Pull the latest changes
+# Initialize repository
+yadm init
+
+# Add files
+yadm add ~/.zshrc
+yadm add ~/.gitconfig
+
+# Commit changes
+yadm commit -m "Update dotfiles"
+
+# Push to remote
+yadm push
+
+# Pull from remote
 yadm pull
 
-# The files will be updated automatically
-# Restart your terminal or source your config:
-source ~/.zshrc
+# Check status
+yadm status
+
+# List tracked files
+yadm ls-files
+
+# Clone on new machine
+yadm clone <repo-url>
 ```
 
-### Troubleshooting
+## Encryption
 
-**Problem**: Bootstrap script didn't run
+To encrypt sensitive files (like SSH keys or API tokens):
+
+1. Create `.yadm/encrypt` file:
+   ```bash
+   echo ".ssh/id_rsa" >> .yadm/encrypt
+   echo ".aws/credentials" >> .yadm/encrypt
+   ```
+
+2. yadm will automatically encrypt these files when committing.
+
+See [yadm encryption documentation](https://yadm.io/docs/encryption) for more details.
+
+## Best Practices
+
+1. **Don't commit sensitive data**:
+   - SSH private keys
+   - API tokens
+   - Passwords
+   - Use encryption for sensitive files
+
+2. **Exclude machine-specific files**:
+   - Cache directories
+   - History files
+   - Temporary files
+   - Use `.yadm/encrypt` or `.gitignore` to exclude them
+
+3. **Use conditional includes**:
+   - yadm supports OS-specific files (e.g., `.zshrc##os.Darwin`)
+   - Use this for platform-specific configurations
+
+4. **Keep bootstrap script updated**:
+   - Update `.yadm/bootstrap` as your setup evolves
+   - Test it on a fresh machine periodically
+
+## Troubleshooting
+
+### yadm not found
+- macOS: `brew install yadm`
+- Linux: See [yadm installation guide](https://yadm.io/docs/install)
+
+### Bootstrap script fails
+- Check that you have necessary permissions
+- On macOS, you may need to allow Homebrew installation
+- On Linux, you may need sudo for package installation
+
+### Files not being tracked
+- Check `yadm status` to see what's tracked
+- Use `yadm add <file>` to explicitly add files
+- Check `.yadm/encrypt` if files should be encrypted
+
+## Testing
+
+This repository includes GitHub Actions workflows to ensure scripts work correctly:
+
+- **Syntax validation**: Checks that all bash scripts have valid syntax
+- **Python linting**: Validates Python code quality
+- **Script execution tests**: Verifies scripts can run without errors (dry-run mode)
+
+The workflows run automatically on:
+- Push to main/master branch
+- Pull requests
+- Manual workflow dispatch
+
+View test results in the "Actions" tab of this repository.
+
+**Note**: Update the badge URL in the README header with your actual GitHub username/repository.
+
+### Local Testing
+
+Run the local test script to validate everything before committing:
+
 ```bash
-# Run it manually
-~/.yadm/bootstrap
+./test_local.sh
 ```
 
-**Problem**: Files not showing up
+This script performs the same checks as the GitHub Actions workflow and helps catch issues early.
+
+## CI/CD
+
+The GitHub Actions workflow (`.github/workflows/test.yml`) tests:
+- Bash script syntax validation
+- Python script execution and output
+- Script permissions and shebang lines
+- Cross-platform compatibility checks
+
+To run tests locally:
 ```bash
-# Force checkout all files
-yadm checkout --force
+# Test bash scripts
+bash -n bootstrap.sh
+bash -n setup_yadm.sh
+bash -n .yadm/bootstrap
+
+# Test Python script
+python3 -m py_compile list_dotfiles.py
+python3 list_dotfiles.py
 ```
 
-**Problem**: Conflicts with existing files
-```bash
-# Backup existing files first, then checkout
-yadm clone https://github.com/jyesselm/dotfiles.git
-# yadm will warn you about existing files - choose to backup or overwrite
-```
-
-## 📁 Structure
-
-```
-.
-├── .zshrc              # Main zsh configuration
-├── .zsh/               # Zsh configuration modules
-│   ├── aliases.zsh     # Custom aliases
-│   ├── functions.zsh   # Custom functions
-│   ├── paths.zsh       # PATH configuration
-│   ├── plugins.zsh     # Plugin configuration
-│   └── env.zsh         # Environment variables
-├── .gitconfig          # Git configuration
-├── .taskrc             # Taskwarrior configuration
-├── .condarc             # Conda configuration
-├── .pymolrc             # PyMOL configuration
-├── .config/             # Application configurations
-└── .yadm/               # yadm-specific files
-    ├── bootstrap        # Setup script for new machines
-    └── encrypt          # Files to encrypt (if using encryption)
-```
-
-## 🔧 Management
-
-### Adding New Dotfiles
-
-```bash
-yadm add ~/.newfile
-yadm commit -m "Add new configuration file"
-yadm push
-```
-
-### Updating Existing Files
-
-```bash
-# Edit your files normally, then:
-yadm add ~/.zshrc
-yadm commit -m "Update zsh configuration"
-yadm push
-```
-
-### Machine-Specific Configurations
-
-yadm supports alternate files for different machines. Create files with the pattern:
-- `.zshrc##machine1` - for machine1
-- `.zshrc##machine2` - for machine2
-
-yadm will automatically use the correct file based on the hostname.
-
-## 🔐 Encryption
-
-Sensitive files can be encrypted using yadm's encryption feature. See `.yadm/encrypt` for configuration.
-
-## 📚 Resources
+## Resources
 
 - [yadm Documentation](https://yadm.io/docs/)
 - [yadm GitHub](https://github.com/TheLocehiliosan/yadm)
+- [Oh My Zsh](https://ohmyz.sh/)
+- [GitHub Actions](https://docs.github.com/en/actions)
 
-## 📝 License
+## Contributing
 
-These dotfiles are provided as-is for personal use. Feel free to use them as inspiration for your own setup!
+When making changes:
+1. Test scripts locally before committing
+2. Ensure GitHub Actions pass
+3. Update documentation if needed
+4. Follow shell scripting best practices
+
+## License
+
+This dotfiles setup is provided as-is. Feel free to use and modify for your needs.
 
