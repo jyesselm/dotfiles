@@ -34,7 +34,7 @@ yadm is a dotfile management tool that uses Git under the hood. It allows you to
    
    This will:
    - Clone your dotfiles repository
-   - Automatically run the `.yadm/bootstrap` script to set up your environment
+   - Automatically run the `.config/yadm/bootstrap` script to set up your environment
    - Install dependencies and configure your system
 
 3. **Restart your terminal** to apply changes
@@ -125,13 +125,13 @@ This repository contains:
 │       └── lua/plugins/      # Neovim plugin configs
 ├── .gitconfig                 # Git configuration
 ├── .pymolrc                   # PyMOL configuration
-└── .yadm/
+└── .config/yadm/
     └── bootstrap              # Bootstrap script (runs on clone)
 ```
 
 ## Bootstrap Script
 
-The `.yadm/bootstrap` script runs automatically when you:
+The `.config/yadm/bootstrap` script runs automatically when you:
 - Clone your dotfiles: `yadm clone <repo-url>`
 - Checkout your dotfiles: `yadm checkout`
 
@@ -209,7 +209,7 @@ When you clone on a specific OS, yadm will automatically use the correct file.
    - Use `.yadm/encrypt` or `.gitignore` to exclude them
 
 3. **Keep bootstrap script updated**:
-   - Update `.yadm/bootstrap` as your setup evolves
+   - Update `.config/yadm/bootstrap` as your setup evolves
    - Test it on a fresh machine periodically
 
 4. **Use meaningful commit messages**:
