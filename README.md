@@ -13,32 +13,115 @@ This repository contains my configuration files for:
 - **PyMOL**: Molecular visualization configuration
 - **Jupyter**: Notebook configuration
 
-## 🚀 Quick Start
+## 🚀 Setup on a New Computer
 
-### On a New Machine
+### Prerequisites
+
+- Git installed on your system
+- Terminal access (macOS Terminal, Linux terminal, or Windows WSL)
+
+### Step-by-Step Setup
 
 1. **Install yadm**:
    ```bash
-   # macOS
+   # macOS (using Homebrew)
    brew install yadm
    
-   # Linux (see https://yadm.io/docs/install for other options)
+   # Linux (using package manager)
+   # Ubuntu/Debian:
+   sudo apt-get install yadm
+   # Fedora/RHEL:
+   sudo dnf install yadm
+   # Arch Linux:
+   sudo pacman -S yadm
+   
+   # Or install manually (see https://yadm.io/docs/install)
    ```
 
 2. **Clone this repository**:
    ```bash
    yadm clone https://github.com/jyesselm/dotfiles.git
    ```
+   
+   This command will:
+   - Clone the repository into your home directory
+   - Automatically run the bootstrap script (`.yadm/bootstrap`)
+   - Set up all your dotfiles
 
-3. **The bootstrap script will run automatically** to set up your environment.
+3. **Verify the setup**:
+   ```bash
+   # Check that files are in place
+   ls -la ~ | grep "^\."
+   
+   # Test your shell configuration
+   source ~/.zshrc
+   
+   # Verify yadm is tracking files
+   yadm status
+   ```
 
-### Manual Setup
+4. **Restart your terminal** or run:
+   ```bash
+   exec zsh
+   ```
 
-If you prefer to set up manually:
+### What Gets Set Up
+
+When you run `yadm clone`, the following happens automatically:
+
+- ✅ All dotfiles are copied to your home directory
+- ✅ The bootstrap script (`.yadm/bootstrap`) runs automatically
+- ✅ Necessary directories are created
+- ✅ Dependencies are installed (if configured in bootstrap)
+- ✅ Your shell configuration is ready to use
+
+### Manual Setup (Alternative)
+
+If you prefer to set up manually or the bootstrap script didn't run:
 
 ```bash
+# Clone the repository
 yadm clone https://github.com/jyesselm/dotfiles.git
+
+# Manually checkout all files
 yadm checkout
+
+# Run bootstrap script manually (if needed)
+~/.yadm/bootstrap
+```
+
+### Syncing Updates from Another Computer
+
+If you've made changes on another computer and want to sync them:
+
+```bash
+# Pull the latest changes
+yadm pull
+
+# The files will be updated automatically
+# Restart your terminal or source your config:
+source ~/.zshrc
+```
+
+### Troubleshooting
+
+**Problem**: Bootstrap script didn't run
+```bash
+# Run it manually
+~/.yadm/bootstrap
+```
+
+**Problem**: Files not showing up
+```bash
+# Force checkout all files
+yadm checkout --force
+```
+
+**Problem**: Conflicts with existing files
+```bash
+# Backup existing files first, then checkout
+yadm clone https://github.com/jyesselm/dotfiles.git
+# yadm will warn you about existing files - choose to backup or overwrite
 ```
 
 ## 📁 Structure
