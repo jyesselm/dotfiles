@@ -132,7 +132,6 @@ format = '[[ $symbol( $version)($virtualenv) ](fg:color_fg0 bg:color_blue)]($sty
 python_binary = ["python", "python3", "python2"]
 detect_files = ["requirements.txt", "pyproject.toml", "setup.py", "Pipfile", ".python-version"]
 detect_folders = [".venv", "venv"]
-ignore_venv = false
 
 [docker_context]
 symbol = ""

@@ -32,8 +32,6 @@ plugins=(
   git
   macos
   python
-  docker
-  docker-compose
   colored-man-pages
   extract
   fzf           # Fuzzy finder integration (Ctrl+R history, Ctrl+T files)
@@ -56,14 +54,18 @@ if [[ -d "$HOME/.zsh" ]]; then
 fi
 
 # ============================================================
-# Mamba Initialization (before autocomplete for proper completions)
+# Mamba/Micromamba Initialization
 # ============================================================
-# Mamba requires conda shell functions, so load conda.sh first
+# Support both mambaforge and micromamba installations
 if [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh" ]]; then
+  # Mambaforge installation
   source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh"
-fi
-if [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh" ]]; then
-  source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh"
+  [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh" ]] && \
+    source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh"
+elif command -v mamba &>/dev/null; then
+  # Micromamba via homebrew
+  export MAMBA_ROOT_PREFIX="$HOME/micromamba"
+  eval "$(mamba shell hook --shell zsh)"
 fi
 # Activate default environment
 mamba activate py3 2>/dev/null
