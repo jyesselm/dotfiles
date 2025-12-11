@@ -83,7 +83,7 @@ alias path='echo $PATH | tr ":" "\n"' # Pretty print PATH
 if [[ "$OSTYPE" == "darwin"* ]]; then
   alias showfiles='defaults write com.apple.finder AppleShowAllFiles YES; killall Finder /System/Library/CoreServices/Finder.app'
   alias hidefiles='defaults write com.apple.finder AppleShowAllFiles NO; killall Finder /System/Library/CoreServices/Finder.app'
-  alias cleanup='find . -type f -name "*.DS_Store" -ls -delete'  # Remove .DS_Store files
+  alias cleanup='fd -H -I -t f ".DS_Store" . --exec rm -v {}'  # Remove .DS_Store files
   alias updatedb='sudo /usr/libexec/locate.updatedb'             # Update locate database
 fi
 

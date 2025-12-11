@@ -6,6 +6,7 @@ vim.opt.termguicolors = true    -- Enable 24-bit colors
 vim.g.mapleader = " "
 vim.wo.number = true
 vim.opt.colorcolumn = "80"
+vim.opt.clipboard = "unnamedplus"
 -- Load lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then

@@ -77,18 +77,13 @@ command -v starship &>/dev/null && eval "$(starship init zsh)"
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
 # fzf configuration - Ctrl+T searches directories only
-export FZF_CTRL_T_COMMAND='find . -type d -not -path "*/\.git/*" 2>/dev/null'
-
-# fzf keybindings and completion (Ctrl+R, Ctrl+T, **<Tab>)
-[[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]] && \
-  source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
-[[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]] && \
-  source /opt/homebrew/opt/fzf/shell/completion.zsh
+# Note: keybindings and completion are loaded by the Oh My Zsh fzf plugin
+export FZF_CTRL_T_COMMAND='fd --type d --hidden --exclude .git'
 
 # Ctrl+G: zoxide interactive - fuzzy search frequently used directories
 zoxide-widget() {
   local selected
-  selected=$(zoxide query -l | fzf --height 40% --reverse)
+  selected=$(zoxide query -l 2>/dev/null | fzf --height 40% --reverse --no-sort) || return 0
   if [[ -n "$selected" ]]; then
     LBUFFER+="${selected}"
   fi

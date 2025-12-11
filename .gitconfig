@@ -1,3 +1,13 @@
+# This is Git's per-user configuration file.
 [user]
+# Please adapt and uncomment the following lines:
+	name = Joseph Yesselman
 	email = jyesselm@unl.edu
-	name = Joe Yesselman
+[http]
+	postBuffer = 157286400
+[core]
+	editor = cursor --wait
+[color]
+	ui = auto
+[push]
+	default = simple

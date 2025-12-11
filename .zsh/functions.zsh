@@ -119,30 +119,38 @@ extract() {
   esac
 }
 
-# Find files by name (case-insensitive)
+# Find files by name (case-insensitive) - uses fd if available
 ff() {
   local pattern="$1"
   local dir="${2:-.}"
-  
+
   if [[ -z "$pattern" ]]; then
     echo "Usage: ff <pattern> [directory]"
     return 1
   fi
-  
-  find "$dir" -iname "*${pattern}*" -type f 2>/dev/null
+
+  if command -v fd &>/dev/null; then
+    command fd --type f --ignore-case "$pattern" "$dir"
+  else
+    find "$dir" -iname "*${pattern}*" -type f 2>/dev/null
+  fi
 }
 
-# Find directories by name (case-insensitive)
-fd() {
+# Find directories by name (case-insensitive) - uses fd if available
+fdir() {
   local pattern="$1"
   local dir="${2:-.}"
-  
+
   if [[ -z "$pattern" ]]; then
-    echo "Usage: fd <pattern> [directory]"
+    echo "Usage: fdir <pattern> [directory]"
     return 1
   fi
-  
-  find "$dir" -iname "*${pattern}*" -type d 2>/dev/null
+
+  if command -v fd &>/dev/null; then
+    command fd --type d --ignore-case "$pattern" "$dir"
+  else
+    find "$dir" -iname "*${pattern}*" -type d 2>/dev/null
+  fi
 }
 
 # ============================================================
@@ -184,11 +192,10 @@ largest() {
   local count=${1:-10}
   local dir="${2:-.}"
 
-  if command -v find &> /dev/null; then
-    find "$dir" -type f -exec du -h {} + 2>/dev/null | sort -rh | head -n "$count"
+  if command -v fd &>/dev/null; then
+    fd --type f . "$dir" --exec du -h {} \; 2>/dev/null | sort -rh | head -n "$count"
   else
-    echo "find command not found"
-    return 1
+    find "$dir" -type f -exec du -h {} + 2>/dev/null | sort -rh | head -n "$count"
   fi
 }
 
