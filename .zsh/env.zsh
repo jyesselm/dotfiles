@@ -26,7 +26,7 @@ export LESS="-R -X -F"  # -R: color, -X: no clear, -F: quit if one screen
 # ============================================================
 export DROPBOX="$HOME/Dropbox"
 export NOTES="${DROPBOX}/0_notes/"
-export SEQPATH="$HOME/gdrive/sequences_and_oligos"
+export SEQPATH="$HOME/cloud/gdrive/sequences_and_oligos"
 export OBSIDIAN="$HOME/Dropbox/notes"
 export BASESPACE="$HOME/BaseSpace"
 export ICLOUD="$HOME/Library/Mobile Documents/com~apple~CloudDocs"

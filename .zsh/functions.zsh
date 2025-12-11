@@ -1,26 +1,6 @@
 # ~/.zsh/functions.zsh
 # Custom shell functions
 
-# ============================================================
-# Obsidian / Note Management
-# ============================================================
-# Obsidian snippet helper
-snip() {
-  local snippet=$1
-  local keywords=$2
-  
-  if [[ -z "$snippet" ]]; then
-    echo "Usage: snip <snippet> [keywords]"
-    return 1
-  fi
-  
-  if command -v obsidian-scripts &> /dev/null; then
-    obsidian-scripts snippet "$snippet" --keywords "${keywords:-}"
-  else
-    echo "Error: obsidian-scripts not found"
-    return 1
-  fi
-}
 
 # ============================================================
 # File Transfer & Remote Operations
@@ -61,28 +41,6 @@ upload_seqs_and_oligos() {
   cd "$current_dir" || return 1
 }
 
-# ============================================================
-# History & Scripting
-# ============================================================
-# Save recent history as a script
-history_to_script() {
-  local count=${1:-10}
-  local output_file=${2:-"script.sh"}
-  
-  if [[ ! "$count" =~ ^[0-9]+$ ]]; then
-    echo "Usage: history_to_script [count] [output_file]"
-    return 1
-  fi
-  
-  if fc -ln -"${count}" > "$output_file" 2>/dev/null; then
-    chmod +x "$output_file"
-    echo "✓ Script created: $output_file (last $count commands)"
-  else
-    echo "✗ Failed to create script"
-    return 1
-  fi
-}
-
 # Show recent files in directory
 recent() {
   # Usage:
@@ -112,6 +70,8 @@ recent() {
     ls -lt "$dir" | head -n "$((count + 1))"
   fi
 }
+
+
 
 # ============================================================
 # File Operations
@@ -223,11 +183,128 @@ dus() {
 largest() {
   local count=${1:-10}
   local dir="${2:-.}"
-  
+
   if command -v find &> /dev/null; then
     find "$dir" -type f -exec du -h {} + 2>/dev/null | sort -rh | head -n "$count"
   else
     echo "find command not found"
     return 1
   fi
+}
+
+# ============================================================
+# Search Functions
+# ============================================================
+
+# Spotlight search excluding Library and system folders
+# Usage: mf <name>  or  mf <name> <folder>
+mf() {
+  local query="$1"
+  local folder="${2:-$HOME}"
+  if [[ -z "$query" ]]; then
+    echo "Usage: mf <filename> [folder]"
+    return 1
+  fi
+  mdfind -name "$query" -onlyin "$folder" 2>/dev/null | grep -v -E "(Library|\.Trash|/\\.)"
+}
+
+# Search file contents with ripgrep (excludes hidden, respects .gitignore)
+# Usage: rgs <pattern>  or  rgs <pattern> <path>
+rgs() {
+  local pattern="$1"
+  local path="${2:-.}"
+  if [[ -z "$pattern" ]]; then
+    echo "Usage: rgs <pattern> [path]"
+    return 1
+  fi
+  rg --smart-case --hidden --glob '!.git' "$pattern" "$path"
+}
+
+# Search in specific file types
+# Usage: rgpy <pattern>  (Python files)
+rgpy() { rg --type py "$@"; }
+rgjs() { rg --type js "$@"; }
+rgmd() { rg --type md "$@"; }
+
+# Search Dropbox
+search-dropbox() {
+  local query="$1"
+  if [[ -z "$query" ]]; then
+    echo "Usage: search-dropbox <pattern>"
+    return 1
+  fi
+  mdfind -name "$query" -onlyin ~/Dropbox 2>/dev/null
+}
+
+# Search projects folder
+search-projects() {
+  local query="$1"
+  if [[ -z "$query" ]]; then
+    echo "Usage: search-projects <pattern>"
+    return 1
+  fi
+  mdfind -name "$query" -onlyin ~/projects 2>/dev/null
+}
+
+# Interactive file search with fzf + preview
+# Usage: sf [directory]
+sf() {
+  local dir="${1:-.}"
+  local file
+  file=$(fd --type f --hidden --exclude .git . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}')
+  if [[ -n "$file" ]]; then
+    echo "$file"
+  fi
+}
+
+# Interactive file search and open in nvim
+# Usage: vf [directory]
+vf() {
+  local dir="${1:-.}"
+  local file
+  file=$(fd --type f --hidden --exclude .git . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}')
+  if [[ -n "$file" ]]; then
+    nvim "$file"
+  fi
+}
+
+# Search content and open in nvim (ripgrep + fzf)
+# Usage: vg <pattern> [directory]
+vg() {
+  local pattern="$1"
+  local dir="${2:-.}"
+  if [[ -z "$pattern" ]]; then
+    echo "Usage: vg <pattern> [directory]"
+    return 1
+  fi
+  local file
+  file=$(rg --files-with-matches "$pattern" "$dir" 2>/dev/null | fzf --preview "rg --color=always -C 3 '$pattern' {}")
+  if [[ -n "$file" ]]; then
+    nvim "$file"
+  fi
+}
+
+# Search inside PDFs, Office docs, etc. with ripgrep-all
+# Usage: rgd <pattern> [directory]
+rgd() {
+  local pattern="$1"
+  local dir="${2:-.}"
+  if [[ -z "$pattern" ]]; then
+    echo "Usage: rgd <pattern> [directory]"
+    echo "Searches PDFs, Word docs, spreadsheets, etc."
+    return 1
+  fi
+  rga --smart-case "$pattern" "$dir"
+}
+
+# Search PDFs only
+# Usage: rgpdf <pattern> [directory]
+rgpdf() {
+  local pattern="$1"
+  local dir="${2:-.}"
+  if [[ -z "$pattern" ]]; then
+    echo "Usage: rgpdf <pattern> [directory]"
+    return 1
+  fi
+  rga --type pdf "$pattern" "$dir"
 }

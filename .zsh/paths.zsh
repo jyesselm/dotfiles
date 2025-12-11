@@ -1,21 +1,24 @@
 # ~/.zsh/paths.zsh
 # PATH and environment variable configuration
 
+export X3DNA=$USER/installs/x3dna
+
 # ============================================================
 # Core Paths (highest priority)
 # ============================================================
-# Homebrew (macOS Apple Silicon)
+# Local user binaries
+export PATH="$HOME/.local/bin:$PATH"
+
+# Homebrew (added AFTER conda so conda takes precedence for Python tools)
+# This ensures conda's pip/python are found first, but Homebrew tools are still accessible
 if [[ -d "/opt/homebrew/bin" ]]; then
-  export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+  export PATH="$PATH:/opt/homebrew/bin:/opt/homebrew/sbin"
 fi
 
 # Homebrew (macOS Intel or Linux)
 if [[ -d "/usr/local/bin" ]] && [[ "$PATH" != *"/usr/local/bin"* ]]; then
-  export PATH="/usr/local/bin:/usr/local/sbin:$PATH"
+  export PATH="$PATH:/usr/local/bin:/usr/local/sbin"
 fi
-
-# Local user binaries
-export PATH="$HOME/.local/bin:$PATH"
 
 # ============================================================
 # Language Runtimes

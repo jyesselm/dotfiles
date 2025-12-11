@@ -1,41 +1,33 @@
 # ~/.zshrc
 # Main zsh configuration file
 
-# Enable Powerlevel10k instant prompt (if using) or set up early
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
 # ============================================================
-# Performance & Compatibility
+# Truecolor & History (before Oh My Zsh)
 # ============================================================
-# Disable Oh My Zsh theme if using Starship (they conflict)
-# Set to empty string to use Starship instead
-ZSH_THEME=""
-
-# Truecolor support
 export COLORTERM=truecolor
 
-# History configuration (before Oh My Zsh loads)
 HISTFILE="$HOME/.zsh_history"
-HISTSIZE=10000
-SAVEHIST=10000
-setopt SHARE_HISTORY          # Share history between sessions
-setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicates first
-setopt HIST_IGNORE_DUPS       # Don't record duplicates
-setopt HIST_IGNORE_ALL_DUPS   # Delete old recorded entry if new entry is duplicate
-setopt HIST_FIND_NO_DUPS      # Don't display duplicates during search
-setopt HIST_IGNORE_SPACE      # Don't record entries starting with space
-setopt HIST_SAVE_NO_DUPS      # Don't write duplicate entries
-setopt HIST_REDUCE_BLANKS     # Remove superfluous blanks
-setopt HIST_VERIFY            # Show command with history expansion before running
+HISTSIZE=50000
+SAVEHIST=50000
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_REDUCE_BLANKS
+setopt INC_APPEND_HISTORY
 
 # ============================================================
 # Oh My Zsh Configuration
 # ============================================================
 export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME=""  # Using Starship instead
+DISABLE_COMPFIX=true  # Skip compaudit checks
 
-# Oh My Zsh plugins (lazy load heavy ones if needed)
+# Move zcompdump to cache directory
+export ZSH_COMPDUMP="$HOME/.cache/zsh/zcompdump-${HOST}-${ZSH_VERSION}"
+[[ -d "$HOME/.cache/zsh" ]] || mkdir -p "$HOME/.cache/zsh"
+
 plugins=(
   git
   macos
@@ -43,73 +35,96 @@ plugins=(
   docker
   docker-compose
   colored-man-pages
-  command-not-found
   extract
-  z
+  fzf           # Fuzzy finder integration (Ctrl+R history, Ctrl+T files)
+  copypath      # Copy current directory path with `copypath`
+  copyfile      # Copy file contents with `copyfile <file>`
+  dirhistory    # Alt+Left/Right to navigate directory history
 )
 
-# Load Oh My Zsh (only if installed)
-if [[ -d "$ZSH" ]]; then
-  source "$ZSH/oh-my-zsh.sh"
-else
-  echo "⚠️  Oh My Zsh not found. Install with: sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
-fi
-
-# ============================================================
-# Conda Configuration
-# ============================================================
-# Conda initialization (lazy - only if conda exists)
-if [[ -f "/opt/homebrew/Caskroom/miniconda/base/bin/conda" ]]; then
-  __conda_setup="$('/opt/homebrew/Caskroom/miniconda/base/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-  if [ $? -eq 0 ]; then
-      eval "$__conda_setup"
-  else
-      if [ -f "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh" ]; then
-          . "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh"
-      else
-          export PATH="/opt/homebrew/Caskroom/miniconda/base/bin:$PATH"
-      fi
-  fi
-  unset __conda_setup
-  
-  # Auto-activate default env (only if it exists)
-  if conda env list | grep -q "^py3 "; then
-    conda activate py3 2>/dev/null || true
-  fi
-fi
+[[ -d "$ZSH" ]] && source "$ZSH/oh-my-zsh.sh"
 
 # ============================================================
 # Custom Modular Configuration
 # ============================================================
-# Load custom configs in specific order for dependencies
-if [ -d "$HOME/.zsh" ]; then
-  # Load in order: env, paths, aliases, functions, plugins, completion
-  for f in env.zsh paths.zsh aliases.zsh functions.zsh plugins.zsh completion.zsh; do
-    [ -f "$HOME/.zsh/$f" ] && source "$HOME/.zsh/$f"
+# Load in order: env, paths, aliases, functions, plugins
+# NOTE: completion.zsh is NOT loaded - zsh-autocomplete handles it
+if [[ -d "$HOME/.zsh" ]]; then
+  for f in env.zsh paths.zsh aliases.zsh functions.zsh plugins.zsh; do
+    [[ -f "$HOME/.zsh/$f" ]] && source "$HOME/.zsh/$f"
   done
 fi
 
 # ============================================================
-# Modern Tools Initialization
+# Mamba Initialization (before autocomplete for proper completions)
 # ============================================================
-# Starship prompt (modern, fast, configurable)
-# Only load if starship is installed and not using Oh My Zsh theme
-if command -v starship &> /dev/null && [[ -z "$ZSH_THEME" || "$ZSH_THEME" == "" ]]; then
-  eval "$(starship init zsh)"
+# Mamba requires conda shell functions, so load conda.sh first
+if [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh" ]]; then
+  source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh"
 fi
+if [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh" ]]; then
+  source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh"
+fi
+# Activate default environment
+mamba activate py3 2>/dev/null
 
-# zoxide - smarter cd (replaces z)
-if command -v zoxide &> /dev/null; then
-  eval "$(zoxide init zsh --cmd cd)"
-fi
+# ============================================================
+# Modern Tools
+# ============================================================
+command -v starship &>/dev/null && eval "$(starship init zsh)"
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
+
+# fzf configuration - Ctrl+T searches directories only
+export FZF_CTRL_T_COMMAND='find . -type d -not -path "*/\.git/*" 2>/dev/null'
+
+# fzf keybindings and completion (Ctrl+R, Ctrl+T, **<Tab>)
+[[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]] && \
+  source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+[[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]] && \
+  source /opt/homebrew/opt/fzf/shell/completion.zsh
+
+# Ctrl+G: zoxide interactive - fuzzy search frequently used directories
+zoxide-widget() {
+  local selected
+  selected=$(zoxide query -l | fzf --height 40% --reverse)
+  if [[ -n "$selected" ]]; then
+    LBUFFER+="${selected}"
+  fi
+  zle reset-prompt
+}
+zle -N zoxide-widget
+bindkey '^G' zoxide-widget
 
 # ============================================================
-# Performance Optimizations
+# Shell Plugins
 # ============================================================
-# Compile zsh files for faster loading (runs in background)
-if [[ -n "$HOME/.zsh" ]]; then
-  (zcompile "$HOME/.zshrc" 2>/dev/null &)
-  for f in "$HOME"/.zsh/*.zsh; do
-    [[ -r "$f" ]] && (zcompile "$f" 2>/dev/null &)
-  done
-fi
+# Syntax highlighting (colors for commands as you type)
+[[ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
+  source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# Autosuggestions (fish-like ghost text from history, press → to accept)
+[[ -f /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
+  source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# ============================================================
+# Completion Settings (standard zsh completion)
+# ============================================================
+autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
+
+zstyle ':completion:*' menu select                          # Arrow key menu
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'   # Case insensitive
+zstyle ':completion:*' list-colors ''                       # Colorize
+zstyle ':completion:*' special-dirs true                    # Complete . and ..
+
+# Keybindings
+bindkey '^[[Z' reverse-menu-complete  # Shift-Tab: go back in menu
+bindkey '^[[A' history-search-backward # Up: search history backward
+bindkey '^[[B' history-search-forward  # Down: search history forward
+
+# Edit command in nvim with Ctrl+X Ctrl+E
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^X^E' edit-command-line
+
+
+

@@ -124,19 +124,6 @@ zip-dir() {
   zip -r "${name}.zip" "$dir"
 }
 
-# TSV → CSV conversion (remove alias if it exists, then define function)
-unalias tsv2csv 2>/dev/null || true
-tsv2csv() {
-  local file="$1"
-  if [[ -z "$file" ]]; then
-    echo "Usage: tsv2csv <file.tsv>"
-    return 1
-  fi
-  local filename="${file%.*}"
-  awk -v OFS="," -F"\t" '{ $1=$1; print }' "$file" > "${filename}.csv"
-  echo "Converted $file to ${filename}.csv"
-}
-
 # ============================================================
 # zoxide (if installed)
 # ============================================================
