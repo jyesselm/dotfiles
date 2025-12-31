@@ -7,6 +7,11 @@ vim.g.mapleader = " "
 vim.wo.number = true
 vim.opt.colorcolumn = "80"
 vim.opt.clipboard = "unnamedplus"
+vim.opt.mouse = "a"              -- Enable mouse in all modes
+
+-- Auto-copy mouse selection to system clipboard
+vim.keymap.set('v', '<LeftRelease>', '"+y<LeftRelease>', { noremap = true, silent = true })
+
 -- Load lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
