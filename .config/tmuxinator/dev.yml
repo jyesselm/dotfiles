@@ -8,7 +8,7 @@ windows:
         - claude-code:
           - printf '\033]2;claude-code\033\\'
           - claude --permission-mode bypassPermissions
-        - pymol:
-          - printf '\033]2;pymol\033\\'
         - terminal:
           - printf '\033]2;terminal\033\\'
+        - pymol:
+          - printf '\033]2;pymol\033\\'
