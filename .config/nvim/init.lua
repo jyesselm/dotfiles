@@ -39,11 +39,7 @@ vim.keymap.set('n', '<leader>w', ':w<CR>', { noremap = true, silent = true, desc
 vim.keymap.set('n', 'fs', ':Telescope treesitter<CR>', { noremap = true, silent = true, desc = 'Go to symbol in file' })
 
 
--- Window navigation
-vim.keymap.set('n', '<C-h>', '<C-w>h', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-l>', '<C-w>l', { noremap = true, silent = true })
+-- Window navigation (C-h/j/k/l handled by vim-tmux-navigator)
 vim.keymap.set('n', '<C-s>', '<C-w>s', { noremap = true, silent = true })
 
 
