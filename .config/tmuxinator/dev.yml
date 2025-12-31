@@ -1,10 +1,10 @@
 name: dev
-root: ~/
+root: ~/local/code/python/prototyped-pair-finder
 
 windows:
   - main:
       layout: even-vertical
       panes:
-        - claude-code:
+        - claude-code: claude --permission-mode bypassPermissions
         - pymol:
         - terminal:
