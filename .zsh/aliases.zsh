@@ -106,6 +106,9 @@ if command -v docker &> /dev/null; then
   alias dex='docker exec -it'
 fi
 
+# Tmux
+alias mux='tmuxinator'
+
 # ============================================================
 # RNA/Bioinformatics Tools
 # ============================================================
