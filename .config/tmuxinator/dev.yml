@@ -1,0 +1,10 @@
+name: dev
+root: ~/
+
+windows:
+  - main:
+      layout: even-vertical
+      panes:
+        - claude-code:
+        - pymol:
+        - terminal:
