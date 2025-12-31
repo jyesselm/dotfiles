@@ -5,6 +5,10 @@ windows:
   - main:
       layout: even-vertical
       panes:
-        - claude-code: claude --permission-mode bypassPermissions
+        - claude-code:
+          - printf '\033]2;claude-code\033\\'
+          - claude --permission-mode bypassPermissions
         - pymol:
+          - printf '\033]2;pymol\033\\'
         - terminal:
+          - printf '\033]2;terminal\033\\'
