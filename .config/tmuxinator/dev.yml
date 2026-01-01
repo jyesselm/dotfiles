@@ -6,9 +6,9 @@ windows:
       layout: even-vertical
       panes:
         - claude-code:
-          - printf '\033]2;claude-code\033\\'
+          - tmux select-pane -T "claude-code"
           - claude --permission-mode bypassPermissions
         - terminal:
-          - printf '\033]2;terminal\033\\'
+          - tmux select-pane -T "terminal"
         - pymol:
-          - printf '\033]2;pymol\033\\'
+          - tmux select-pane -T "pymol"
