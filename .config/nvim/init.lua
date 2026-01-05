@@ -53,9 +53,16 @@ if vim.g.vscode then
     vim.keymap.set('n', 'fb', '<Cmd>call VSCodeNotify("workbench.action.showAllEditors")<CR>', { noremap = true, silent = true, desc = 'Find buffers' })
     vim.keymap.set('n', 'fw', '<Cmd>call VSCodeNotify("workbench.action.showAllSymbols")<CR>', { noremap = true, silent = true, desc = 'Workspace symbols' })
     vim.keymap.set('n', 'fs', '<Cmd>call VSCodeNotify("workbench.action.gotoSymbol")<CR>', { noremap = true, silent = true, desc = 'File symbols' })
+
+    -- VSCode/Cursor: Window splits (matches tmux prefix + | and prefix + -)
+    vim.keymap.set('n', '<leader>\\', '<Cmd>call VSCodeNotify("workbench.action.splitEditorRight")<CR>', { noremap = true, silent = true, desc = 'Split vertical' })
+    vim.keymap.set('n', '<leader>-', '<Cmd>call VSCodeNotify("workbench.action.splitEditorDown")<CR>', { noremap = true, silent = true, desc = 'Split horizontal' })
+    vim.keymap.set('n', '<leader>x', '<Cmd>call VSCodeNotify("workbench.action.closeActiveEditor")<CR>', { noremap = true, silent = true, desc = 'Close split' })
 else
-    -- Terminal Neovim: handled by vim-tmux-navigator
-    vim.keymap.set('n', '<C-s>', '<C-w>s', { noremap = true, silent = true })
+    -- Terminal Neovim: Window splits (matches tmux prefix + | and prefix + -)
+    vim.keymap.set('n', '<leader>\\', '<C-w>v', { noremap = true, silent = true, desc = 'Split vertical' })
+    vim.keymap.set('n', '<leader>-', '<C-w>s', { noremap = true, silent = true, desc = 'Split horizontal' })
+    vim.keymap.set('n', '<leader>x', '<C-w>c', { noremap = true, silent = true, desc = 'Close split' })
 end
 
 
