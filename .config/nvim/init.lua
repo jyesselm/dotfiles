@@ -39,8 +39,24 @@ vim.keymap.set('n', '<leader>w', ':w<CR>', { noremap = true, silent = true, desc
 vim.keymap.set('n', 'fs', ':Telescope treesitter<CR>', { noremap = true, silent = true, desc = 'Go to symbol in file' })
 
 
--- Window navigation (C-h/j/k/l handled by vim-tmux-navigator)
-vim.keymap.set('n', '<C-s>', '<C-w>s', { noremap = true, silent = true })
+-- Window navigation
+if vim.g.vscode then
+    -- VSCode/Cursor: use VS Code commands for window navigation
+    vim.keymap.set('n', '<C-h>', '<Cmd>call VSCodeNotify("workbench.action.navigateLeft")<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<C-j>', '<Cmd>call VSCodeNotify("workbench.action.navigateDown")<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<C-k>', '<Cmd>call VSCodeNotify("workbench.action.navigateUp")<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<C-l>', '<Cmd>call VSCodeNotify("workbench.action.navigateRight")<CR>', { noremap = true, silent = true })
+
+    -- VSCode/Cursor: Telescope-like commands
+    vim.keymap.set('n', 'ff', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files' })
+    vim.keymap.set('n', 'fg', '<Cmd>call VSCodeNotify("workbench.action.quickTextSearch")<CR>', { noremap = true, silent = true, desc = 'Live grep' })
+    vim.keymap.set('n', 'fb', '<Cmd>call VSCodeNotify("workbench.action.showAllEditors")<CR>', { noremap = true, silent = true, desc = 'Find buffers' })
+    vim.keymap.set('n', 'fw', '<Cmd>call VSCodeNotify("workbench.action.showAllSymbols")<CR>', { noremap = true, silent = true, desc = 'Workspace symbols' })
+    vim.keymap.set('n', 'fs', '<Cmd>call VSCodeNotify("workbench.action.gotoSymbol")<CR>', { noremap = true, silent = true, desc = 'File symbols' })
+else
+    -- Terminal Neovim: handled by vim-tmux-navigator
+    vim.keymap.set('n', '<C-s>', '<C-w>s', { noremap = true, silent = true })
+end
 
 
 -- Tab management
