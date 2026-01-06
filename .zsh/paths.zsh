@@ -1,7 +1,7 @@
 # ~/.zsh/paths.zsh
 # PATH and environment variable configuration
 
-export X3DNA=$USER/installs/x3dna
+export X3DNA=$HOME/local/installs/x3dna
 
 # ============================================================
 # Core Paths (highest priority)
