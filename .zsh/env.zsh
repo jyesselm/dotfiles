@@ -1,6 +1,9 @@
 # ~/.zsh/env.zsh
 # Environment variables and locale settings
 
+# Load secrets (API tokens, etc.) - not tracked by yadm
+[[ -f ~/.zsh/secrets.zsh ]] && source ~/.zsh/secrets.zsh
+
 # ============================================================
 # Locale & Language
 # ============================================================
