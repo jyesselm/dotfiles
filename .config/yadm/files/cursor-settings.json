@@ -1,0 +1,54 @@
+{
+    "workbench.colorTheme": "One Dark Pro Darker",
+    "window.commandCenter": 1,
+    "terminal.integrated.inheritEnv": false,
+    "window.newWindowProfile": "default_cursor",
+
+    // Use ruff as the default formatter for Python files
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        }
+    },
+
+    // Use ruff for Jupyter notebooks
+    "notebook.formatOnSave.enabled": true,
+    "notebook.codeActionsOnSave": {
+        "source.fixAll": "always",
+        "source.organizeImports": "always"
+    },
+    "[jupyter]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+
+    // Ruff extension settings - Black-compatible formatting
+    "ruff.enable": true,
+    "ruff.organizeImports": true,
+    "ruff.fixAll": true,
+    "ruff.lint.enable": true,
+    "ruff.format.args": ["--line-length", "88"],
+
+    // Ruff will use pyproject.toml for isort configuration if present
+    // Otherwise, these defaults apply globally:
+    // - split-on-trailing-comma: true
+    // - combine-as-imports: true
+    // - force-sort-within-sections: true
+    // - order-by-type: true
+
+    // Disable black formatter
+    "python.formatting.provider": "none",
+
+    // vscode-neovim configuration
+    "vscode-neovim.neovimExecutablePaths.darwin": "/opt/homebrew/bin/nvim",
+    "vscode-neovim.neovimInitVimPaths.darwin": "~/.config/nvim/init.lua",
+    "extensions.experimental.affinity": {
+        "asvetliakov.vscode-neovim": 1
+    },
+
+    // Periscope settings (Telescope-like search)
+    "periscope.showPreview": true,
+    "periscope.peekBorderColor": "#8FBCBB"
+}
