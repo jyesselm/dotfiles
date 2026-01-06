@@ -1,3 +1,8 @@
+-- Disable treesitter in VSCode BEFORE anything else loads
+if vim.g.vscode then
+    vim.g.loaded_nvim_treesitter = 1
+end
+
 vim.opt.expandtab = true        -- Use spaces instead of tabs
 vim.opt.tabstop = 4             -- Number of spaces tabs count for
 vim.opt.softtabstop = 4         -- Number of spaces a <Tab> counts for while editing
@@ -58,6 +63,12 @@ if vim.g.vscode then
     vim.keymap.set('n', '<leader>\\', '<Cmd>call VSCodeNotify("workbench.action.splitEditorRight")<CR>', { noremap = true, silent = true, desc = 'Split vertical' })
     vim.keymap.set('n', '<leader>-', '<Cmd>call VSCodeNotify("workbench.action.splitEditorDown")<CR>', { noremap = true, silent = true, desc = 'Split horizontal' })
     vim.keymap.set('n', '<leader>x', '<Cmd>call VSCodeNotify("workbench.action.closeActiveEditor")<CR>', { noremap = true, silent = true, desc = 'Close split' })
+
+    -- VSCode/Cursor: Move editor to another split
+    vim.keymap.set('n', '<leader>mh', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToLeftGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor left' })
+    vim.keymap.set('n', '<leader>ml', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToRightGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor right' })
+    vim.keymap.set('n', '<leader>mk', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToAboveGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor up' })
+    vim.keymap.set('n', '<leader>mj', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToBelowGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor down' })
 else
     -- Terminal Neovim: Window splits (matches tmux prefix + | and prefix + -)
     vim.keymap.set('n', '<leader>\\', '<C-w>v', { noremap = true, silent = true, desc = 'Split vertical' })
