@@ -4,13 +4,15 @@
 export X3DNA=$HOME/local/installs/x3dna
 
 # ============================================================
-# Core Paths (highest priority)
+# Core Paths (appended to not interfere with conda/mamba)
 # ============================================================
-# Local user binaries
-export PATH="$HOME/.local/bin:$PATH"
+# Note: Mamba init runs LAST in .zshrc and prepends its paths,
+# so we append everything here to ensure mamba takes precedence
 
-# Homebrew (added AFTER conda so conda takes precedence for Python tools)
-# This ensures conda's pip/python are found first, but Homebrew tools are still accessible
+# Local user binaries (appended, not prepended)
+[[ -d "$HOME/.local/bin" ]] && export PATH="$PATH:$HOME/.local/bin"
+
+# Homebrew (appended so conda takes precedence for Python tools)
 if [[ -d "/opt/homebrew/bin" ]]; then
   export PATH="$PATH:/opt/homebrew/bin:/opt/homebrew/sbin"
 fi
@@ -23,9 +25,9 @@ fi
 # ============================================================
 # Language Runtimes
 # ============================================================
-# Java (OpenJDK via Homebrew)
+# Java (OpenJDK via Homebrew) - appended
 if [[ -d "/opt/homebrew/opt/openjdk/bin" ]]; then
-  export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+  export PATH="$PATH:/opt/homebrew/opt/openjdk/bin"
   export JAVA_HOME="/opt/homebrew/opt/openjdk"
 fi
 

@@ -54,23 +54,6 @@ if [[ -d "$HOME/.zsh" ]]; then
 fi
 
 # ============================================================
-# Mamba/Micromamba Initialization
-# ============================================================
-# Support both mambaforge and micromamba installations
-if [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh" ]]; then
-  # Mambaforge installation
-  source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh"
-  [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh" ]] && \
-    source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh"
-elif command -v mamba &>/dev/null; then
-  # Micromamba via homebrew
-  export MAMBA_ROOT_PREFIX="$HOME/micromamba"
-  eval "$(mamba shell hook --shell zsh)"
-fi
-# Activate default environment
-mamba activate py3 2>/dev/null
-
-# ============================================================
 # Modern Tools
 # ============================================================
 command -v starship &>/dev/null && eval "$(starship init zsh)"
@@ -122,3 +105,25 @@ bindkey '^[[B' history-search-forward  # Down: search history forward
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey '^X^E' edit-command-line
+
+# ============================================================
+# Mamba/Micromamba Initialization (MUST BE LAST for PATH priority)
+# ============================================================
+# Support both mambaforge and micromamba installations
+if [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh" ]]; then
+  # Mambaforge installation
+  source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/conda.sh"
+  [[ -f "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh" ]] && \
+    source "/opt/homebrew/Caskroom/mambaforge/base/etc/profile.d/mamba.sh"
+elif command -v mamba &>/dev/null; then
+  # Micromamba via homebrew
+  export MAMBA_ROOT_PREFIX="$HOME/micromamba"
+  eval "$(mamba shell hook --shell zsh)"
+fi
+# Activate default environment
+mamba activate py3 2>/dev/null
+
+# Force conda/mamba paths to front (fixes PATH ordering issues with Homebrew)
+if [[ -n "$CONDA_PREFIX" ]]; then
+  export PATH="$CONDA_PREFIX/bin:${PATH//$CONDA_PREFIX\/bin:/}"
+fi
