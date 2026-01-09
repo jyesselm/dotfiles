@@ -9,7 +9,7 @@ return {
     lazy = false,
     dependencies = {
       'williamboman/mason.nvim',
-      'neovim/nvim-lspconfig',
+      { 'neovim/nvim-lspconfig', version = '2.*' },  -- Pin to v2.x for Neovim < 0.11
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
