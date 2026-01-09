@@ -1,15 +1,20 @@
+-- LSP requires Neovim 0.10+
+local has_modern_nvim = vim.fn.has('nvim-0.10') == 1
+
 return {
   {
     'williamboman/mason.nvim',
+    cond = has_modern_nvim,
     lazy = false,
     config = true,
   },
   {
     'williamboman/mason-lspconfig.nvim',
+    cond = has_modern_nvim,
     lazy = false,
     dependencies = {
       'williamboman/mason.nvim',
-      { 'neovim/nvim-lspconfig', version = '2.*' },  -- Pin to v2.x for Neovim < 0.11
+      'neovim/nvim-lspconfig',
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
@@ -85,6 +90,7 @@ return {
   -- Autocompletion
   {
     'hrsh7th/nvim-cmp',
+    cond = has_modern_nvim,
     lazy = false,
     dependencies = {
       'L3MON4D3/LuaSnip',
