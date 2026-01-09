@@ -137,6 +137,14 @@ if command -v zoxide &> /dev/null; then
 fi
 
 # ============================================================
+# Dotfile Management (yadm)
+# ============================================================
+# Ensure yadm works on cluster where git needs login shell
+if [[ -x "$HOME/.local/bin/yadm" ]]; then
+  alias yadm='$HOME/.local/bin/yadm'
+fi
+
+# ============================================================
 # Configuration File Shortcuts
 # ============================================================
 alias ez='nvim ~/.zshrc'
