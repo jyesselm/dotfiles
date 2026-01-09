@@ -141,9 +141,9 @@ fi
 # ============================================================
 if [[ "$OSTYPE" == "darwin"* ]] && command -v op &>/dev/null; then
   # Copy password to clipboard: opp "Item Name"
-  opp() { op item get "$1" --fields password | pbcopy && echo "Password copied!"; }
+  opp() { op item get "$1" --fields password --reveal | pbcopy && echo "Password copied!"; }
   # Copy username to clipboard: opu "Item Name"
-  opu() { op item get "$1" --fields username | pbcopy && echo "Username copied!"; }
+  opu() { op item get "$1" --fields username --reveal | pbcopy && echo "Username copied!"; }
   # Copy OTP to clipboard: opo "Item Name"
   opo() { op item get "$1" --otp | pbcopy && echo "OTP copied!"; }
   # Search items: ops "search term"
