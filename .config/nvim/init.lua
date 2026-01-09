@@ -11,8 +11,23 @@ vim.opt.termguicolors = true    -- Enable 24-bit colors
 vim.g.mapleader = " "
 vim.wo.number = true
 vim.opt.colorcolumn = "80"
-vim.opt.clipboard = "unnamedplus"
 vim.opt.mouse = "a"              -- Enable mouse in all modes
+
+-- Clipboard: use OSC 52 over SSH (works through terminal), otherwise system clipboard
+if os.getenv("SSH_TTY") then
+    vim.g.clipboard = {
+        name = 'OSC 52',
+        copy = {
+            ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
+            ['*'] = require('vim.ui.clipboard.osc52').copy('*'),
+        },
+        paste = {
+            ['+'] = require('vim.ui.clipboard.osc52').paste('+'),
+            ['*'] = require('vim.ui.clipboard.osc52').paste('*'),
+        },
+    }
+end
+vim.opt.clipboard = "unnamedplus"
 
 -- Auto-copy mouse selection to system clipboard
 vim.keymap.set('v', '<LeftRelease>', '"+y<LeftRelease>', { noremap = true, silent = true })
