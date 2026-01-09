@@ -62,15 +62,16 @@ if [[ -d "$HOME/projects/Rosetta" ]]; then
 fi
 
 # ============================================================
-# SRA Toolkit
+# SRA Toolkit (macOS only)
 # ============================================================
-# Find latest version dynamically
-for sra_dir in "$HOME/Downloads"/sratoolkit.*-mac64/bin; do
-  if [[ -d "$sra_dir" ]]; then
-    export PATH="$PATH:$sra_dir"
-    break
-  fi
-done
+if [[ "$(uname)" == "Darwin" ]]; then
+  for sra_dir in "$HOME/Downloads"/sratoolkit.*-mac64/bin(N); do
+    if [[ -d "$sra_dir" ]]; then
+      export PATH="$PATH:$sra_dir"
+      break
+    fi
+  done
+fi
 
 # ============================================================
 # SHAPEMapper

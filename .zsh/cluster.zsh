@@ -2,11 +2,22 @@
 # HPC cluster-specific configuration (swan)
 
 # ============================================================
+# Module System Initialization
+# ============================================================
+# Source module init if not already available
+if ! command -v module &>/dev/null; then
+  [[ -f /etc/profile.d/modules.sh ]] && source /etc/profile.d/modules.sh
+  [[ -f /util/opt/lmod/lmod/init/zsh ]] && source /util/opt/lmod/lmod/init/zsh
+fi
+
+# ============================================================
 # Module Loads
 # ============================================================
-module load anaconda
-module load nvim
-module load "starship/1.20"
+if command -v module &>/dev/null; then
+  module load anaconda 2>/dev/null
+  module load nvim 2>/dev/null
+  module load "starship/1.20" 2>/dev/null
+fi
 
 # ============================================================
 # Cluster-specific PATH

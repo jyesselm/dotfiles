@@ -16,12 +16,11 @@ else
 fi
 
 # ============================================================
-# Cluster: Load modules first (before Oh My Zsh)
+# Platform-Specific Configuration (EARLY - before Oh My Zsh)
 # ============================================================
+# Cluster needs modules loaded first for tools to be available
 if $IS_CLUSTER; then
-  module load anaconda 2>/dev/null
-  module load nvim 2>/dev/null
-  module load "starship/1.20" 2>/dev/null
+  [[ -f "$HOME/.zsh/cluster.zsh" ]] && source "$HOME/.zsh/cluster.zsh"
 fi
 
 # ============================================================
@@ -63,12 +62,10 @@ if [[ -d "$HOME/.zsh" ]]; then
 fi
 
 # ============================================================
-# Platform-Specific Configuration
+# macOS-Specific Configuration (after Oh My Zsh)
 # ============================================================
 if $IS_MACOS; then
   [[ -f "$HOME/.zsh/macos.zsh" ]] && source "$HOME/.zsh/macos.zsh"
-elif $IS_CLUSTER; then
-  [[ -f "$HOME/.zsh/cluster.zsh" ]] && source "$HOME/.zsh/cluster.zsh"
 fi
 
 # ============================================================
