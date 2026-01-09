@@ -14,18 +14,22 @@ vim.opt.colorcolumn = "80"
 vim.opt.mouse = "a"              -- Enable mouse in all modes
 
 -- Clipboard: use OSC 52 over SSH (works through terminal), otherwise system clipboard
+-- Neovim 0.10+ has built-in OSC52, older versions use ojroques/nvim-osc52 plugin
 if os.getenv("SSH_TTY") then
-    vim.g.clipboard = {
-        name = 'OSC 52',
-        copy = {
-            ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
-            ['*'] = require('vim.ui.clipboard.osc52').copy('*'),
-        },
-        paste = {
-            ['+'] = require('vim.ui.clipboard.osc52').paste('+'),
-            ['*'] = require('vim.ui.clipboard.osc52').paste('*'),
-        },
-    }
+    if vim.fn.has('nvim-0.10') == 1 then
+        vim.g.clipboard = {
+            name = 'OSC 52',
+            copy = {
+                ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
+                ['*'] = require('vim.ui.clipboard.osc52').copy('*'),
+            },
+            paste = {
+                ['+'] = require('vim.ui.clipboard.osc52').paste('+'),
+                ['*'] = require('vim.ui.clipboard.osc52').paste('*'),
+            },
+        }
+    end
+    -- For older versions, the osc52 plugin handles this (see lua/plugins/osc52.lua)
 end
 vim.opt.clipboard = "unnamedplus"
 
