@@ -94,6 +94,14 @@ elif [[ -f "$HOME/.atuin/bin/env" ]]; then
   eval "$(atuin init zsh)"
 fi
 
+# 1Password CLI integration (macOS only)
+if $IS_MACOS && command -v op &>/dev/null; then
+  # Shell plugins for auto-complete
+  [[ -f ~/.config/op/plugins.sh ]] && source ~/.config/op/plugins.sh
+  # Completions
+  eval "$(op completion zsh)" 2>/dev/null
+fi
+
 # Ctrl+G: zoxide interactive - fuzzy cd to frequent directories
 zoxide-widget() {
   local selected
