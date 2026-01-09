@@ -76,11 +76,17 @@ export PATH="$HOME/.local/bin:$PATH"
 command -v starship &>/dev/null && eval "$(starship init zsh)"
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
-# fzf
-export FZF_CTRL_T_COMMAND='fd --type d --hidden --exclude .git 2>/dev/null || find . -type d'
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# fzf configuration
+export FZF_DEFAULT_OPTS='--height 40% --reverse'
+export FZF_CTRL_T_COMMAND='fd --type f --hidden --exclude .git 2>/dev/null || find . -type f'
+export FZF_ALT_C_COMMAND='fd --type d --hidden --exclude .git 2>/dev/null || find . -type d'
 
-# Ctrl+G: zoxide interactive
+# Source fzf keybindings
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ] && source /opt/homebrew/opt/fzf/shell/completion.zsh
+
+# Ctrl+G: zoxide interactive - fuzzy cd to frequent directories
 zoxide-widget() {
   local selected
   selected=$(zoxide query -l 2>/dev/null | fzf --height 40% --reverse --no-sort) || return 0
@@ -89,6 +95,16 @@ zoxide-widget() {
 }
 zle -N zoxide-widget
 bindkey '^G' zoxide-widget
+
+# Ctrl+F: file search - fuzzy find files with preview
+file-widget() {
+  local selected
+  selected=$(fd --type f --hidden --exclude .git 2>/dev/null | fzf --height 40% --reverse --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}') || return 0
+  [[ -n "$selected" ]] && LBUFFER+="${selected}"
+  zle reset-prompt
+}
+zle -N file-widget
+bindkey '^F' file-widget
 
 # ============================================================
 # Completion & Keybindings
