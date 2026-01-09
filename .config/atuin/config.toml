@@ -1,0 +1,16 @@
+# Atuin configuration
+
+# Use up arrow to search history
+enter_accept = true
+
+# Search mode: prefix, fulltext, fuzzy, skim
+search_mode = "fuzzy"
+
+# Filter mode: global, host, session, directory
+filter_mode = "global"
+
+# Style: auto, full, compact
+style = "compact"
+
+# Show preview of command
+show_preview = true
