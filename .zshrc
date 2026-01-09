@@ -76,6 +76,14 @@ export PATH="$HOME/.local/bin:$PATH"
 command -v starship &>/dev/null && eval "$(starship init zsh)"
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
+# Atuin - synced shell history (replaces Ctrl+R)
+if command -v atuin &>/dev/null; then
+  eval "$(atuin init zsh)"
+elif [[ -f "$HOME/.atuin/bin/env" ]]; then
+  source "$HOME/.atuin/bin/env"
+  eval "$(atuin init zsh)"
+fi
+
 # fzf configuration
 export FZF_DEFAULT_OPTS='--height 40% --reverse'
 export FZF_CTRL_T_COMMAND='fd --type f --hidden --exclude .git 2>/dev/null || find . -type f'
