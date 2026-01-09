@@ -137,6 +137,20 @@ if command -v zoxide &> /dev/null; then
 fi
 
 # ============================================================
+# 1Password CLI helpers (macOS)
+# ============================================================
+if [[ "$OSTYPE" == "darwin"* ]] && command -v op &>/dev/null; then
+  # Copy password to clipboard: opp "Item Name"
+  opp() { op item get "$1" --fields password | pbcopy && echo "Password copied!"; }
+  # Copy username to clipboard: opu "Item Name"
+  opu() { op item get "$1" --fields username | pbcopy && echo "Username copied!"; }
+  # Copy OTP to clipboard: opo "Item Name"
+  opo() { op item get "$1" --otp | pbcopy && echo "OTP copied!"; }
+  # Search items: ops "search term"
+  ops() { op item list | grep -i "$1"; }
+fi
+
+# ============================================================
 # Dotfile Management (yadm)
 # ============================================================
 # Ensure yadm works on cluster where git needs login shell
