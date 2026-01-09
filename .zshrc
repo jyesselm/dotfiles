@@ -76,23 +76,23 @@ export PATH="$HOME/.local/bin:$PATH"
 command -v starship &>/dev/null && eval "$(starship init zsh)"
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
-# Atuin - synced shell history (replaces Ctrl+R)
+# fzf configuration
+export FZF_DEFAULT_OPTS='--height 40% --reverse'
+export FZF_CTRL_T_COMMAND='fd --type f --hidden --exclude .git 2>/dev/null || find . -type f'
+export FZF_ALT_C_COMMAND='fd --type d --hidden --exclude .git 2>/dev/null || find . -type d'
+
+# Source fzf keybindings (BEFORE atuin so atuin takes Ctrl+R)
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ] && source /opt/homebrew/opt/fzf/shell/completion.zsh
+
+# Atuin - synced shell history (AFTER fzf to override Ctrl+R)
 if command -v atuin &>/dev/null; then
   eval "$(atuin init zsh)"
 elif [[ -f "$HOME/.atuin/bin/env" ]]; then
   source "$HOME/.atuin/bin/env"
   eval "$(atuin init zsh)"
 fi
-
-# fzf configuration
-export FZF_DEFAULT_OPTS='--height 40% --reverse'
-export FZF_CTRL_T_COMMAND='fd --type f --hidden --exclude .git 2>/dev/null || find . -type f'
-export FZF_ALT_C_COMMAND='fd --type d --hidden --exclude .git 2>/dev/null || find . -type d'
-
-# Source fzf keybindings
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
-[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ] && source /opt/homebrew/opt/fzf/shell/completion.zsh
 
 # Ctrl+G: zoxide interactive - fuzzy cd to frequent directories
 zoxide-widget() {
