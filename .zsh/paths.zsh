@@ -121,15 +121,16 @@ fi
   export PATH="$PATH:$HOME/projects/nextflow"
 
 # ============================================================
-# TeX/LaTeX
+# TeX/LaTeX (macOS only)
 # ============================================================
-# TeX Live (check for latest version)
-for tex_path in /usr/local/texlive/*/bin/universal-darwin; do
-  if [[ -d "$tex_path" ]]; then
-    export PATH="$PATH:$tex_path"
-    break
-  fi
-done
+if [[ "$(uname)" == "Darwin" ]]; then
+  for tex_path in /usr/local/texlive/*/bin/universal-darwin(N); do
+    if [[ -d "$tex_path" ]]; then
+      export PATH="$PATH:$tex_path"
+      break
+    fi
+  done
+fi
 
 # ============================================================
 # Clean up PATH (remove duplicates)
