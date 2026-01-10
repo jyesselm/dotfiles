@@ -43,6 +43,7 @@ return {
     vim.keymap.set('n', 'fg', builtin.live_grep, { desc = 'Live grep' })
     vim.keymap.set('n', 'fb', builtin.buffers, { desc = 'Find buffers' })
     vim.keymap.set('n', 'fw', builtin.lsp_dynamic_workspace_symbols, { desc = 'Workspace symbols' })
+    vim.keymap.set('n', 'fk', builtin.keymaps, { desc = 'Find keymaps' })
 
     -- Find files and open in new tab
     vim.keymap.set('n', 'ft', function()
