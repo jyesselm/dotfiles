@@ -86,6 +86,8 @@ fi
 # ============================================================
 if $IS_MACOS; then
   [[ -f "$HOME/.zsh/macos.zsh" ]] && source "$HOME/.zsh/macos.zsh"
+  # Fix terminal detection for Claude Code (prevents Ghostty prompt in iTerm2/tmux)
+  export TERM_PROGRAM=iTerm.app
 fi
 
 # ============================================================
@@ -95,9 +97,6 @@ export PATH="$HOME/.local/bin:$PATH"
 
 command -v starship &>/dev/null && eval "$(starship init zsh)"
 
-# Ghostty shell integration
-[[ -f /Applications/Ghostty.app/Contents/Resources/shell-integration/zsh/ghostty.zsh ]] && \
-  source /Applications/Ghostty.app/Contents/Resources/shell-integration/zsh/ghostty.zsh
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
 # fzf configuration
