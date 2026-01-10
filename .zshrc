@@ -45,9 +45,9 @@ export ZSH_COMPDUMP="$HOME/.cache/zsh/zcompdump-${HOST}-${ZSH_VERSION}"
 
 # Platform-specific plugins
 if $IS_MACOS; then
-  plugins=(git macos python colored-man-pages extract fzf copypath copyfile dirhistory)
+  plugins=(git macos python colored-man-pages extract fzf copypath copyfile dirhistory zsh-autosuggestions zsh-syntax-highlighting)
 else
-  plugins=(git colored-man-pages extract fzf)
+  plugins=(git colored-man-pages extract fzf zsh-autosuggestions zsh-syntax-highlighting)
 fi
 
 [[ -d "$ZSH" ]] && source "$ZSH/oh-my-zsh.sh"
