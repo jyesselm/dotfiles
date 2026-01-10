@@ -4,24 +4,44 @@
 # ============================================================
 # Platform Detection
 # ============================================================
-if [[ "$(uname)" == "Darwin" ]]; then
-  IS_MACOS=true
-  IS_CLUSTER=false
-elif [[ -d /util/opt ]] || [[ "$HOSTNAME" == *swan* ]]; then
-  IS_MACOS=false
-  IS_CLUSTER=true
-else
-  IS_MACOS=false
-  IS_CLUSTER=false
-fi
+# MACHINE_TYPE: macos, cluster, linux, or specific hostname
+# Add new machines by extending the case statement below
+
+IS_MACOS=false
+IS_CLUSTER=false
+IS_LINUX=false
+MACHINE_TYPE="unknown"
+
+case "$(uname)" in
+  Darwin)
+    IS_MACOS=true
+    MACHINE_TYPE="macos"
+    ;;
+  Linux)
+    IS_LINUX=true
+    # Detect specific clusters/servers
+    if [[ -d /util/opt ]] || [[ "$HOSTNAME" == *swan* ]]; then
+      IS_CLUSTER=true
+      MACHINE_TYPE="swan"
+    # Add more clusters/servers here:
+    # elif [[ "$HOSTNAME" == *otherhpc* ]]; then
+    #   IS_CLUSTER=true
+    #   MACHINE_TYPE="otherhpc"
+    else
+      MACHINE_TYPE="linux"
+    fi
+    ;;
+esac
 
 # ============================================================
-# Platform-Specific Configuration (EARLY - before Oh My Zsh)
+# Machine-Specific Configuration (EARLY - before Oh My Zsh)
 # ============================================================
-# Cluster needs modules loaded first for tools to be available
+# Sources ~/.zsh/<machine_type>.zsh if it exists (e.g., swan.zsh, macos.zsh)
+# Also sources cluster.zsh for any cluster machine
 if $IS_CLUSTER; then
   [[ -f "$HOME/.zsh/cluster.zsh" ]] && source "$HOME/.zsh/cluster.zsh"
 fi
+[[ -f "$HOME/.zsh/${MACHINE_TYPE}.zsh" ]] && source "$HOME/.zsh/${MACHINE_TYPE}.zsh"
 
 # ============================================================
 # History Settings
@@ -143,3 +163,9 @@ bindkey '^[[B' history-search-forward
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey '^X^E' edit-command-line
+
+# ============================================================
+# Local Overrides (not tracked in git)
+# ============================================================
+# Create ~/.zsh/local.zsh for machine-specific settings
+[[ -f "$HOME/.zsh/local.zsh" ]] && source "$HOME/.zsh/local.zsh"
