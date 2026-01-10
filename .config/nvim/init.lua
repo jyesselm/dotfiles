@@ -90,6 +90,7 @@ if vim.g.vscode then
 
     -- VSCode/Cursor: Telescope-like commands
     vim.keymap.set('n', 'ff', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files' })
+    vim.keymap.set('n', 'ft', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files (new tab)' })
     vim.keymap.set('n', 'fg', '<Cmd>call VSCodeNotify("workbench.action.quickTextSearch")<CR>', { noremap = true, silent = true, desc = 'Live grep' })
     vim.keymap.set('n', 'fb', '<Cmd>call VSCodeNotify("workbench.action.showAllEditors")<CR>', { noremap = true, silent = true, desc = 'Find buffers' })
     vim.keymap.set('n', 'fw', '<Cmd>call VSCodeNotify("workbench.action.showAllSymbols")<CR>', { noremap = true, silent = true, desc = 'Workspace symbols' })
@@ -105,17 +106,22 @@ if vim.g.vscode then
     vim.keymap.set('n', '<leader>ml', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToRightGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor right' })
     vim.keymap.set('n', '<leader>mk', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToAboveGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor up' })
     vim.keymap.set('n', '<leader>mj', '<Cmd>call VSCodeNotify("workbench.action.moveEditorToBelowGroup")<CR>', { noremap = true, silent = true, desc = 'Move editor down' })
+
+    -- VSCode/Cursor: Tab/editor management
+    vim.keymap.set('n', '<leader>l', '<Cmd>call VSCodeNotify("workbench.action.nextEditor")<CR>', { noremap = true, silent = true, desc = 'Next editor' })
+    vim.keymap.set('n', '<leader>h', '<Cmd>call VSCodeNotify("workbench.action.previousEditor")<CR>', { noremap = true, silent = true, desc = 'Previous editor' })
+    vim.keymap.set('n', '<leader>tc', '<Cmd>call VSCodeNotify("workbench.action.closeActiveEditor")<CR>', { noremap = true, silent = true, desc = 'Close editor' })
+    vim.keymap.set('n', '<leader>to', '<Cmd>call VSCodeNotify("workbench.action.closeOtherEditors")<CR>', { noremap = true, silent = true, desc = 'Close other editors' })
 else
     -- Terminal Neovim: Window splits (matches tmux prefix + | and prefix + -)
     vim.keymap.set('n', '<leader>\\', '<C-w>v', { noremap = true, silent = true, desc = 'Split vertical' })
     vim.keymap.set('n', '<leader>-', '<C-w>s', { noremap = true, silent = true, desc = 'Split horizontal' })
     vim.keymap.set('n', '<leader>x', '<C-w>c', { noremap = true, silent = true, desc = 'Close split' })
+
+    -- Terminal Neovim: Tab management
+    vim.keymap.set('n', '<leader>l', ':tabnext<CR>', { noremap = true, silent = true, desc = 'Move to next tab' })
+    vim.keymap.set('n', '<leader>h', ':tabprevious<CR>', { noremap = true, silent = true, desc = 'Move to previous tab' })
+    vim.keymap.set('n', '<leader>tc', ':tabclose<CR>', { noremap = true, silent = true, desc = 'Close current tab' })
+    vim.keymap.set('n', '<leader>to', ':tabonly<CR>', { noremap = true, silent = true, desc = 'Close all tabs but the current one' })
 end
-
-
--- Tab management
--- vim.keymap.set('n', '<leader>t', ':tabnew<CR>', { noremap = true, silent = true, desc = 'Create new tab' })
-vim.keymap.set('n', '<leader>l', ':tabnext<CR>', { noremap = true, silent = true, desc = 'Move to next tab' })
-vim.keymap.set('n', '<leader>h', ':tabprevious<CR>', { noremap = true, silent = true, desc = 'Move to previous tab' })
-vim.keymap.set('n', '<leader>to', ':tabonly<CR>', { noremap = true, silent = true, desc = 'Close all tabs but the current one' })
 

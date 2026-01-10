@@ -42,6 +42,17 @@ return {
     vim.keymap.set('n', 'ff', builtin.find_files, { desc = 'Find files' })
     vim.keymap.set('n', 'fg', builtin.live_grep, { desc = 'Live grep' })
     vim.keymap.set('n', 'fb', builtin.buffers, { desc = 'Find buffers' })
-    vim.keymap.set('n', 'fw', builtin.lsp_dynamic_workspace_symbols, { desc ='Workspace symbols' })
+    vim.keymap.set('n', 'fw', builtin.lsp_dynamic_workspace_symbols, { desc = 'Workspace symbols' })
+
+    -- Find files and open in new tab
+    vim.keymap.set('n', 'ft', function()
+      builtin.find_files({
+        attach_mappings = function(_, map)
+          map('i', '<CR>', actions.select_tab)
+          map('n', '<CR>', actions.select_tab)
+          return true
+        end,
+      })
+    end, { desc = 'Find files (open in tab)' })
   end,
 }
