@@ -77,7 +77,6 @@ vim.keymap.set('n', 'J', '5j', { noremap = true, silent = true, desc = 'Go down 
 vim.keymap.set('n', 'K', '5k', { noremap = true, silent = true, desc = 'Go up faster' })
 vim.keymap.set('n', '<leader>/', ':noh<CR>', { noremap = true, silent = true, desc = 'Clear highlighted text' })
 vim.keymap.set('n', '<leader>w', ':w<CR>', { noremap = true, silent = true, desc = 'Save file' })
-vim.keymap.set('n', 'fs', ':Telescope treesitter<CR>', { noremap = true, silent = true, desc = 'Go to symbol in file' })
 
 
 -- Window navigation
