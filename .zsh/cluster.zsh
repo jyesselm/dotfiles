@@ -14,6 +14,7 @@ fi
 # Module Loads
 # ============================================================
 if command -v module &>/dev/null; then
+  module load git 2>/dev/null
   module load anaconda 2>/dev/null
   module load nvim 2>/dev/null
   module load "starship/1.20" 2>/dev/null
@@ -22,6 +23,8 @@ fi
 # ============================================================
 # Cluster-specific PATH
 # ============================================================
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="/util/src/OLD-CRANE/git/git-2.7.4:$PATH"
 export PATH="$PATH:/work/yesselmanlab/jyesselm/Rosetta/main/source/build/src/release/linux/4.18/64/x86/gcc/11.2/default/"
 export PATH="$PATH:/work/yesselmanlab/jyesselm/installs/TrimGalore-0.6.6"
 export PATH="$PATH:/work/yesselmanlab/jyesselm/installs/bowtie2-2.2.9"
