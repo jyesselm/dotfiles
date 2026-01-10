@@ -3,6 +3,35 @@ return {
     priority = 1000,
     lazy = false,
     opts = {
+        -- Big file handling (disable heavy features for large files)
+        bigfile = {
+            enabled = true,
+            size = 1.5 * 1024 * 1024, -- 1.5MB
+        },
+        -- Buffer delete without messing up layout
+        bufdelete = {
+            enabled = true,
+        },
+        -- Dim inactive code outside current scope
+        dim = {
+            enabled = true,
+        },
+        -- File explorer
+        explorer = {
+            enabled = true,
+        },
+        -- LazyGit integration
+        lazygit = {
+            enabled = true,
+        },
+        -- Better keymaps
+        keymap = {
+            enabled = true,
+        },
+        -- Scope detection
+        scope = {
+            enabled = true,
+        },
         -- Picker (replaces Telescope)
         picker = {
             enabled = true,
@@ -91,6 +120,14 @@ return {
         { "<leader>z", function() Snacks.zen() end, desc = "Zen mode" },
         -- Notifications
         { "<leader>n", function() Snacks.notifier.show_history() end, desc = "Notification history" },
+        -- Explorer
+        { "<C-n>", function() Snacks.explorer() end, desc = "File explorer" },
+        -- LazyGit
+        { "<leader>gg", function() Snacks.lazygit() end, desc = "LazyGit" },
+        -- Buffer delete
+        { "<leader>bd", function() Snacks.bufdelete() end, desc = "Delete buffer" },
+        -- Dim toggle
+        { "<leader>d", function() Snacks.dim() end, desc = "Toggle dim" },
     },
     init = function()
         -- Setup some globals for easy access
