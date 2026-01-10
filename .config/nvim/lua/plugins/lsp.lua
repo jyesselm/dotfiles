@@ -50,6 +50,16 @@ return {
             lspconfig.pyright.setup({
               capabilities = capabilities,
               on_attach = on_attach,
+              root_dir = function(fname)
+                local util = require('lspconfig.util')
+                return util.root_pattern(
+                  'pyrightconfig.json',
+                  'pyproject.toml',
+                  'setup.py',
+                  'setup.cfg',
+                  '.git'
+                )(fname) or util.path.dirname(fname)
+              end,
               settings = {
                 python = {
                   analysis = {
