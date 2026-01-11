@@ -1,7 +1,13 @@
 # Two-line prompt with clean formatting
 format = """
-$directory$git_branch$git_status$conda$cmd_duration
+${custom.hostname}$directory$git_branch$git_status$conda$cmd_duration
 $character"""
+
+[custom.hostname]
+command = "echo $HOSTNAME_ALIAS"
+when = "test -n \"$HOSTNAME_ALIAS\""
+format = "[$output]($style) "
+style = "bold blue"
 
 [character]
 success_symbol = "[→](bold green)"
