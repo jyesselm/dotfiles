@@ -2,6 +2,10 @@
     "profiles": [
         {
             "complex_modifications": {
+                "parameters": {
+                    "basic.to_if_alone_timeout_milliseconds": 250,
+                    "basic.to_if_held_down_threshold_milliseconds": 50
+                },
                 "rules": [
                     {
                         "description": "F3 to Clipboard Screenshot",
@@ -14,6 +18,289 @@
                                         "modifiers": ["left_command", "left_control", "left_shift"]
                                     }
                                 ],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Space as Hyper Key (Space alone = Space, Space+key = Hyper)",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "spacebar",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "right_shift",
+                                        "modifiers": ["right_command", "right_control", "right_option"]
+                                    }
+                                ],
+                                "to_if_alone": [{ "key_code": "spacebar" }],
+                                "type": "basic",
+                                "conditions": [
+                                    {
+                                        "type": "frontmost_application_unless",
+                                        "bundle_identifiers": [
+                                            "^md\\.obsidian$",
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^io\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^net\\.kovidgoyal\\.kitty$"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper + hjkl = Arrow keys (system-wide)",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "h",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "key_code": "left_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "j",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "key_code": "down_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "k",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "key_code": "up_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "l",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "key_code": "right_arrow" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper + App Switching",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "b",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Google Chrome'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "t",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'iTerm'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "o",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Obsidian'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "c",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Cursor'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "s",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Slack'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "m",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Messages'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "e",
+                                    "modifiers": {
+                                        "mandatory": ["right_shift", "right_command", "right_control", "right_option"]
+                                    }
+                                },
+                                "to": [{ "shell_command": "open -a 'Finder'" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper + Window Management (Magnet)",
+                        "manipulators": [
+                            {
+                                "description": "Left half",
+                                "from": { "key_code": "left_arrow", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "left_arrow", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Right half",
+                                "from": { "key_code": "right_arrow", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "right_arrow", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Top half",
+                                "from": { "key_code": "up_arrow", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "up_arrow", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Bottom half",
+                                "from": { "key_code": "down_arrow", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "down_arrow", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Top Left",
+                                "from": { "key_code": "u", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "u", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Top Right",
+                                "from": { "key_code": "i", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "i", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Bottom Left",
+                                "from": { "key_code": "j", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "j", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Bottom Right",
+                                "from": { "key_code": "k", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "k", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Left Third",
+                                "from": { "key_code": "d", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "d", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Center Third",
+                                "from": { "key_code": "f", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "f", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Right Third",
+                                "from": { "key_code": "g", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "g", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Left Two Thirds",
+                                "from": { "key_code": "e", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "e", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Right Two Thirds",
+                                "from": { "key_code": "t", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "t", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Maximize",
+                                "from": { "key_code": "return_or_enter", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "return_or_enter", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Center",
+                                "from": { "key_code": "c", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "c", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Command 01",
+                                "from": { "key_code": "1", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "keypad_1", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Command 02",
+                                "from": { "key_code": "2", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "keypad_2", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Command 03",
+                                "from": { "key_code": "3", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "keypad_3", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Command 04",
+                                "from": { "key_code": "4", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "keypad_4", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Command 05",
+                                "from": { "key_code": "5", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "keypad_5", "modifiers": ["left_control", "left_option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "description": "Command 06",
+                                "from": { "key_code": "6", "modifiers": { "mandatory": ["right_shift", "right_command", "right_control", "right_option"] } },
+                                "to": [{ "key_code": "keypad_6", "modifiers": ["left_control", "left_option"] }],
                                 "type": "basic"
                             }
                         ]
