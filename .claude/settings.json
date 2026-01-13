@@ -1,0 +1,8 @@
+{
+  "model": "opus",
+  "enabledPlugins": {
+    "clangd-lsp@claude-plugins-official": true,
+    "laravel-simplifier@laravel": true
+  },
+  "alwaysThinkingEnabled": true
+}
