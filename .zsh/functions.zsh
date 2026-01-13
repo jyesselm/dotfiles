@@ -315,3 +315,87 @@ rgpdf() {
   fi
   rga --type pdf "$pattern" "$dir"
 }
+
+# Recent files system-wide with fzf
+# Usage: recentf [-c] [days] [folder]
+#   -c  search by creation time instead of modification time
+# Finds files within N days (default: 7), excludes system files
+recentf() {
+  local created=false
+  local days=7
+  local folder="$HOME"
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -c) created=true; shift ;;
+      *)
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+          days="$1"
+        elif [[ -d "$1" ]]; then
+          folder="$1"
+        fi
+        shift ;;
+    esac
+  done
+
+  local selected
+  local header_type="modified"
+
+  if $created && [[ "$(uname)" == "Darwin" ]]; then
+    header_type="created"
+    # Use mdfind for fast creation time search (uses Spotlight index)
+    selected=$(mdfind "kMDItemFSCreationDate > \$time.now(-${days}d)" -onlyin "$folder" 2>/dev/null | \
+      grep -v -E "(Library|\.Trash|/\.|node_modules|\.cache)" | \
+      fzf --header="Files created in last ${days} days | $folder")
+  else
+    # Use fd for modification time (or created on Linux where we fall back to mtime)
+    selected=$(fd --type f --hidden \
+      --exclude .git \
+      --exclude Library \
+      --exclude .Trash \
+      --exclude node_modules \
+      --exclude .cache \
+      --exclude .npm \
+      --exclude .conda \
+      --exclude .local/share \
+      --exclude "*.app" \
+      --changed-within "${days}d" \
+      . "$folder" 2>/dev/null | \
+      fzf --header="Files ${header_type} in last ${days} days | $folder")
+  fi
+
+  if [[ -n "$selected" ]]; then
+    echo "$selected"
+    if [[ "$(uname)" == "Darwin" ]]; then
+      echo -n "$selected" | pbcopy
+      echo "(copied to clipboard)"
+    elif command -v xclip &>/dev/null; then
+      echo -n "$selected" | xclip -selection clipboard
+      echo "(copied to clipboard)"
+    fi
+  fi
+}
+
+# Interactive file finder with fzf
+# Usage: mff [folder]
+# Type in fzf to filter: "2026 docx" matches both, "'exact" for exact, "!exclude" to exclude
+# Returns: selected file path (copied to clipboard)
+mff() {
+  local folder="${1:-$HOME}"
+  local selected
+
+  selected=$(fd --type f --hidden --exclude .git --exclude Library --exclude .Trash . "$folder" 2>/dev/null | \
+    fzf --header="$folder | space=AND 'exact !exclude .ext\$")
+
+  if [[ -n "$selected" ]]; then
+    echo "$selected"
+    if [[ "$(uname)" == "Darwin" ]]; then
+      echo -n "$selected" | pbcopy
+      echo "(copied to clipboard)"
+    elif command -v xclip &>/dev/null; then
+      echo -n "$selected" | xclip -selection clipboard
+      echo "(copied to clipboard)"
+    fi
+  fi
+}
