@@ -10,6 +10,7 @@ vim.opt.shiftwidth = 4          -- Number of spaces to use for autoindent
 vim.opt.termguicolors = true    -- Enable 24-bit colors
 vim.g.mapleader = " "
 vim.wo.number = true
+vim.opt.relativenumber = true   -- Show relative line numbers
 vim.opt.colorcolumn = "80"
 vim.opt.mouse = "a"              -- Enable mouse in all modes
 
