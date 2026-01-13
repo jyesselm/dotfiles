@@ -138,7 +138,7 @@ bindkey '^G' zoxide-widget
 # Ctrl+F: file search - fuzzy find files with preview
 file-widget() {
   local selected
-  selected=$(fd --type f --hidden --exclude .git 2>/dev/null | fzf --height 40% --reverse --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}') || return 0
+  selected=$(fd --type f --hidden --exclude .git 2>/dev/null | fzf --height 40% --reverse --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}' --preview-window=bottom --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up') || return 0
   [[ -n "$selected" ]] && LBUFFER+="${selected}"
   zle reset-prompt
 }

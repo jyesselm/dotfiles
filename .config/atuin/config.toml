@@ -9,8 +9,23 @@ search_mode = "fuzzy"
 # Filter mode: global, host, session, directory
 filter_mode = "global"
 
+# Up arrow uses directory-first filtering (most relevant)
+filter_mode_shell_up_key_binding = "directory"
+
 # Style: auto, full, compact
 style = "compact"
 
 # Show preview of command
 show_preview = true
+
+# Show more results
+max_preview_height = 4
+
+# Ignore common commands that clutter history
+history_filter = [
+  "^ls$",
+  "^cd$",
+  "^pwd$",
+  "^clear$",
+  "^exit$",
+]

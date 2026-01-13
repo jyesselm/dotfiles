@@ -258,7 +258,7 @@ search-projects() {
 sf() {
   local dir="${1:-.}"
   local file
-  file=$(fd --type f --hidden --exclude .git . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}')
+  file=$(fd --type f --hidden --exclude .git . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}' --preview-window=bottom --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
   if [[ -n "$file" ]]; then
     echo "$file"
   fi
@@ -387,6 +387,41 @@ mff() {
 
   selected=$(fd --type f --hidden --exclude .git --exclude Library --exclude .Trash . "$folder" 2>/dev/null | \
     fzf --header="$folder | space=AND 'exact !exclude .ext\$")
+
+  if [[ -n "$selected" ]]; then
+    echo "$selected"
+    if [[ "$(uname)" == "Darwin" ]]; then
+      echo -n "$selected" | pbcopy
+      echo "(copied to clipboard)"
+    elif command -v xclip &>/dev/null; then
+      echo -n "$selected" | xclip -selection clipboard
+      echo "(copied to clipboard)"
+    fi
+  fi
+}
+
+# Interactive document finder with content preview
+# Usage: docs [folder]
+# Searches: pdf, docx, pptx, xlsx, doc, odt, epub
+docs() {
+  local folder="${1:-$HOME}"
+  local selected
+  local preview_cmd='
+    case {} in
+      *.pdf) pdftotext -l 3 {} - 2>/dev/null | head -80 ;;
+      *.docx|*.odt|*.epub) pandoc {} -t plain 2>/dev/null | head -80 ;;
+      *.pptx) unzip -p {} "ppt/slides/slide*.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
+      *.xlsx) unzip -p {} "xl/sharedStrings.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
+      *.doc) catdoc {} 2>/dev/null | head -80 || echo "Install catdoc for .doc preview" ;;
+      *) echo "No preview available" ;;
+    esac
+  '
+
+  selected=$(fd --type f -e pdf -e docx -e pptx -e xlsx -e doc -e odt -e epub . "$folder" 2>/dev/null | \
+    fzf --header="Documents in $folder" \
+        --preview "$preview_cmd" \
+        --preview-window=bottom:50% \
+        --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
 
   if [[ -n "$selected" ]]; then
     echo "$selected"
