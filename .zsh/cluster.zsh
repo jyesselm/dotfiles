@@ -16,7 +16,6 @@ fi
 if command -v module &>/dev/null; then
   module load git 2>/dev/null
   module load anaconda 2>/dev/null
-  module load tmux/3.6 2>/dev/null
   module load nvim/0.11 2>/dev/null
   module load "starship/1.20" 2>/dev/null
 fi
