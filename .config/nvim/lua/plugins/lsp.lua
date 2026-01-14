@@ -1,12 +1,25 @@
 -- LSP requires Neovim 0.10+
 local has_modern_nvim = vim.fn.has('nvim-0.10') == 1
+local is_ssh = os.getenv("SSH_TTY") ~= nil
 
 return {
   {
     'williamboman/mason.nvim',
     cond = has_modern_nvim,
     lazy = false,
-    config = true,
+    config = function()
+      require('mason').setup({
+        -- Disable log notifications on SSH to avoid popups
+        log_level = is_ssh and vim.log.levels.OFF or vim.log.levels.INFO,
+        ui = {
+          icons = {
+            package_installed = "✓",
+            package_pending = "➜",
+            package_uninstalled = "✗"
+          },
+        },
+      })
+    end,
   },
   {
     'williamboman/mason-lspconfig.nvim',
@@ -36,7 +49,8 @@ return {
       end
 
       require('mason-lspconfig').setup({
-        ensure_installed = { 'pyright', 'ruff', 'lua_ls' },
+        -- Skip auto-install on SSH/remote machines to avoid constant failures
+        ensure_installed = is_ssh and {} or { 'pyright', 'ruff', 'lua_ls' },
         handlers = {
           -- Default handler for all servers
           function(server_name)
