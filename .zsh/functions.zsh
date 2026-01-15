@@ -92,6 +92,37 @@ mkcd() {
   fi
 }
 
+# work on the desktop 
+tarzip() {
+  if [ -z "$1" ]; then
+    echo "Usage: tarzip <directory>"
+    return 1
+  fi
+  local dir="$1"
+  if [ ! -d "$dir" ]; then
+    echo "Error: $dir is not a directory"
+    return 1
+  fi
+  
+  # Cross-platform byte size
+  local size
+  if du -sb "$dir" &>/dev/null; then
+    size=$(du -sb "$dir" | awk '{print $1}')  # Linux (GNU)
+  else
+    size=$(find "$dir" -type f -exec stat -f%z {} + 2>/dev/null | awk '{s+=$1} END {print s}')  # macOS (BSD)
+  fi
+  
+  echo "Compressing $dir ($(du -sh "$dir" | awk '{print $1}'))..."
+  
+  if [ -n "$size" ] && [ "$size" -gt 0 ] 2>/dev/null; then
+    tar -c "$dir" | pv -s "$size" | zstd -T0 -19 > "${dir}.tar.zst"
+  else
+    tar -c "$dir" | pv | zstd -T0 -19 > "${dir}.tar.zst"  # No size estimate
+  fi
+  
+  echo "Created ${dir}.tar.zst"
+}
+
 # Extract any archive
 extract() {
   if [[ -z "$1" ]]; then

@@ -34,6 +34,9 @@ if os.getenv("SSH_TTY") then
 end
 vim.opt.clipboard = "unnamedplus"
 
+-- Paste mode toggle (Space+p to preserve formatting when pasting)
+vim.keymap.set('n', '<leader>p', ':set paste!<CR>', { noremap = true, silent = true, desc = 'Toggle paste mode' })
+
 -- Auto-copy mouse selection to system clipboard
 vim.keymap.set('v', '<LeftRelease>', '"+y<LeftRelease>', { noremap = true, silent = true })
 
