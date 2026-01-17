@@ -67,3 +67,88 @@ repos:
 
 - path: local/code/cpp/find_pair_2
   remote: https://github.com/jyesselm/find_pair.git
+
+- path: local/code/python/developing/cookiecutter-pypackage
+  remote: https://github.com/jyesselm/cookiecutter-pypackage
+
+- path: local/code/python/developing/rna_draw
+  remote: https://github.com/YesselmanLab/rna_draw.git
+
+- path: local/code/python/developing/rna_secstruct_design
+  remote: https://github.com/YesselmanLab/rna_secstruct_design.git
+  branch: jdy/mondernize
+
+- path: local/code/python/developing/py_x3dna
+  remote: https://github.com/YesselmanLab/py_x3dna.git
+
+- path: local/code/python/developing/py_dssr
+  remote: https://github.com/YesselmanLab/py_dssr.git
+
+- path: local/code/python/developing/key-binding-database
+  remote: https://github.com/jyesselm/key-binding-database.git
+
+- path: local/code/python/developing/rna-map-mini
+  remote: https://github.com/jyesselm/rna-map-mini.git
+
+- path: local/code/python/developing/rna_lib_design
+  remote: https://github.com/jyesselm/rna_lib_design.git
+  branch: jdy/old_main
+
+- path: local/code/python/developing/pyscp
+  remote: https://github.com/jyesselm/pyscp.git
+
+- path: local/code/python/developing/twoway-lib-generation
+  remote: https://github.com/jyesselm/twoway-lib-generation.git
+
+- path: local/code/python/developing/file-normalization
+  remote: https://github.com/jyesselm/file-norm.git
+
+- path: local/code/python/developing/construct_design
+  remote: https://github.com/jyesselm/construct_design.git
+
+- path: local/code/python/developing/obsidian_scripts
+  remote: https://github.com/jyesselm/obsidian_scripts
+  branch: jdy/ai_updates
+
+- path: local/code/python/developing/pyrnamake
+  remote: https://github.com/jyesselm/pyrnamake.git
+
+- path: local/code/python/developing/rna-int-barcode
+  remote: https://github.com/jyesselm/rna-int-barcode.git
+  branch: refactor/integrate-barcode-library
+
+- path: local/code/python/developing/jobsubmit
+  remote: https://github.com/YesselmanLab/jobsubmit.git
+
+- path: local/code/python/rnamake_ens_gen
+  remote: https://github.com/jyesselm/rnamake_ens_gen.git
+
+- path: local/code/python/released/seq_deposit
+  remote: https://github.com/YesselmanLab/seq_deposit.git
+
+- path: local/code/python/released/pymerize
+  remote: https://github.com/YesselmanLab/pymerize.git
+
+- path: local/code/other/computer-setup
+  remote: https://github.com/jyesselm/computer-setup
+
+- path: local/code/cpp/eigen_testing/build/_deps/benchmark-src
+  remote: https://github.com/google/benchmark.git
+  branch: HEAD
+
+- path: local/code/cpp/eigen_testing/build/_deps/catch2-src
+  remote: https://github.com/catchorg/Catch2.git
+  branch: HEAD
+
+- path: local/code/cpp/RNAMake
+  remote: https://github.com/RNAMAke/RNAMake.git
+  branch: jdy/modernize_x3dna
+
+- path: local/code/cpp/RNAMake.New
+  remote: https://github.com/jyesselm/RNAMake.New.git
+
+- path: local/code/cpp/graph_implementations_cpp/graph1/doctest
+  remote: https://github.com/doctest/doctest.git
+
+- path: local/code/javascript/master_protocol_sheet
+  remote: https://github.com/YesselmanLab/lab_protocols.git
