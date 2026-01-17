@@ -1,0 +1,69 @@
+# Tracked repositories for git-repo-checker sync
+# These repos will be cloned if missing, pulled if they exist
+#
+# Override path_prefix for different machines with --path-prefix or local.yml
+
+path_prefix: '~'
+repos:
+
+- path: local/code/python/developing/barcode_demultiplex
+  remote: https://github.com/jyesselm/barcode_demultiplex.git
+
+- path: local/code/python/developing/paper-to-markdown
+  remote: https://github.com/jyesselm/paper-to-markdown.git
+
+- path: local/code/python/developing/seq_deposit
+  remote: https://github.com/YesselmanLab/seq_deposit
+
+- path: local/code/python/developing/ylab_gdrive
+  remote: https://github.com/YesselmanLab/ylab_gdrive.git
+
+- path: local/code/python/developing/yplot
+  remote: https://github.com/YesselmanLab/rna_map_plotting.git
+  branch: feature/grid-layout-system
+
+- path: local/code/python/developing/file-norm
+  remote: https://github.com/jyesselm/file-norm
+
+- path: local/code/python/developing/git-repo-checker
+  remote: https://github.com/jyesselm/git-repo-checker.git
+
+- path: local/code/python/developing/todoist-cli
+  remote: https://github.com/jyesselm/todoist-cli.git
+
+- path: local/code/python/developing/yplot2
+  remote: https://github.com/jyesselm/yplot2.git
+
+- path: local/code/python/developing/mtr_analysis
+  remote: https://github.com/jyesselm/mtr_analysis.git
+
+- path: local/code/python/developing/docx-to-markdown
+  remote: https://github.com/jyesselm/docx-to-markdown.git
+
+- path: local/code/python/developing/rna_map_slurm
+  remote: https://github.com/YesselmanLab/rna_map_slurm.git
+  branch: jdy/cpp-int-demultiplex
+
+- path: local/code/python/developing/rna_motif_library
+  remote: https://github.com/YesselmanLab/rna_motif_library.git
+
+- path: local/code/python/released/seq_tools
+  remote: https://github.com/jyesselm/seq_tools
+
+- path: local/code/python/released/vienna
+  remote: https://github.com/jyesselm/vienna.git
+
+- path: local/code/python/released/rna_map
+  remote: https://github.com/YesselmanLab/rna_map.git
+
+- path: local/code/python/released/rna_secstruct
+  remote: https://github.com/jyesselm/rna_secstruct.git
+
+- path: local/code/python/prototyped-pair-finder
+  remote: https://github.com/jyesselm/prototyped-pair-finder.git
+
+- path: local/code/other/lab-docs
+  remote: https://github.com/YesselmanLab/lab-docs.git
+
+- path: local/code/cpp/find_pair_2
+  remote: https://github.com/jyesselm/find_pair.git
