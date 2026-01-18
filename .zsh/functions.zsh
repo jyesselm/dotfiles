@@ -11,33 +11,34 @@ upload_seqs_and_oligos() {
     echo "Error: SEQPATH not set"
     return 1
   fi
-  
+
   local current_dir=$PWD
   local parent_dir=$(dirname "$SEQPATH")
-  local zip_name="sequences_and_oligos.zip"
-  
+  local dir_name=$(basename "$SEQPATH")
+  local archive_name="${dir_name}.tar.zst"
+
   if ! cd "$parent_dir" 2>/dev/null; then
     echo "Error: Cannot access $parent_dir"
     return 1
   fi
-  
-  echo "Creating zip archive..."
-  rm -f "$zip_name"
-  if ! zip -r "$zip_name" "$(basename "$SEQPATH")/" &>/dev/null; then
-    echo "Error: Failed to create zip file"
+
+  echo "Creating tar.zst archive..."
+  rm -f "$archive_name"
+  if ! tar -cf - "$dir_name" | zstd -T0 -19 > "$archive_name" 2>/dev/null; then
+    echo "Error: Failed to create tar.zst archive"
     cd "$current_dir" || true
     return 1
   fi
-  
+
   echo "Uploading to swan.unl.edu..."
-  if scp "$zip_name" jyesselm@swan.unl.edu:/work/yesselmanlab/jyesselm/ && \
-     ssh jyesselm@swan.unl.edu "cd /work/yesselmanlab/jyesselm/ && unzip -o $zip_name && rm $zip_name"; then
+  if scp "$archive_name" jyesselm@swan.unl.edu:/work/yesselmanlab/jyesselm/ && \
+     ssh jyesselm@swan.unl.edu "cd /work/yesselmanlab/jyesselm/ && zstd -d $archive_name && tar -xf ${dir_name}.tar && rm $archive_name ${dir_name}.tar"; then
     echo "✓ Upload successful"
-    rm -f "$zip_name"
+    rm -f "$archive_name"
   else
     echo "✗ Upload failed"
   fi
-  
+
   cd "$current_dir" || return 1
 }
 

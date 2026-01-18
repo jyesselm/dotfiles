@@ -152,3 +152,6 @@ repos:
 
 - path: local/code/javascript/master_protocol_sheet
   remote: https://github.com/YesselmanLab/lab_protocols.git
+
+- path: local/code/python/developing/zotero-cli
+  remote: https://github.com/jyesselm/zotero-cli.git
