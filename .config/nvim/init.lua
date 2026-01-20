@@ -115,6 +115,19 @@ if vim.g.vscode then
     vim.keymap.set('n', '<leader>h', '<Cmd>call VSCodeNotify("workbench.action.previousEditor")<CR>', { noremap = true, silent = true, desc = 'Previous editor' })
     vim.keymap.set('n', '<leader>tc', '<Cmd>call VSCodeNotify("workbench.action.closeActiveEditor")<CR>', { noremap = true, silent = true, desc = 'Close editor' })
     vim.keymap.set('n', '<leader>to', '<Cmd>call VSCodeNotify("workbench.action.closeOtherEditors")<CR>', { noremap = true, silent = true, desc = 'Close other editors' })
+
+    -- VSCode/Cursor: Fix gg/G viewport sync issues by using native VSCode commands
+    vim.keymap.set('n', 'gg', '<Cmd>call VSCodeNotify("cursorTop")<CR>', { noremap = true, silent = true, desc = 'Go to top' })
+    vim.keymap.set('n', 'G', '<Cmd>call VSCodeNotify("cursorBottom")<CR>', { noremap = true, silent = true, desc = 'Go to bottom' })
+
+    -- VSCode/Cursor: Fix Ctrl-d/Ctrl-u half-page scroll viewport sync
+    vim.keymap.set('n', '<C-d>', '<Cmd>call VSCodeNotify("editorScroll", {"to": "down", "by": "halfPage", "revealCursor": true})<CR>', { noremap = true, silent = true, desc = 'Scroll down half page' })
+    vim.keymap.set('n', '<C-u>', '<Cmd>call VSCodeNotify("editorScroll", {"to": "up", "by": "halfPage", "revealCursor": true})<CR>', { noremap = true, silent = true, desc = 'Scroll up half page' })
+
+    -- VSCode/Cursor: Fix zz/zt/zb viewport centering
+    vim.keymap.set('n', 'zz', '<Cmd>call VSCodeNotify("revealLine", {"lineNumber": line("."), "at": "center"})<CR>', { noremap = true, silent = true, desc = 'Center cursor in view' })
+    vim.keymap.set('n', 'zt', '<Cmd>call VSCodeNotify("revealLine", {"lineNumber": line("."), "at": "top"})<CR>', { noremap = true, silent = true, desc = 'Cursor to top of view' })
+    vim.keymap.set('n', 'zb', '<Cmd>call VSCodeNotify("revealLine", {"lineNumber": line("."), "at": "bottom"})<CR>', { noremap = true, silent = true, desc = 'Cursor to bottom of view' })
 else
     -- Terminal Neovim: Window splits (matches tmux prefix + | and prefix + -)
     vim.keymap.set('n', '<leader>\\', '<C-w>v', { noremap = true, silent = true, desc = 'Split vertical' })
