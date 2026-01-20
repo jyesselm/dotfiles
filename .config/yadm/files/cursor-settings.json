@@ -1,5 +1,6 @@
 {
     "workbench.colorTheme": "One Dark Pro Darker",
+    "editor.inlayHints.enabled": "off",
     "window.commandCenter": 1,
     "terminal.integrated.inheritEnv": false,
     "window.newWindowProfile": "default_cursor",

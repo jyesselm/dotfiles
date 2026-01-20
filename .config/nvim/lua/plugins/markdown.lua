@@ -2,6 +2,7 @@ return {
     'MeanderingProgrammer/render-markdown.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' },
     ft = { 'markdown' },
+    enabled = not vim.g.vscode,  -- Disable when running in VS Code
     opts = {
         heading = {
             enabled = true,
