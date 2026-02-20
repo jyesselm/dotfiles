@@ -1,0 +1,106 @@
+{
+    // Editor settings
+    "editor.fontFamily": "JetBrainsMono Nerd Font",
+    "editor.fontSize": 11.5,
+    "editor.minimap.enabled": false,
+    "editor.inlineSuggest.enabled": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.language.colorizedBracketPairs": [],
+    "editor.largeFileOptimizations": false,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.selectionHighlight": false,
+    "search.useIgnoreFiles": true,
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
+    },
+    "editor.find.seedSearchStringFromSelection": "selection",
+    // Workbench settings
+    "workbench.colorTheme": "Catppuccin Mocha",
+    "workbench.preferredHighContrastColorTheme": "Monokai",
+    "workbench.preferredDarkColorTheme": "Monokai",
+    "workbench.colorCustomizations": {
+        "statusBar.background": "#8FBCBB",
+        "statusBar.noFolderBackground": "#8FBCBB",
+        "statusBar.debuggingBackground": "#8FBCBB",
+        "statusBar.foreground": "#000",
+        "statusBar.debuggingForeground": "#000"
+    },
+    "workbench.editor.enablePreview": false,
+    // Terminal settings
+    "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font Mono",
+    "terminal.integrated.inheritEnv": false,
+    "terminal.explorerKind": "external",
+    "terminal.external.osxExec": "iTerm.app",
+    "terminal.integrated.env.osx": {
+        "PATH": ""
+    },
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    // Python settings
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [],
+    // Language-specific settings
+    "[python]": {
+        "editor.formatOnPaste": false,
+        "editor.rulers": [
+            88
+        ],
+        "editor.formatOnType": true,
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "[cpp]": {
+        "editor.tabSize": 2,
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    // CMake settings
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/cmake/build_vscode",
+    // Window settings
+    "window.zoomLevel": 1,
+    // Security settings
+    "security.workspace.trust.untrustedFiles": "open",
+    // Extension settings
+    "extensions.ignoreRecommendations": true,
+    // Jupyter settings
+    "jupyter.askForKernelRestart": false,
+    "notebook.formatOnSave.enabled": true,
+    // Git settings
+    "git.ignoreMissingGitWarning": true,
+    "git.openRepositoryInParentFolders": "never",
+    // Cursor settings
+    "cursor.cpp.disabledLanguages": [
+        "scminput"
+    ],
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "notebook.cellToolbarLocation": {
+        "default": "right",
+        "jupyter-notebook": "right"
+    },
+    "cursor.chat.terminalShowHoverHint": false,
+    "python.defaultInterpreterPath": "/opt/homebrew/Caskroom/mambaforge/base/envs/py3",
+    "workbench.iconTheme": "vs-seti-jetbrainsmononerdfontmono",
+    "cursorpyright.analysis.extraPaths": [],
+    "editor.accessibilitySupport": "off",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "cursorpyright.shouldImportPylanceSettings": "never",
+    "editor.formatOnType": true,
+    "diffEditor.codeLens": true,
+    "notebook.find.filters": {
+        "markupSource": true,
+        "markupPreview": true,
+        "codeSource": true,
+        "codeOutput": true
+    },
+}

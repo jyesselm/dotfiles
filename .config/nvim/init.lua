@@ -58,22 +58,24 @@ local opts = {}
 
 require("lazy").setup("plugins")
 
--- LSP keybindings (set when LSP attaches to buffer)
-vim.api.nvim_create_autocmd('LspAttach', {
-    group = vim.api.nvim_create_augroup('UserLspConfig', {}),
-    callback = function(ev)
-        local opts = { buffer = ev.buf, noremap = true, silent = true }
-        vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-        vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
-        vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-        vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
-        vim.keymap.set('n', '<leader>k', vim.lsp.buf.hover, opts)
-        vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
-        vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
-        vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
-        vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
-    end,
-})
+-- LSP keybindings (terminal Neovim only - VSCode/Cursor handles these natively)
+if not vim.g.vscode then
+    vim.api.nvim_create_autocmd('LspAttach', {
+        group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+        callback = function(ev)
+            local opts = { buffer = ev.buf, noremap = true, silent = true }
+            vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+            vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+            vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+            vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+            vim.keymap.set('n', '<leader>k', vim.lsp.buf.hover, opts)
+            vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+            vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+            vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+            vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+        end,
+    })
+end
 
 vim.keymap.set('n', '<C-n>', ':Neotree filesystem reveal left<CR>')
 -- Normal mode mappings
@@ -115,6 +117,12 @@ if vim.g.vscode then
     vim.keymap.set('n', '<leader>h', '<Cmd>call VSCodeNotify("workbench.action.previousEditor")<CR>', { noremap = true, silent = true, desc = 'Previous editor' })
     vim.keymap.set('n', '<leader>tc', '<Cmd>call VSCodeNotify("workbench.action.closeActiveEditor")<CR>', { noremap = true, silent = true, desc = 'Close editor' })
     vim.keymap.set('n', '<leader>to', '<Cmd>call VSCodeNotify("workbench.action.closeOtherEditors")<CR>', { noremap = true, silent = true, desc = 'Close other editors' })
+
+    -- VSCode/Cursor: LSP-like commands using native VSCode actions
+    vim.keymap.set('n', 'gd', '<Cmd>call VSCodeNotify("editor.action.revealDefinition")<CR>', { noremap = true, silent = true, desc = 'Go to definition' })
+    vim.keymap.set('n', 'gD', '<Cmd>call VSCodeNotify("editor.action.revealDeclaration")<CR>', { noremap = true, silent = true, desc = 'Go to declaration' })
+    vim.keymap.set('n', 'gr', '<Cmd>call VSCodeNotify("editor.action.referenceSearch.trigger")<CR>', { noremap = true, silent = true, desc = 'Find references' })
+    vim.keymap.set('n', 'gi', '<Cmd>call VSCodeNotify("editor.action.goToImplementation")<CR>', { noremap = true, silent = true, desc = 'Go to implementation' })
 
     -- VSCode/Cursor: Fix gg/G viewport sync issues by using native VSCode commands
     vim.keymap.set('n', 'gg', '<Cmd>call VSCodeNotify("cursorTop")<CR>', { noremap = true, silent = true, desc = 'Go to top' })
