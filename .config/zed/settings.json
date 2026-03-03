@@ -1,0 +1,73 @@
+{
+  // ── Vim mode ──
+  "ui_font_weight": 500.0,
+  "buffer_font_weight": 500.0,
+  "vim_mode": true,
+  "vim": {
+    "toggle_relative_line_numbers": true,
+    "use_system_clipboard": "always",
+    "use_smartcase_find": true
+  },
+
+  // ── Theme (matches catppuccin-mocha from nvim) ──
+  "theme": "Catppuccin Mocha",
+
+  // ── Font ──
+  "ui_font_size": 16.0,
+  "buffer_font_size": 14.0,
+  "buffer_line_height": "standard",
+  "cursor_blink": false,
+
+  // ── Tabs & indentation (matches nvim tabstop=4, expandtab) ──
+  "tab_size": 4,
+  "hard_tabs": false,
+
+  // ── Autosave ──
+  "autosave": {
+    "after_delay": {
+      "milliseconds": 1000
+    }
+  },
+
+  // ── Column ruler at 80 (matches nvim colorcolumn) ──
+  "wrap_guides": [80],
+
+  // ── Indent guides (matches indent-blankline.nvim) ──
+  "indent_guides": {
+    "enabled": true,
+    "line_width": 1,
+    "active_line_width": 1,
+    "coloring": "fixed",
+    "background_coloring": "disabled"
+  },
+
+  // ── Git gutter (matches gitsigns.nvim) ──
+  "git": {
+    "git_gutter": "tracked_files",
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+
+  // ── Brackets (matches nvim-autopairs) ──
+  "use_autoclose": true,
+
+  // ── Scrolling ──
+  "vertical_scroll_margin": 5,
+  "scrollbar": {
+    "show": "auto"
+  },
+
+  // ── Completions ──
+  "show_completions_on_input": true,
+
+  // ── Tab bar ──
+  "tab_bar": {
+    "show": true
+  },
+
+  // ── Terminal ──
+  "terminal": {
+    "font_size": 13.0
+  }
+}

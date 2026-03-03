@@ -1,0 +1,90 @@
+[
+  // ── Workspace-wide bindings ──
+  {
+    "context": "Workspace",
+    "bindings": {
+      // File explorer toggle (matches <C-n> → Snacks.explorer / Neotree)
+      "ctrl-n": "workspace::ToggleLeftDock",
+      // Window navigation (matches <C-h/j/k/l> → tmux-navigator)
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-j": "workspace::ActivatePaneDown",
+      "ctrl-k": "workspace::ActivatePaneUp",
+      "ctrl-l": "workspace::ActivatePaneRight"
+    }
+  },
+
+  // ── Sneak (closest to flash.nvim: press s + 2 chars to jump, ; to repeat) ──
+  {
+    "context": "vim_mode == normal || vim_mode == visual",
+    "bindings": {
+      "s": "vim::PushSneak",
+      "shift-s": "vim::PushSneakBackward"
+    }
+  },
+
+  // ── Vim Normal mode ──
+  {
+    "context": "Editor && vim_mode == normal && !VimWaiting && !menu",
+    "bindings": {
+      // ── Fast movement (J=5j, K=5k from init.lua) ──
+      "shift-j": ["workspace::SendKeystrokes", "5 j"],
+      "shift-k": ["workspace::SendKeystrokes", "5 k"],
+
+      // ── Save & clear search (matches <leader>w, <leader>/) ──
+      "space w": "workspace::Save",
+      "space /": ["workspace::SendKeystrokes", ": n o h enter"],
+
+      // ── File finding / search (f-prefix, no leader — matches snacks.nvim) ──
+      "f f": "file_finder::Toggle",
+      "f g": "pane::DeploySearch",
+      "f b": "tab_switcher::Toggle",
+      "f s": "outline::Toggle",
+      "f w": "project_symbols::Toggle",
+      "f r": "file_finder::Toggle",
+      "f c": "command_palette::Toggle",
+
+      // ── Splits (matches <leader>\, <leader>-, <leader>x) ──
+      "space \\": "pane::SplitRight",
+      "space -": "pane::SplitDown",
+      "space x": "pane::CloseActiveItem",
+
+      // ── Tab / editor navigation (matches <leader>l/h, <leader>tc/to) ──
+      "space l": "pane::ActivateNextItem",
+      "space h": "pane::ActivatePreviousItem",
+      "space t c": "pane::CloseActiveItem",
+      "space t o": "pane::CloseInactiveItems",
+
+      // ── LSP (matches nvim LSP keybindings) ──
+      "g d": "editor::GoToDefinition",
+      "g D": "editor::GoToTypeDefinition",
+      "g r": "editor::FindAllReferences",
+      "g i": "editor::GoToImplementation",
+      "space k": "editor::Hover",
+      "space r n": "editor::Rename",
+      "space c a": "editor::ToggleCodeActions",
+      "[ d": "editor::GoToPreviousDiagnostic",
+      "] d": "editor::GoToDiagnostic",
+
+      // ── Zen mode (matches <leader>z → Snacks.zen) ──
+      "space z": "workspace::ToggleCenteredLayout",
+
+      // ── Buffer delete (matches <leader>bd → Snacks.bufdelete) ──
+      "space b d": "pane::CloseActiveItem",
+
+      // ── Harpoon-like: jump to tab by position (<leader>1-4) ──
+      "space 1": ["pane::ActivateItem", 0],
+      "space 2": ["pane::ActivateItem", 1],
+      "space 3": ["pane::ActivateItem", 2],
+      "space 4": ["pane::ActivateItem", 3]
+    }
+  },
+
+  // ── Vim Visual mode ──
+  {
+    "context": "Editor && vim_mode == visual && !VimWaiting && !menu",
+    "bindings": {
+      "shift-j": ["workspace::SendKeystrokes", "5 j"],
+      "shift-k": ["workspace::SendKeystrokes", "5 k"]
+    }
+  }
+]
