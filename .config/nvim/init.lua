@@ -10,10 +10,22 @@ vim.opt.shiftwidth = 4          -- Number of spaces to use for autoindent
 vim.opt.termguicolors = true    -- Enable 24-bit colors
 vim.g.mapleader = " "
 vim.o.autowriteall = true
+vim.o.updatetime = 1000  -- CursorHold triggers after 1 second of idle
+
+vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI", "InsertLeave", "TextChanged" }, {
+    pattern = "*",
+    callback = function()
+        if vim.bo.modified and vim.bo.buftype == "" and vim.fn.expand("%") ~= "" then
+            vim.cmd("silent! write")
+        end
+    end,
+    desc = "Auto-save on idle or text change",
+})
 vim.wo.number = true
 vim.opt.relativenumber = true   -- Show relative line numbers
 vim.opt.colorcolumn = "80"
 vim.opt.mouse = "a"              -- Enable mouse in all modes
+vim.opt.autoread = true            -- Auto-reload files changed outside Neovim
 
 -- Clipboard: use OSC 52 over SSH (works through terminal), otherwise system clipboard
 -- Neovim 0.10+ has built-in OSC52, older versions use ojroques/nvim-osc52 plugin
@@ -65,10 +77,10 @@ if not vim.g.vscode then
         group = vim.api.nvim_create_augroup('UserLspConfig', {}),
         callback = function(ev)
             local opts = { buffer = ev.buf, noremap = true, silent = true }
-            vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+            vim.keymap.set('n', 'gd', function() Snacks.picker.lsp_definitions() end, opts)
             vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
-            vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-            vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+            vim.keymap.set('n', 'gr', function() Snacks.picker.lsp_references() end, opts)
+            vim.keymap.set('n', 'gi', function() Snacks.picker.lsp_implementations() end, opts)
             vim.keymap.set('n', '<leader>k', vim.lsp.buf.hover, opts)
             vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
             vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
