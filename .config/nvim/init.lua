@@ -9,6 +9,7 @@ vim.opt.softtabstop = 4         -- Number of spaces a <Tab> counts for while edi
 vim.opt.shiftwidth = 4          -- Number of spaces to use for autoindent
 vim.opt.termguicolors = true    -- Enable 24-bit colors
 vim.g.mapleader = " "
+vim.o.autowriteall = true
 vim.wo.number = true
 vim.opt.relativenumber = true   -- Show relative line numbers
 vim.opt.colorcolumn = "80"
