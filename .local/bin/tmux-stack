@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Create a layout with 3 stacked panes (no vertical split)
+# Usage: tmux-stack [session-name] [working-dir]
+
+SESSION="${1:-dev}"
+DIR="${2:-$(pwd)}"
+
+# If already inside tmux, create a new window with the layout
+if [ -n "$TMUX" ]; then
+    tmux new-window -c "$DIR" -n "$SESSION"
+    tmux split-window -v -c "$DIR" -p 66
+    tmux split-window -v -c "$DIR" -p 50
+    tmux select-pane -t 1
+    exit 0
+fi
+
+# Otherwise create a new session
+tmux new-session -d -s "$SESSION" -c "$DIR"
+tmux split-window -v -c "$DIR" -p 66
+tmux split-window -v -c "$DIR" -p 50
+tmux select-pane -t 1
+tmux attach-session -t "$SESSION"
