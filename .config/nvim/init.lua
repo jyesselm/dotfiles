@@ -151,8 +151,8 @@ if vim.g.vscode then
     vim.keymap.set('n', 'zb', '<Cmd>call VSCodeNotify("revealLine", {"lineNumber": line("."), "at": "bottom"})<CR>', { noremap = true, silent = true, desc = 'Cursor to bottom of view' })
 else
     -- Terminal Neovim: Window splits (matches tmux prefix + | and prefix + -)
-    vim.keymap.set('n', '<leader>\\', '<C-w>v', { noremap = true, silent = true, desc = 'Split vertical' })
-    vim.keymap.set('n', '<leader>-', '<C-w>s', { noremap = true, silent = true, desc = 'Split horizontal' })
+    vim.keymap.set('n', '<leader>\\', '<cmd>rightbelow vnew<CR>', { noremap = true, silent = true, desc = 'Split vertical (blank)' })
+    vim.keymap.set('n', '<leader>-', '<cmd>rightbelow new<CR>', { noremap = true, silent = true, desc = 'Split horizontal (blank)' })
     vim.keymap.set('n', '<leader>x', '<C-w>c', { noremap = true, silent = true, desc = 'Close split' })
 
     -- Terminal Neovim: Tab management

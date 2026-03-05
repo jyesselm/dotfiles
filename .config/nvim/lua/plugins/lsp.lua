@@ -104,7 +104,16 @@ return {
           ['ruff'] = function()
             lspconfig.ruff.setup({
               capabilities = capabilities,
-              on_attach = on_attach,
+              on_attach = function(client, bufnr)
+                on_attach(client, bufnr)
+                -- Auto-format with ruff on save
+                vim.api.nvim_create_autocmd("BufWritePre", {
+                  buffer = bufnr,
+                  callback = function()
+                    vim.lsp.buf.format({ async = false, name = "ruff" })
+                  end,
+                })
+              end,
             })
           end,
         },
