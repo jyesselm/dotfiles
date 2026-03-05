@@ -106,13 +106,13 @@ if vim.g.vscode then
     vim.keymap.set('n', '<C-k>', '<Cmd>call VSCodeNotify("workbench.action.navigateUp")<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<C-l>', '<Cmd>call VSCodeNotify("workbench.action.navigateRight")<CR>', { noremap = true, silent = true })
 
-    -- VSCode/Cursor: Telescope-like commands
-    vim.keymap.set('n', 'ff', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files' })
-    vim.keymap.set('n', 'ft', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files (new tab)' })
-    vim.keymap.set('n', 'fg', '<Cmd>call VSCodeNotify("workbench.action.quickTextSearch")<CR>', { noremap = true, silent = true, desc = 'Live grep' })
-    vim.keymap.set('n', 'fb', '<Cmd>call VSCodeNotify("workbench.action.showAllEditors")<CR>', { noremap = true, silent = true, desc = 'Find buffers' })
-    vim.keymap.set('n', 'fw', '<Cmd>call VSCodeNotify("workbench.action.showAllSymbols")<CR>', { noremap = true, silent = true, desc = 'Workspace symbols' })
-    vim.keymap.set('n', 'fs', '<Cmd>call VSCodeNotify("workbench.action.gotoSymbol")<CR>', { noremap = true, silent = true, desc = 'File symbols' })
+    -- VSCode/Cursor: Picker-like commands (<leader>f prefix to avoid f-find conflict)
+    vim.keymap.set('n', '<leader>ff', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files' })
+    vim.keymap.set('n', '<leader>ft', '<Cmd>call VSCodeNotify("workbench.action.quickOpen")<CR>', { noremap = true, silent = true, desc = 'Find files (new tab)' })
+    vim.keymap.set('n', '<leader>fg', '<Cmd>call VSCodeNotify("workbench.action.quickTextSearch")<CR>', { noremap = true, silent = true, desc = 'Live grep' })
+    vim.keymap.set('n', '<leader>fb', '<Cmd>call VSCodeNotify("workbench.action.showAllEditors")<CR>', { noremap = true, silent = true, desc = 'Find buffers' })
+    vim.keymap.set('n', '<leader>fw', '<Cmd>call VSCodeNotify("workbench.action.showAllSymbols")<CR>', { noremap = true, silent = true, desc = 'Workspace symbols' })
+    vim.keymap.set('n', '<leader>fs', '<Cmd>call VSCodeNotify("workbench.action.gotoSymbol")<CR>', { noremap = true, silent = true, desc = 'File symbols' })
 
     -- VSCode/Cursor: Window splits (matches tmux prefix + | and prefix + -)
     vim.keymap.set('n', '<leader>\\', '<Cmd>call VSCodeNotify("workbench.action.splitEditorRight")<CR>', { noremap = true, silent = true, desc = 'Split vertical' })

@@ -25,6 +25,7 @@ return {
         -- Register key groups for better organization
         wk.add({
             { "<leader>c", group = "code" },
+            { "<leader>f", group = "find/picker" },
             { "<leader>m", group = "move editor" },
             { "<leader>t", group = "tabs" },
         })

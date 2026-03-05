@@ -99,20 +99,20 @@ return {
         },
     },
     keys = {
-        -- Picker keymaps (same as your Telescope ones)
-        { "ff", function() Snacks.picker.files() end, desc = "Find files" },
-        { "ft", function() Snacks.picker.files({ win = { input = { keys = { ["<CR>"] = { "edit_tab", mode = { "i", "n" } } } } } }) end, desc = "Find files (tab)" },
-        { "fg", function() Snacks.picker.grep({ layout = "sidebar" }) end, desc = "Live grep (horizontal)" },
-        { "fG", function() Snacks.picker.grep() end, desc = "Live grep (vertical)" },
-        { "fb", function() Snacks.picker.buffers() end, desc = "Find buffers" },
-        { "fw", function() Snacks.picker.lsp_workspace_symbols() end, desc = "Workspace symbols" },
-        { "fs", function() Snacks.picker.lsp_symbols() end, desc = "Document symbols" },
-        { "fk", function() Snacks.picker.keymaps() end, desc = "Find keymaps" },
-        { "fr", function() Snacks.picker.recent() end, desc = "Recent files" },
-        { "fh", function() Snacks.picker.help() end, desc = "Help pages" },
-        { "fc", function() Snacks.picker.commands() end, desc = "Commands" },
+        -- Picker keymaps (<leader>f prefix to avoid conflict with f-find)
+        { "<leader>ff", function() Snacks.picker.files() end, desc = "Find files" },
+        { "<leader>ft", function() Snacks.picker.files({ win = { input = { keys = { ["<CR>"] = { "edit_tab", mode = { "i", "n" } } } } } }) end, desc = "Find files (tab)" },
+        { "<leader>fg", function() Snacks.picker.grep({ layout = "sidebar" }) end, desc = "Live grep (horizontal)" },
+        { "<leader>fG", function() Snacks.picker.grep() end, desc = "Live grep (vertical)" },
+        { "<leader>fb", function() Snacks.picker.buffers() end, desc = "Find buffers" },
+        { "<leader>fw", function() Snacks.picker.lsp_workspace_symbols() end, desc = "Workspace symbols" },
+        { "<leader>fs", function() Snacks.picker.lsp_symbols() end, desc = "Document symbols" },
+        { "<leader>fk", function() Snacks.picker.keymaps() end, desc = "Find keymaps" },
+        { "<leader>fr", function() Snacks.picker.recent() end, desc = "Recent files" },
+        { "<leader>fh", function() Snacks.picker.help() end, desc = "Help pages" },
+        { "<leader>fc", function() Snacks.picker.commands() end, desc = "Commands" },
         -- Grep word under cursor
-        { "f*", function() Snacks.picker.grep_word() end, desc = "Grep word under cursor" },
+        { "<leader>f*", function() Snacks.picker.grep_word() end, desc = "Grep word under cursor" },
         -- Git
         { "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git status" },
         { "<leader>gc", function() Snacks.picker.git_log() end, desc = "Git commits" },
