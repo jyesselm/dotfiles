@@ -1,0 +1,7 @@
+# lsd config
+color:
+  when: auto
+  theme: custom
+icons:
+  when: auto
+  separator: " "

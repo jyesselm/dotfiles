@@ -1,0 +1,33 @@
+---
+# lsd colors.yaml - Catppuccin Mocha
+# File extension colors come from LS_COLORS (set in ~/.zsh/env.zsh)
+
+user: 189         # lavender
+group: 153        # sky
+permission:
+  read: 151       # green
+  write: 223      # yellow
+  exec: 217       # red
+  exec-sticky: 225  # pink
+  no-access: 103  # overlay0
+date:
+  hour-old: 151   # green
+  day-old: 152    # teal
+  older: 109      # overlay1
+size:
+  none: 103       # overlay0
+  small: 223      # yellow
+  medium: 223     # peach
+  large: 217      # red
+tree-edge: 102    # surface2
+git-status:
+  default: 103
+  unmodified: 103
+  ignored: 103
+  new-in-index: 151    # green
+  new-in-workdir: 151  # green
+  typechange: 223      # yellow
+  deleted: 217         # red
+  renamed: 152         # teal
+  modified: 223        # yellow
+  conflicted: 217      # red
