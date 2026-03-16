@@ -4,5 +4,7 @@
     "clangd-lsp@claude-plugins-official": true,
     "laravel-simplifier@laravel": true
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "high"
 }

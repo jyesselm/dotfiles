@@ -15,24 +15,24 @@ upload_seqs_and_oligos() {
   local current_dir=$PWD
   local parent_dir=$(dirname "$SEQPATH")
   local dir_name=$(basename "$SEQPATH")
-  local archive_name="${dir_name}.tar.zst"
+  local archive_name="${dir_name}.tar.gz"
 
   if ! cd "$parent_dir" 2>/dev/null; then
     echo "Error: Cannot access $parent_dir"
     return 1
   fi
 
-  echo "Creating tar.zst archive..."
+  echo "Creating tar.gz archive..."
   rm -f "$archive_name"
-  if ! tar -cf - "$dir_name" | zstd -T0 -19 > "$archive_name" 2>/dev/null; then
-    echo "Error: Failed to create tar.zst archive"
+  if ! tar -czf "$archive_name" "$dir_name"; then
+    echo "Error: Failed to create tar.gz archive"
     cd "$current_dir" || true
     return 1
   fi
 
   echo "Uploading to swan.unl.edu..."
   if scp "$archive_name" jyesselm@swan.unl.edu:/work/yesselmanlab/jyesselm/ && \
-     ssh jyesselm@swan.unl.edu "cd /work/yesselmanlab/jyesselm/ && zstd -d $archive_name && tar -xf ${dir_name}.tar && rm $archive_name ${dir_name}.tar"; then
+     ssh jyesselm@swan.unl.edu "cd /work/yesselmanlab/jyesselm/ && tar -xzf $archive_name && rm $archive_name"; then
     echo "✓ Upload successful"
     rm -f "$archive_name"
   else

@@ -138,6 +138,9 @@ return {
       local luasnip = require('luasnip')
 
       cmp.setup({
+        performance = {
+          max_view_entries = 5,
+        },
         formatting = {
           format = lspkind.cmp_format({
             mode = 'symbol_text',
