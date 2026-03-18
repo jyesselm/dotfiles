@@ -1,0 +1,97 @@
+{
+  "main": {
+    "prefix": "main",
+    "body": [
+      "def main():",
+      "\t$0",
+      "",
+      "",
+      "if __name__ == \"__main__\":",
+      "\tmain()"
+    ],
+    "description": "if __name__ == '__main__' with main()"
+  },
+  "ifmain": {
+    "prefix": "ifmain",
+    "body": [
+      "if __name__ == \"__main__\":",
+      "\t$0"
+    ],
+    "description": "if __name__ == '__main__'"
+  },
+  "def": {
+    "prefix": "def",
+    "body": [
+      "def ${1:name}(${2:args}) -> ${3:None}:",
+      "\t\"\"\"${4:Docstring}.\"\"\"",
+      "\t$0"
+    ],
+    "description": "Function with type hint and docstring"
+  },
+  "class": {
+    "prefix": "class",
+    "body": [
+      "class ${1:ClassName}:",
+      "\t\"\"\"${2:Docstring}.\"\"\"",
+      "",
+      "\tdef __init__(self${3:, args}) -> None:",
+      "\t\t$0"
+    ],
+    "description": "Class with __init__"
+  },
+  "dataclass": {
+    "prefix": "dataclass",
+    "body": [
+      "from dataclasses import dataclass",
+      "",
+      "",
+      "@dataclass",
+      "class ${1:ClassName}:",
+      "\t\"\"\"${2:Docstring}.\"\"\"",
+      "",
+      "\t${3:field}: ${4:str}$0"
+    ],
+    "description": "Dataclass"
+  },
+  "argparse": {
+    "prefix": "argparse",
+    "body": [
+      "import argparse",
+      "",
+      "",
+      "def parse_args():",
+      "\tparser = argparse.ArgumentParser(description=\"${1:description}\")",
+      "\tparser.add_argument(\"${2:arg}\", help=\"${3:help}\")",
+      "\treturn parser.parse_args()",
+      "",
+      "",
+      "def main():",
+      "\targs = parse_args()",
+      "\t$0",
+      "",
+      "",
+      "if __name__ == \"__main__\":",
+      "\tmain()"
+    ],
+    "description": "Argparse script boilerplate"
+  },
+  "typer": {
+    "prefix": "typer",
+    "body": [
+      "import typer",
+      "",
+      "app = typer.Typer()",
+      "",
+      "",
+      "@app.command()",
+      "def main(${1:name: str}):",
+      "\t\"\"\"${2:Description}.\"\"\"",
+      "\t$0",
+      "",
+      "",
+      "if __name__ == \"__main__\":",
+      "\tapp()"
+    ],
+    "description": "Typer CLI app boilerplate"
+  }
+}

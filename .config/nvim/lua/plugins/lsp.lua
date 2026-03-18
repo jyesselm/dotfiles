@@ -137,9 +137,32 @@ return {
       local lspkind = require('lspkind')
       local luasnip = require('luasnip')
 
+      local compare = require('cmp.config.compare')
+
       cmp.setup({
         performance = {
           max_view_entries = 5,
+        },
+        sorting = {
+          priority_weight = 2,
+          comparators = {
+            compare.exact,
+            function(entry1, entry2)
+              local types = require('cmp.types')
+              local kind1 = entry1:get_kind()
+              local kind2 = entry2:get_kind()
+              local snippet = types.lsp.CompletionItemKind.Snippet
+              if kind1 == snippet and kind2 ~= snippet then return true end
+              if kind1 ~= snippet and kind2 == snippet then return false end
+              return nil
+            end,
+            compare.score,
+            compare.recently_used,
+            compare.locality,
+            compare.kind,
+            compare.length,
+            compare.order,
+          },
         },
         formatting = {
           format = lspkind.cmp_format({
@@ -171,8 +194,8 @@ return {
           ['<CR>'] = cmp.mapping.confirm({ select = true }),
         }),
         sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
+          { name = 'luasnip', priority = 1000 },
+          { name = 'nvim_lsp', priority = 750 },
           { name = 'path' },
           { name = 'nvim_lua' },
         }),
