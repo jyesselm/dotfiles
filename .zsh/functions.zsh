@@ -466,3 +466,16 @@ docs() {
     fi
   fi
 }
+
+# ============================================================
+# Development Helpers
+# ============================================================
+# Watch a Python script and re-run on save
+# Usage: watchpy <script.py>
+watchpy() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: watchpy <script.py>"
+    return 1
+  fi
+  echo "$1" | entr -c python "$1"
+}
