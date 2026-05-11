@@ -31,6 +31,23 @@
     "ruff.lint.enable": true,
     "ruff.format.args": ["--line-length", "88"],
 
+    // Globally silence stylistic rules that just paint squigglies.
+    // `extendIgnore` is additive on top of any per-project `pyproject.toml`,
+    // so projects without their own ignore list still benefit. Imports
+    // still auto-sort on save via `source.organizeImports`.
+    "ruff.lint.extendIgnore": [
+        "I001",   // unsorted import block (still sorted on save)
+        "I002",   // missing import in __init__
+        "UP006",  // List → list (PEP 585)
+        "UP007",  // Union[X, Y] → X | Y (PEP 604)
+        "UP035",  // typing imports → collections.abc
+        "UP037",  // remove quotes from type annotations
+        "UP040",  // TypeAlias → `type X = ...`
+        "UP045",  // Optional[X] → X | None
+        "UP046",  // non-PEP-695 generic class
+        "UP047"   // non-PEP-695 generic function
+    ],
+
     // Ruff will use pyproject.toml for isort configuration if present
     // Otherwise, these defaults apply globally:
     // - split-on-trailing-comma: true
@@ -63,7 +80,7 @@
     "terminal.integrated.fontWeight": "normal",
 
     // Python interpreter
-    "python.defaultInterpreterPath": "/opt/homebrew/Caskroom/mambaforge/base/envs/py3/bin/python",
+    "python.defaultInterpreterPath": "/opt/homebrew/bin/python3",
     "security.workspace.trust.untrustedFiles": "open",
     "workbench.preferredDarkColorTheme": "Catppuccin Mocha",
     "workbench.preferredHighContrastColorTheme": "Catppuccin Mocha",
@@ -73,22 +90,124 @@
     "workbench.secondarySideBar.showLabels": false,
 
 
-    // vscode-neovim configuration
-    "vscode-neovim.neovimExecutablePaths.darwin": "/opt/homebrew/bin/nvim",
-    "vscode-neovim.neovimInitVimPaths.darwin": "~/.config/nvim/init.lua",
+    // VSCodeVim (vscodevim.vim) — replaces the unreliable vscode-neovim.
+    // Mirrors the user's ~/.config/nvim/init.lua keymaps so muscle memory
+    // carries over (Telescope-style ff/fg/fb/fs/fw, LSP <leader>k/rn/ca,
+    // tab nav <leader>l/h/tc/to, splits <leader>\/-/x, J/K = 5j/5k).
+    // Leader must be a literal char; "<space>" would be taken as 7 chars.
+    "vim.leader": " ",
+    "vim.useSystemClipboard": true,
+    "vim.useCtrlKeys": true,
+    "vim.hlsearch": true,
+    "vim.incsearch": true,
+    "vim.smartRelativeLine": true,
+    "vim.foldfix": true,
+    // Per-mode status bar color — recolors the bottom bar so you can tell
+    // mode at a glance. Palette tuned for the Catppuccin Mocha theme.
+    "vim.statusBarColorControl": true,
+    "vim.statusBarColors": {
+        "normal":                "#89b4fa",
+        "insert":                "#a6e3a1",
+        "visual":                "#cba6f7",
+        "visualline":            "#f5c2e7",
+        "visualblock":           "#fab387",
+        "replace":               "#f38ba8",
+        "commandlineinprogress": "#f9e2af",
+        "searchinprogressmode":  "#f9e2af",
+        "easymotionmode":        "#f9e2af",
+        "easymotioninputmode":   "#f9e2af",
+        "surroundinputmode":     "#f9e2af"
+    },
+    "vim.insertModeKeyBindings": [
+        { "before": ["j", "j"], "after": ["<Esc>"] },
+        { "before": ["j", "k"], "after": ["<Esc>"] }
+    ],
+    "vim.normalModeKeyBindingsNonRecursive": [
+        // ── Editing / file ops ─────────────────────────────────────────────
+        { "before": ["<leader>", "w"], "commands": ["workbench.action.files.save"] },
+        { "before": ["<leader>", "q"], "commands": ["workbench.action.closeActiveEditor"] },
+        { "before": ["<leader>", "/"], "commands": [":nohl"] },
+
+        // ── Faster motion (mirrors nvim init.lua J=5j, K=5k) ───────────────
+        { "before": ["J"], "after": ["5", "j"] },
+        { "before": ["K"], "after": ["5", "k"] },
+
+        // ── Telescope-style file pickers ───────────────────────────────────
+        { "before": ["<leader>", "f", "f"], "commands": ["workbench.action.quickOpen"] },
+        { "before": ["<leader>", "f", "t"], "commands": ["workbench.action.quickOpen"] },
+        { "before": ["<leader>", "f", "g"], "commands": ["workbench.action.findInFiles"] },
+        { "before": ["<leader>", "f", "b"], "commands": ["workbench.action.showAllEditors"] },
+        { "before": ["<leader>", "f", "s"], "commands": ["workbench.action.gotoSymbol"] },
+        { "before": ["<leader>", "f", "w"], "commands": ["workbench.action.showAllSymbols"] },
+        { "before": ["<leader>", "e"], "commands": ["workbench.view.explorer"] },
+        { "before": ["<C-n>"], "commands": ["workbench.action.toggleSidebarVisibility"] },
+
+        // ── LSP ────────────────────────────────────────────────────────────
+        { "before": ["g", "d"], "commands": ["editor.action.revealDefinition"] },
+        { "before": ["g", "D"], "commands": ["editor.action.revealDeclaration"] },
+        { "before": ["g", "r"], "commands": ["editor.action.goToReferences"] },
+        { "before": ["g", "i"], "commands": ["editor.action.goToImplementation"] },
+        { "before": ["<leader>", "k"], "commands": ["editor.action.showHover"] },
+        { "before": ["<leader>", "r", "n"], "commands": ["editor.action.rename"] },
+        { "before": ["<leader>", "c", "a"], "commands": ["editor.action.quickFix"] },
+        { "before": ["[", "d"], "commands": ["editor.action.marker.prev"] },
+        { "before": ["]", "d"], "commands": ["editor.action.marker.next"] },
+
+        // ── Tabs (editors) ─────────────────────────────────────────────────
+        { "before": ["<leader>", "l"], "commands": ["workbench.action.nextEditor"] },
+        { "before": ["<leader>", "h"], "commands": ["workbench.action.previousEditor"] },
+        { "before": ["<leader>", "t", "c"], "commands": ["workbench.action.closeActiveEditor"] },
+        { "before": ["<leader>", "t", "o"], "commands": ["workbench.action.closeOtherEditors"] },
+
+        // ── Splits ─────────────────────────────────────────────────────────
+        { "before": ["<leader>", "\\"], "commands": ["workbench.action.splitEditorRight"] },
+        { "before": ["<leader>", "-"], "commands": ["workbench.action.splitEditorDown"] },
+        { "before": ["<leader>", "x"], "commands": ["workbench.action.closeActiveEditor"] },
+        { "before": ["<leader>", "m", "h"], "commands": ["workbench.action.moveEditorToLeftGroup"] },
+        { "before": ["<leader>", "m", "l"], "commands": ["workbench.action.moveEditorToRightGroup"] },
+        { "before": ["<leader>", "m", "k"], "commands": ["workbench.action.moveEditorToAboveGroup"] },
+        { "before": ["<leader>", "m", "j"], "commands": ["workbench.action.moveEditorToBelowGroup"] },
+
+        // ── Window navigation (Ctrl-h/j/k/l) ───────────────────────────────
+        { "before": ["<C-h>"], "commands": ["workbench.action.focusLeftGroup"] },
+        { "before": ["<C-j>"], "commands": ["workbench.action.focusBelowGroup"] },
+        { "before": ["<C-k>"], "commands": ["workbench.action.focusAboveGroup"] },
+        { "before": ["<C-l>"], "commands": ["workbench.action.focusRightGroup"] }
+    ],
+    "vim.visualModeKeyBindingsNonRecursive": [
+        // Stay in visual mode after indent/outdent
+        { "before": [">"], "commands": ["editor.action.indentLines"] },
+        { "before": ["<"], "commands": ["editor.action.outdentLines"] },
+        // Paste without yanking the replaced text
+        { "before": ["p"], "after": ["p", "g", "v", "y"] },
+        // Faster motion (matches normal mode)
+        { "before": ["J"], "after": ["5", "j"] },
+        { "before": ["K"], "after": ["5", "k"] }
+    ],
+    // Let the editor handle these Ctrl-bindings instead of Vim
+    "vim.handleKeys": {
+        "<C-a>": false,
+        "<C-c>": false,
+        "<C-v>": false,
+        "<C-x>": false,
+        "<C-z>": false,
+        "<C-f>": false,
+        "<C-p>": false
+    },
 
     // Periscope settings (Telescope-like search)
     "periscope.showPreview": true,
     "periscope.peekBorderColor": "#8FBCBB",
+    // VSCodeVim drives statusBar.background dynamically via
+    // vim.statusBarColorControl. We only set the foreground here so dark
+    // text reads cleanly against the saturated mode colors.
     "workbench.colorCustomizations": {
-        "statusBar.background": "#8FBCBB",
-        "statusBar.noFolderBackground": "#8FBCBB",
-        "statusBar.debuggingBackground": "#8FBCBB",
-        "statusBar.foreground": "#000",
-        "statusBar.debuggingForeground": "#000"
-    },
-    "extensions.experimental.affinity": {
-        "asvetliakov.vscode-neovim": 1
+        "statusBar.foreground": "#11111b",
+        "statusBar.debuggingForeground": "#11111b",
+        "statusBar.noFolderForeground": "#11111b",
+        "statusBar.background": "#cba6f7",
+        "statusBar.noFolderBackground": "#cba6f7",
+        "statusBar.debuggingBackground": "#cba6f7"
     },
     "jupyter.askForKernelRestart": false,
     "jupyter.useDefaultConfigForJupyter": false,
