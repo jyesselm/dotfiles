@@ -4,8 +4,11 @@ return {
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
         options = {
-            mode = "tabs",
+            mode = "buffers",
             separator_style = "thin",
+            name_formatter = function(buf)
+                return vim.fn.fnamemodify(buf.path or "", ":t")
+            end,
             show_buffer_close_icons = true,
             show_close_icon = true,
             color_icons = true,

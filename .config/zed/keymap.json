@@ -9,7 +9,17 @@
       "ctrl-h": "workspace::ActivatePaneLeft",
       "ctrl-j": "workspace::ActivatePaneDown",
       "ctrl-k": "workspace::ActivatePaneUp",
-      "ctrl-l": "workspace::ActivatePaneRight"
+      "ctrl-l": "workspace::ActivatePaneRight",
+      // Toggle terminal with cmd+t
+      "cmd-t": "workspace::ToggleBottomDock"
+    }
+  },
+
+  // ── Terminal: escape to editor (ctrl-h is backspace in terminals, so use cmd-t to toggle) ──
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-k": "workspace::ActivatePaneUp"
     }
   },
 

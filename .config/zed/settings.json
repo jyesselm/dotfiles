@@ -1,5 +1,8 @@
 {
   // ── Vim mode ──
+  "edit_predictions": {
+    "provider": "zed"
+  },
   "ui_font_weight": 500.0,
   "buffer_font_weight": 500.0,
   "vim_mode": true,
@@ -69,5 +72,27 @@
   // ── Terminal ──
   "terminal": {
     "font_size": 13.0
+  },
+
+  // ── Python: use Ruff as linter/formatter, pyright for type checking ──
+  "languages": {
+    "Python": {
+      "language_servers": ["pyright", "ruff"],
+      "formatter": {
+        "external": {
+          "command": "ruff",
+          "arguments": ["format", "--stdin-filename", "{buffer_path}", "-"]
+        }
+      }
+    }
+  },
+  "lsp": {
+    "ruff": {
+      "initialization_options": {
+        "settings": {
+          "lineLength": 88
+        }
+      }
+    }
   }
 }
