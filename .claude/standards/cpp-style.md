@@ -48,17 +48,59 @@ Identifiers are **`snake_case`**, except **types**, which are **`PascalCase`** (
 
 ## Documentation
 
-- **Every public class, function, and free function gets a `///` doc comment** (Doxygen). Cover: a one-line summary, `@param` for each parameter, `@return`, and `@throws` for every exception it can raise.
-- **Document the contract, not the implementation** — preconditions, units, ownership, valid ranges, and what the caller must guarantee. The body shows *how*; the comment states *what* and *what's required*.
-- **File header:** a one-line `/// @file` brief at the top of each header describing the module's purpose.
-- **Inline comments explain WHY, not WHAT.** The code already says what it does; a comment justifies a non-obvious choice (`// clip outliers first: box-plot normalization is sensitive to them`).
-- **Keep comments truthful and current.** A stale or wrong comment is worse than none; update or delete it when the code changes.
-- **No commented-out code.** That is what version control is for.
+Use **JavaDoc-style Doxygen blocks** — `/** ... */` with a leading `*` on every line — per
+the [Doxygen docblock manual](https://www.doxygen.nl/manual/docblocks.html). The block opens
+with `/**`, the first line is a one-sentence brief, then a blank `*` line, then the detailed
+description, then the `@` tags. Align `@param` continuation lines under the description text.
+
+```cpp
+/**
+ * Normalize a signal using the specified method.
+ *
+ * Box-plot normalization is sensitive to outliers, so values are clipped before
+ * scaling. The result has the same length as the input.
+ *
+ * @param raw_signal Raw probing values; must be non-empty.
+ * @param method     Normalization strategy to apply. Defaults to z-score.
+ * @return Normalized signal, same length as @p raw_signal.
+ * @throws std::invalid_argument if @p raw_signal is empty.
+ */
+```
+
+- **Every public class, function, and free function gets a `/** */` block** covering: a one-line brief, `@param` for each parameter, `@return`, and `@throws` for every exception it can raise.
+- **Document the contract, not the implementation** — preconditions, units, ownership, valid ranges, and what the caller must guarantee. The body shows *how*; the block states *what* and *what's required*.
+- Refer to a parameter in prose with `@p name`.
+- **Inline comments explain WHY, not WHAT** — use a plain `//` line to justify a non-obvious choice (`// clip outliers first: box-plot normalization is sensitive to them`).
+- **Keep comments truthful and current.** A stale comment is worse than none. No commented-out code; that is what version control is for.
+
+## Banners
+
+Open every file with a **file banner**, and separate major sections with a **section banner**, so files stay scannable.
+
+File banner (top of every header/source):
+```cpp
+/**
+ * @file signal_normalizer.hpp
+ * @brief Normalizes raw chemical-probing signal into reactivity values.
+ */
+```
+
+Section banner (between major groups within a file):
+```cpp
+/*===========================================================================
+ *  Normalization helpers
+ *==========================================================================*/
+```
 
 ## Header & Class Template
 
 ```cpp
 #pragma once
+
+/**
+ * @file signal_normalizer.hpp
+ * @brief Normalizes raw chemical-probing signal into reactivity values.
+ */
 
 #include <span>                          // std:: headers first
 #include <vector>
@@ -69,9 +111,11 @@ namespace rna {
 
 class ReactivityProfile;  // forward declare to minimize includes
 
-/// Normalizes raw chemical-probing signal into reactivity values.
-///
-/// Holds the normalization configuration and exposes a single entry point.
+/**
+ * Normalizes raw chemical-probing signal into reactivity values.
+ *
+ * Holds the normalization configuration and exposes a single entry point.
+ */
 class SignalNormalizer {
 public:
     using value_type = double;  // STL-style trait alias stays snake_case
@@ -79,10 +123,13 @@ public:
     explicit SignalNormalizer(NormalizerConfig config);
     ~SignalNormalizer() = default;
 
-    /// Returns the normalized reactivity for `raw_signal`.
-    /// @param raw_signal Non-owning view of raw probing values (non-empty).
-    /// @return Normalized values, same length as `raw_signal`.
-    /// @throws std::invalid_argument if `raw_signal` is empty.
+    /**
+     * Returns the normalized reactivity for @p raw_signal.
+     *
+     * @param raw_signal Non-owning view of raw probing values; must be non-empty.
+     * @return Normalized values, same length as @p raw_signal.
+     * @throws std::invalid_argument if @p raw_signal is empty.
+     */
     [[nodiscard]] auto normalize(std::span<const value_type> raw_signal) const
         -> std::vector<value_type>;
 
@@ -96,12 +143,14 @@ private:
 ## Function Style
 
 ```cpp
-/// Normalize a signal using the specified method.
-///
-/// @param raw_signal Raw probing values (must be non-empty).
-/// @param method     Normalization strategy to apply.
-/// @return Normalized signal, same length as `raw_signal`.
-/// @throws std::invalid_argument if `raw_signal` is empty.
+/**
+ * Normalize a signal using the specified method.
+ *
+ * @param raw_signal Raw probing values; must be non-empty.
+ * @param method     Normalization strategy to apply. Defaults to z-score.
+ * @return Normalized signal, same length as @p raw_signal.
+ * @throws std::invalid_argument if @p raw_signal is empty.
+ */
 [[nodiscard]] auto normalize_signal(
     std::span<const double> raw_signal,
     NormalizationMethod method = NormalizationMethod::zscore
