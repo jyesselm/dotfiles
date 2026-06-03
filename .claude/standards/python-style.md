@@ -19,6 +19,41 @@ Shared standard for `py-planner`, `py-coder`, and `py-reviewer`. Modern Python 3
 - **Early returns** — handle errors/edge cases first, then happy path
 - **Flat is better** — prefer composition over deep nesting
 
+## Human Readability (the prime directive)
+
+Above all, write code a human can read quickly and trust. Code is read far more often than it is written, and the reader is usually a tired collaborator, a new trainee, or you in six months with no memory of this. Optimize for that reader, not for the machine and not for your own convenience while writing. If they would have to ask you what a piece of code does, it is not done.
+
+- **Tell a story top-down.** A function's first lines should read as its high-level steps; push details into helpers defined below it. A reader should learn *what* a function does without reading *how*.
+- **Minimize what the reader must hold in mind.** Keep scopes short and variables few. Declare a variable right before its first use, not at the top. Use early returns to peel off edge cases so the happy path stays flat. Avoid action at a distance: no hidden mutation of arguments, no surprising global state.
+- **Make names do the work.** A precise name removes the need for a comment. Use one word per concept and the same word everywhere (`reactivity`, never `react`/`r`/`val` for the same thing). Names state intent and units, never type: `timeout_s`, `coverage_depth`, `is_paired`.
+- **Surface the logic.** Give a complex sub-expression a name (an "explaining variable"), and lift a compound condition into a named predicate so the `if` reads like a sentence.
+  ```python
+  # dense: the reader has to decode the condition
+  if seq and len(seq) >= min_len and not seq.strip("AUGC"):
+      ...
+  # readable: the condition names its intent
+  if is_valid_rna(seq, min_len):
+      ...
+  ```
+- **Comment the why, never the what.** The code already says what it does. Comments justify the non-obvious: a scientific rationale (cite the paper or equation), a unit, an assumption, a gotcha. Name magic numbers and explain them.
+  ```python
+  Z_95 = 1.96  # 95% CI half-width for a normal distribution; see Methods.
+  ci_half_width = Z_95 * standard_error
+  ```
+- **Prefer boring and explicit over clever.** No nested ternaries, no multi-clause comprehensions that must be decoded, no one-liner that saves a line at the cost of a minute. If a line makes the reader pause to parse it, split it.
+  ```python
+  # clever: three operations crammed into one line
+  return [f(x) for x in xs if x.ok and x.v > t][: n or len(xs)]
+  # clear: each step is named and obvious
+  usable = [x for x in xs if is_usable(x, threshold)]
+  transformed = [transform(x) for x in usable]
+  return transformed[:limit]
+  ```
+- **Replace flag parameters with intent.** A boolean argument forces the reader to look up what `True` means at the call site. Prefer two well-named functions, or a keyword-only argument with an enum.
+- **Map code onto the science.** Analysis code should read like the method it implements: name variables after the quantities, make each step visible, and state units and the rationale for every threshold, normalization, and formula (with a reference).
+
+**The reader test (run before finishing):** reread each function and ask, "could a new lab member follow this in one pass without asking me?" If not, the fix is almost always a clearer name, a flatter structure, an explaining variable, or a single why-comment, not more prose.
+
 ## Function Template
 
 ```python

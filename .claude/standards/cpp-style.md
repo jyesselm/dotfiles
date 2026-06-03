@@ -20,6 +20,38 @@ Shared standard for `cpp-planner`, `cpp-coder`, and `cpp-reviewer`. Modern C++17
 - **Const correctness** — mark everything const that can be
 - **Composition over inheritance** — no getters/setters theater
 
+## Human Readability (the prime directive)
+
+Above all, write code a human can read quickly and trust. Code is read far more often than it is written, and the reader is usually a tired collaborator, a new trainee, or you in six months with no memory of this. Optimize for that reader, not for the compiler and not for your own convenience while writing. If they would have to ask you what a piece of code does, it is not done.
+
+- **Tell a story top-down.** A function's first lines should read as its high-level steps; push details into helpers defined below it. A reader should learn *what* a function does without reading *how*.
+- **Minimize what the reader must hold in mind.** Short scopes, few variables, declared at first use rather than the top of the block. Early returns and guard clauses keep the happy path flat. Avoid action at a distance: prefer values and `const`, avoid out-parameters and shared mutable state.
+- **Make names do the work.** A precise name removes the need for a comment. Use one word per concept and the same word everywhere (`reactivity`, never `react`/`r`/`val` for the same thing). Names state intent and units, never type: `timeout_ms`, `coverage_depth`, `is_paired`.
+- **Surface the logic.** Give a complex sub-expression a name (an "explaining variable"), and extract a compound condition into a named predicate so the `if` reads like a sentence.
+  ```cpp
+  // dense: the reader has to decode the condition
+  if (node.left == nullptr && node.right == nullptr && node.count == 0) { ... }
+  // readable: the condition names its intent
+  if (is_empty_leaf(node)) { ... }
+  ```
+- **Comment the why, never the what.** The code already says what it does. Comments justify the non-obvious: a scientific rationale (cite the paper or equation), a unit, an assumption, a gotcha. Name magic numbers with a `constexpr` and explain them.
+  ```cpp
+  // below this depth, reactivities are dominated by noise (see Methods)
+  constexpr int min_reliable_coverage = 1000;
+  if (coverage < min_reliable_coverage) return;
+  ```
+- **Prefer boring and explicit over clever.** No nested ternaries, no template metaprogramming for its own sake, no bit-tricks without a comment. Use range-based loops and structured bindings instead of index arithmetic.
+  ```cpp
+  // noisy: index bookkeeping the reader must track
+  for (std::size_t i = 0; i < values.size(); ++i) { use(values[i]); }
+  // clear: the intent is "for each value"
+  for (const auto& value : values) { use(value); }
+  ```
+- **Replace flag parameters with intent.** A bare `bool` argument forces the reader to look up what `true` means at the call site. Prefer two named functions, or an `enum class`.
+- **Map code onto the science.** Analysis code should read like the method it implements: name variables after the quantities, make each step visible, and state units and the rationale for every threshold, normalization, and formula (with a reference).
+
+**The reader test (run before finishing):** reread each function and ask, "could a new lab member follow this in one pass without asking me?" If not, the fix is almost always a clearer name, a flatter structure, an explaining variable, or a single why-comment, not more comments.
+
 ## Naming
 
 Identifiers are **`snake_case`**, except **types**, which are **`PascalCase`** (the standard C++ convention). The goal is names that read like prose and need no comment to explain what they hold.
