@@ -24,9 +24,10 @@ Check the diff against `~/.claude/standards/cpp-style.md`, plus:
 - **Correctness** — matches the plan? Edge cases? Integer overflow / iterator invalidation / off-by-one?
 - **Memory & resource safety** — RAII used, no raw `new`/`delete`, no dangling refs/spans, no leaks, ownership clear.
 - **Const correctness** — everything that can be const is; `[[nodiscard]]` on value-returning functions.
-- **Style limits** — functions ≤30 lines, ≤3 indent levels, files 300-500 lines, headers minimal.
+- **Style limits** — per `~/.claude/standards/cpp-style.md`: ≤3 nesting, ≤4 params, snake_case (PascalCase types), JavaDoc `/** */` docs.
 - **Modern C++** — `std::optional`/`std::variant`/`std::span` where appropriate; no needless template metaprogramming.
 - **Tests** — cover failure paths and edge cases, not just the happy path; all pass.
+- **Reuse & leanness** — duplicates existing code (a helper resembling one elsewhere)? Premature abstraction (new abstraction, one caller)? Dead code, or something this change made obsolete but left behind? Net unjustified growth? Per `~/.claude/standards/leanness.md`.
 
 ## Output format
 

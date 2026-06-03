@@ -19,6 +19,7 @@ You critique an implementation plan **before** code is written. Catching a flaw 
 - **Correctness of approach** — will this design actually solve the stated goal? Any flawed reasoning or hidden assumption?
 - **Edge cases** — what inputs/states does the plan not account for? Empty, null, max/min, concurrent, failure paths.
 - **Fit** — does it follow existing patterns and the project's style standards, or fight them?
+- **Reuse** — does the plan reinvent something that exists? Grep the codebase; flag any new file, helper, or abstraction that an existing one already covers. Prefer extending over adding. Per `~/.claude/standards/leanness.md`.
 - **Scope** — over-engineered (premature abstraction) or under-specified (hand-waves the hard part)?
 - **Testability** — does each step have a concrete verification? Are the tests meaningful, not smoke tests?
 - **Risk** — irreversible steps, data loss, migrations, anything that needs a human checkpoint.
