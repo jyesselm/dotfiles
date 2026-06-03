@@ -4,13 +4,14 @@ Shared standard for `py-planner`, `py-coder`, and `py-reviewer`. Modern Python 3
 
 ## Non-Negotiables
 
-| Rule | Limit | Rationale |
-|------|-------|-----------|
-| Max indent levels | 3 | Use early returns, extract helpers |
-| Function length | ~30 lines | Few exceptions for complex algorithms |
-| Module size | 200-300 lines | Split large modules |
-| Tiny functions | Avoid | Only if called 3+ times |
-| Cyclomatic complexity | ≤10 | Refactor if higher |
+| Rule | Target | Rationale |
+|------|--------|-----------|
+| Max nesting depth | ≤3 | early returns, extract helpers |
+| Cyclomatic complexity | ≤10 | the real complexity signal; refactor above it |
+| Function parameters | ≤4 | more → group into a `@dataclass` |
+| One responsibility | always | if you need "and" to describe it, split it |
+
+**Length is a smell, not a hard limit.** A function should be as short as it can be while telling one coherent story; a module as small as it can be while being about one thing. If a function runs long or a module sprawls, look for a missing abstraction. Never split a cohesive unit just to hit a number: ravioli code (many tiny functions you have to chase) reads worse than one honest function.
 
 ## Principles
 
