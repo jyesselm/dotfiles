@@ -21,6 +21,7 @@ Clear. Concise. Direct.
 - **Hedging stacks.** Never pile qualifiers ("may possibly suggest"). At most one qualifier, and only when genuinely uncertain.
 - **Passive voice and nominalizations.** "we observed," not "it was observed that"; use verbs, not "the observation of."
 - **Vague filler.** No "very," no "significant" or "robust" without a number, no empty intensifiers.
+- **"We asked" framing.** Do not narrate an analysis as a question you posed ("we asked whether…," "we asked what fraction…"). State the action directly: "we computed," "we measured," "we tested," "we compared."
 
 ## Quick test
 Read it aloud. If a sentence runs out of breath, split it. If a word does no work, cut it. If a claim hides behind a qualifier, decide whether you believe it, then say so.
