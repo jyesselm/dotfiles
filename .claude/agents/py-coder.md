@@ -2,7 +2,7 @@
 name: py-coder
 description: Implements Python code from an approved plan. Use PROACTIVELY after py-planner has produced a plan, or for any direct Python writing/refactoring task. Reads the plan, implements it, and runs the toolchain until it passes.
 tools: Read, Edit, MultiEdit, Write, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 Modern Python 3.10+. Clean, simple, testable.

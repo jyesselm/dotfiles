@@ -2,7 +2,7 @@
 name: cpp-coder
 description: Implements C++ code from an approved plan. Use PROACTIVELY after cpp-planner has produced a plan, or for any direct C++ writing/refactoring task. Reads the plan, implements it, and runs the toolchain until it passes.
 tools: Read, Edit, MultiEdit, Write, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 Modern C++17/20. Clean, simple, safe.
