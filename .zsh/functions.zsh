@@ -404,6 +404,8 @@ recentf() {
 # ── Search scopes ────────────────────────────────────────────────────────
 # Named roots for the fuzzy finders. Use a scope name OR a literal path:
 #   mff data        docs teaching        mff code        mff ~/some/dir
+# NOTE: cloud docs live under ~/Library/CloudStorage (~/Dropbox is a symlink
+# there); we point at the real paths so fd/ignore behave predictably.
 # Edit this table to add/rename scopes. `scopes` prints them.
 typeset -gA FSCOPES=(
   data      "$HOME/local/data"
@@ -411,34 +413,49 @@ typeset -gA FSCOPES=(
   papers    "$HOME/local/data/papers"
   analysis  "$HOME/local/data/analysis"
   code      "$HOME/local/code"
-  docs      "$HOME/Dropbox/documents"
-  teaching  "$HOME/Dropbox/documents/teaching"
+  cloud     "$HOME/Library/CloudStorage"
+  docs      "$HOME/Library/CloudStorage/Dropbox/documents"
+  teaching  "$HOME/Library/CloudStorage/Dropbox/documents/teaching"
+  dropbox   "$HOME/Library/CloudStorage/Dropbox"
+  onedrive  "$HOME/Library/CloudStorage/OneDrive-UniversityofNebraska-Lincoln"
+  gdrive    "$HOME/Library/CloudStorage/GoogleDrive-yesselmanlab@gmail.com"
   notes     "$HOME/notes"
-  dropbox   "$HOME/Dropbox"
   dl        "$HOME/Downloads"
 )
 
-# Resolve a scope name or path to a directory (no arg → $HOME).
-_fscope() {
+# Default roots when no scope is given — the real content trees, NOT raw $HOME
+# (which would drag in ~/Library caches, ~150k junk files). Covers all cloud
+# docs + local data/code + notes + Downloads.
+typeset -ga FZ_ROOTS=(
+  "$HOME/Library/CloudStorage"
+  "$HOME/local"
+  "$HOME/notes"
+  "$HOME/Downloads"
+)
+
+# Print search root(s): no arg → default set; scope name → its root; else literal.
+# One root per line (callers read into an array via ${(@f)...}).
+_froots() {
   local arg="${1:-}"
-  [[ -z "$arg" ]] && { print -r -- "$HOME"; return; }
+  [[ -z "$arg" ]] && { printf '%s\n' "${FZ_ROOTS[@]}"; return; }
   [[ -n "${FSCOPES[$arg]:-}" ]] && { print -r -- "${FSCOPES[$arg]}"; return; }
   print -r -- "$arg"   # fall back to a literal path
 }
 
-# List the defined scopes.
+# List the defined scopes + the default root set.
 scopes() {
   local k
   for k in ${(ok)FSCOPES}; do printf "  %-10s %s\n" "$k" "${FSCOPES[$k]}"; done
+  printf "  %-10s %s\n" "(default)" "${FZ_ROOTS[*]}"
 }
 
 # Interactive file finder with fzf (preview + actions)
-# Usage: mff [scope|folder]   (e.g. `mff data`, `mff code`, `mff ~/dir`)
+# Usage: mff [scope|folder]   (no arg = all content roots; e.g. `mff data`, `mff ~/dir`)
 #   filter: "2026 docx" = AND  ·  "'exact"  ·  "!exclude"  ·  ".ext$" = suffix
 #   enter = copy path  ·  ctrl-o = open  ·  ctrl-e = $EDITOR  ·  tab = multi-select
 # Respects ~/.config/fd/ignore (dropbox_backup, .git, … auto-skipped).
 mff() {
-  local folder; folder=$(_fscope "$1")
+  local -a roots; roots=("${(@f)$(_froots "$1")}")
   local selected
   local preview_cmd='
     case {} in
@@ -450,9 +467,9 @@ mff() {
       *) bat --color=always --style=plain --line-range=:80 {} 2>/dev/null || head -80 {} ;;
     esac'
 
-  selected=$(fd --type f --hidden . "$folder" 2>/dev/null | \
+  selected=$(fd --type f --hidden . "${roots[@]}" 2>/dev/null | \
     fzf --multi --height=80% --layout=reverse --border --info=inline \
-        --prompt="$folder ❯ " \
+        --prompt="${1:-all} ❯ " \
         --header="enter=copy  ctrl-o=open  ctrl-e=edit  tab=multi  ·  space=AND  'exact  !exclude  .ext\$" \
         --preview="$preview_cmd" --preview-window='down,60%,wrap' \
         --bind='ctrl-o:execute(open {})' \
@@ -474,7 +491,7 @@ mff() {
 # Usage: docs [scope|folder]   (e.g. `docs teaching`, `docs ~/dir`)
 # Searches: pdf, docx, pptx, xlsx, doc, odt, epub
 docs() {
-  local folder; folder=$(_fscope "$1")
+  local -a roots; roots=("${(@f)$(_froots "$1")}")
   local selected
   local preview_cmd='
     case {} in
@@ -487,8 +504,8 @@ docs() {
     esac
   '
 
-  selected=$(fd --type f -e pdf -e docx -e pptx -e xlsx -e doc -e odt -e epub . "$folder" 2>/dev/null | \
-    fzf --header="Documents in $folder" \
+  selected=$(fd --type f -e pdf -e docx -e pptx -e xlsx -e doc -e odt -e epub . "${roots[@]}" 2>/dev/null | \
+    fzf --header="Documents in ${1:-all roots}" \
         --preview "$preview_cmd" \
         --preview-window=bottom:50% \
         --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
