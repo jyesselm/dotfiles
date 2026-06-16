@@ -1,9 +1,23 @@
 {
+  "model": "opus[1m]",
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "laravel-simplifier@laravel": true
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/jyesselman2/.claude/hooks/autonomy-guard.sh"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -102,8 +102,7 @@ return {
         -- Picker keymaps (<leader>f prefix to avoid conflict with f-find)
         { "<leader>ff", function() Snacks.picker.files() end, desc = "Find files" },
         { "<leader>ft", function() Snacks.picker.files({ win = { input = { keys = { ["<CR>"] = { "edit_tab", mode = { "i", "n" } } } } } }) end, desc = "Find files (tab)" },
-        { "<leader>fg", function() Snacks.picker.grep({ layout = "sidebar" }) end, desc = "Live grep (horizontal)" },
-        { "<leader>fG", function() Snacks.picker.grep() end, desc = "Live grep (vertical)" },
+        { "<leader>fg", function() Snacks.picker.grep() end, desc = "Live grep" },
         { "<leader>fb", function() Snacks.picker.buffers() end, desc = "Find buffers" },
         { "<leader>fw", function() Snacks.picker.lsp_workspace_symbols() end, desc = "Workspace symbols" },
         { "<leader>fs", function() Snacks.picker.lsp_symbols() end, desc = "Document symbols" },
@@ -111,8 +110,10 @@ return {
         { "<leader>fr", function() Snacks.picker.recent() end, desc = "Recent files" },
         { "<leader>fh", function() Snacks.picker.help() end, desc = "Help pages" },
         { "<leader>fc", function() Snacks.picker.commands() end, desc = "Commands" },
+        -- Search current buffer
+        { "<leader>fl", function() Snacks.picker.grep({ dirs = { vim.fn.expand("%:p") } }) end, desc = "Grep current file" },
         -- Grep word under cursor
-        { "<leader>f*", function() Snacks.picker.grep_word() end, desc = "Grep word under cursor" },
+        { "<leader>fd", function() Snacks.picker.grep_word() end, desc = "Grep word under cursor" },
         -- Git
         { "<leader>gs", function() Snacks.picker.git_status() end, desc = "Git status" },
         { "<leader>gc", function() Snacks.picker.git_log() end, desc = "Git commits" },

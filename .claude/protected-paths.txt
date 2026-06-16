@@ -1,0 +1,28 @@
+# protected-paths.txt — never edit, overwrite, or delete these, even by mistake.
+# One glob per line. Read by ~/.claude/hooks/autonomy-guard.sh (always-on tier) and
+# referenced by long-run-planner / autopilot guardrails.
+# Matching: globs are tested against the absolute path AND the basename.
+#   `**`  = any depth (e.g. **/data/raw/** → any data/raw dir anywhere)
+#   trailing `/` = treat as a directory prefix
+# Lines starting with # are comments. Add your own paths under the last section.
+
+# --- raw / ground-truth experimental data ---
+**/data/raw/**
+**/raw_data/**
+**/*.fastq
+**/*.fastq.gz
+**/*.fq
+**/*.fq.gz
+**/*.bam
+**/*.bai
+**/*.cram
+**/*.sra
+**/*.ab1
+
+# --- reference / benchmark / ground-truth sets ---
+**/reference/**
+**/ground_truth/**
+**/ground-truth/**
+**/benchmarks/**
+
+# --- your project-specific protected paths (add below) ---

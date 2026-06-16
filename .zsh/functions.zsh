@@ -290,7 +290,7 @@ search-projects() {
 sf() {
   local dir="${1:-.}"
   local file
-  file=$(fd --type f --hidden --exclude .git . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}' --preview-window=bottom --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
+  file=$(fd --type f --hidden . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}' --preview-window=bottom --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
   if [[ -n "$file" ]]; then
     echo "$file"
   fi
@@ -301,7 +301,7 @@ sf() {
 vf() {
   local dir="${1:-.}"
   local file
-  file=$(fd --type f --hidden --exclude .git . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}')
+  file=$(fd --type f --hidden . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}')
   if [[ -n "$file" ]]; then
     nvim "$file"
   fi
@@ -383,15 +383,7 @@ recentf() {
   else
     # Use fd for modification time (or created on Linux where we fall back to mtime)
     selected=$(fd --type f --hidden \
-      --exclude .git \
-      --exclude Library \
-      --exclude .Trash \
-      --exclude node_modules \
-      --exclude .cache \
-      --exclude .npm \
-      --exclude .conda \
       --exclude .local/share \
-      --exclude "*.app" \
       --changed-within "${days}d" \
       . "$folder" 2>/dev/null | \
       fzf --header="Files ${header_type} in last ${days} days | $folder")
@@ -409,34 +401,80 @@ recentf() {
   fi
 }
 
-# Interactive file finder with fzf
-# Usage: mff [folder]
-# Type in fzf to filter: "2026 docx" matches both, "'exact" for exact, "!exclude" to exclude
-# Returns: selected file path (copied to clipboard)
-mff() {
-  local folder="${1:-$HOME}"
-  local selected
+# ── Search scopes ────────────────────────────────────────────────────────
+# Named roots for the fuzzy finders. Use a scope name OR a literal path:
+#   mff data        docs teaching        mff code        mff ~/some/dir
+# Edit this table to add/rename scopes. `scopes` prints them.
+typeset -gA FSCOPES=(
+  data      "$HOME/local/data"
+  seq       "$HOME/local/data/sequencing"
+  papers    "$HOME/local/data/papers"
+  analysis  "$HOME/local/data/analysis"
+  code      "$HOME/local/code"
+  docs      "$HOME/Dropbox/documents"
+  teaching  "$HOME/Dropbox/documents/teaching"
+  notes     "$HOME/notes"
+  dropbox   "$HOME/Dropbox"
+  dl        "$HOME/Downloads"
+)
 
-  selected=$(fd --type f --hidden --exclude .git --exclude Library --exclude .Trash . "$folder" 2>/dev/null | \
-    fzf --header="$folder | space=AND 'exact !exclude .ext\$")
+# Resolve a scope name or path to a directory (no arg → $HOME).
+_fscope() {
+  local arg="${1:-}"
+  [[ -z "$arg" ]] && { print -r -- "$HOME"; return; }
+  [[ -n "${FSCOPES[$arg]:-}" ]] && { print -r -- "${FSCOPES[$arg]}"; return; }
+  print -r -- "$arg"   # fall back to a literal path
+}
+
+# List the defined scopes.
+scopes() {
+  local k
+  for k in ${(ok)FSCOPES}; do printf "  %-10s %s\n" "$k" "${FSCOPES[$k]}"; done
+}
+
+# Interactive file finder with fzf (preview + actions)
+# Usage: mff [scope|folder]   (e.g. `mff data`, `mff code`, `mff ~/dir`)
+#   filter: "2026 docx" = AND  ·  "'exact"  ·  "!exclude"  ·  ".ext$" = suffix
+#   enter = copy path  ·  ctrl-o = open  ·  ctrl-e = $EDITOR  ·  tab = multi-select
+# Respects ~/.config/fd/ignore (dropbox_backup, .git, … auto-skipped).
+mff() {
+  local folder; folder=$(_fscope "$1")
+  local selected
+  local preview_cmd='
+    case {} in
+      *.pdf) pdftotext -l 3 {} - 2>/dev/null | head -80 ;;
+      *.docx|*.odt|*.epub) pandoc {} -t plain 2>/dev/null | head -80 ;;
+      *.pptx) unzip -p {} "ppt/slides/slide*.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
+      *.xlsx) unzip -p {} "xl/sharedStrings.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
+      *.png|*.jpg|*.jpeg|*.gif|*.heic) file -b {} ;;
+      *) bat --color=always --style=plain --line-range=:80 {} 2>/dev/null || head -80 {} ;;
+    esac'
+
+  selected=$(fd --type f --hidden . "$folder" 2>/dev/null | \
+    fzf --multi --height=80% --layout=reverse --border --info=inline \
+        --prompt="$folder ❯ " \
+        --header="enter=copy  ctrl-o=open  ctrl-e=edit  tab=multi  ·  space=AND  'exact  !exclude  .ext\$" \
+        --preview="$preview_cmd" --preview-window='down,60%,wrap' \
+        --bind='ctrl-o:execute(open {})' \
+        --bind='ctrl-e:execute(${EDITOR:-nvim} {})')
 
   if [[ -n "$selected" ]]; then
     echo "$selected"
     if [[ "$(uname)" == "Darwin" ]]; then
-      echo -n "$selected" | pbcopy
+      printf '%s' "$selected" | pbcopy
       echo "(copied to clipboard)"
     elif command -v xclip &>/dev/null; then
-      echo -n "$selected" | xclip -selection clipboard
+      printf '%s' "$selected" | xclip -selection clipboard
       echo "(copied to clipboard)"
     fi
   fi
 }
 
 # Interactive document finder with content preview
-# Usage: docs [folder]
+# Usage: docs [scope|folder]   (e.g. `docs teaching`, `docs ~/dir`)
 # Searches: pdf, docx, pptx, xlsx, doc, odt, epub
 docs() {
-  local folder="${1:-$HOME}"
+  local folder; folder=$(_fscope "$1")
   local selected
   local preview_cmd='
     case {} in

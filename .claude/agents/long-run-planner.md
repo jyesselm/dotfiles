@@ -71,6 +71,29 @@ context can resume) and report the path. This is the only channel to the executo
 it self-contained. If feeding the existing coder pipeline, you may also write
 `current-plan.md`. Write ONLY under `.claude/plans/`; never touch code.
 
+## Mission mode (multi-task goals)
+
+When the goal is large enough to span **several tasks** (a multi-day effort), also produce a
+**`MISSION.md`** backlog alongside the first task's runbook. The mission is the source of
+truth for "what to work on next" that `/autopilot` reads.
+
+- List tasks **in dependency order**, each `[ ]` with a one-line done-definition and a link
+  to its runbook (`.claude/plans/<slug>.md`); leave the runbook unwritten until its turn,
+  except the first.
+- For each task note its **primary file set** (from the runbook Files table) so the autopilot
+  can judge which tasks are **independent** (disjoint files → safe to run in parallel
+  worktrees) vs overlapping (must serialize).
+
+```markdown
+# Mission: <title>
+## Goal & done-definition
+<the whole mission is DONE when …>
+## Tasks
+- [ ] T1 — <title> · done: <criteria> · files: <paths> · runbook: .claude/plans/<slug>.md
+- [ ] T2 — <title> · done: <criteria> · files: <paths> · depends: T1
+## Run log (append-only)
+```
+
 ## Status legend
 
 `[ ]` todo · `[~]` in progress · `[x]` done & verified · `[!]` blocked

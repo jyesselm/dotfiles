@@ -1,0 +1,23 @@
+# yadm home repo — ignore rules
+
+# ── Claude Code: session state, history, caches (never track) ──
+.claude/history.jsonl
+.claude/projects/
+.claude/sessions/
+.claude/session-env/
+.claude/shell-snapshots/
+.claude/file-history/
+.claude/debug/
+.claude/backups/
+.claude/cache/
+.claude/paste-cache/
+.claude/plans/
+.claude/tasks/
+.claude/plugins/
+.claude/ide/
+.claude/downloads/
+.claude/.last-cleanup
+.claude/.last-update-result.json
+.claude/*-cache.json
+.claude/settings.local.json
+.claude/claude_desktop_config.json

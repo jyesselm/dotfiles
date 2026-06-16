@@ -1,0 +1,16 @@
+# Global fd ignore — one shared noise list for fd / mff / docs / ff / fcd / recent.
+# gitignore syntax, one pattern per line. Applies to every fd run.
+# NOTE: ~/local/data is intentionally NOT ignored — bulk data stays searchable.
+
+dropbox_backup
+.git
+node_modules
+Library
+.Trash
+.cache
+.npm
+.conda
+.venv
+__pycache__
+.DS_Store
+*.app

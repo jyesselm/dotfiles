@@ -30,11 +30,12 @@
     "workbench.preferredHighContrastColorTheme": "Monokai",
     "workbench.preferredDarkColorTheme": "Monokai",
     "workbench.colorCustomizations": {
-        "statusBar.background": "#8FBCBB",
-        "statusBar.noFolderBackground": "#8FBCBB",
-        "statusBar.debuggingBackground": "#8FBCBB",
-        "statusBar.foreground": "#000",
-        "statusBar.debuggingForeground": "#000"
+        "statusBar.foreground": "#1e1e2e",
+        "statusBar.debuggingForeground": "#1e1e2e",
+        "statusBar.noFolderForeground": "#1e1e2e",
+        "statusBar.background": "#cba6f7",
+        "statusBar.noFolderBackground": "#cba6f7",
+        "statusBar.debuggingBackground": "#cba6f7"
     },
     "workbench.editor.enablePreview": false,
     // Terminal settings
@@ -103,4 +104,458 @@
         "codeSource": true,
         "codeOutput": true
     },
+    // ─────────── VSCodeVim ───────────────────────────────────────────────
+    "vim.leader": " ",
+    "vim.useSystemClipboard": true,
+    "vim.useCtrlKeys": true,
+    "vim.hlsearch": true,
+    "vim.incsearch": true,
+    "vim.smartRelativeLine": true,
+    "vim.foldfix": true,
+    "vim.easymotion": true,
+    "vim.easymotionMarkerBackgroundColor": "#cba6f7",
+    "vim.easymotionMarkerForegroundColorOneChar": "#1e1e2e",
+    // Per-mode status bar color (palette for One Dark Pro Darker)
+    "vim.statusBarColorControl": true,
+    "vim.statusBarColors": {
+        "normal": "#89b4fa",
+        "insert": "#a6e3a1",
+        "visual": "#cba6f7",
+        "visualline": "#f5c2e7",
+        "visualblock": "#fab387",
+        "replace": "#f38ba8",
+        "commandlineinprogress": "#f9e2af",
+        "searchinprogressmode": "#f9e2af",
+        "easymotionmode": "#f9e2af",
+        "easymotioninputmode": "#f9e2af",
+        "surroundinputmode": "#f9e2af"
+    },
+    "vim.insertModeKeyBindings": [
+        {
+            "before": [
+                "j",
+                "j"
+            ],
+            "after": [
+                "<Esc>"
+            ]
+        },
+        {
+            "before": [
+                "j",
+                "k"
+            ],
+            "after": [
+                "<Esc>"
+            ]
+        }
+    ],
+    "vim.normalModeKeyBindingsNonRecursive": [
+        // Editing / file ops
+        {
+            "before": [
+                "<leader>",
+                "w"
+            ],
+            "commands": [
+                "workbench.action.files.save"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "q"
+            ],
+            "commands": [
+                "workbench.action.closeActiveEditor"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "/"
+            ],
+            "commands": [
+                ":nohl"
+            ]
+        },
+        // Faster motion (J=5j, K=5k, mirrors nvim)
+        {
+            "before": [
+                "J"
+            ],
+            "after": [
+                "5",
+                "j"
+            ]
+        },
+        {
+            "before": [
+                "K"
+            ],
+            "after": [
+                "5",
+                "k"
+            ]
+        },
+        // Telescope-style file pickers
+        {
+            "before": [
+                "<leader>",
+                "f",
+                "f"
+            ],
+            "commands": [
+                "workbench.action.quickOpen"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "f",
+                "t"
+            ],
+            "commands": [
+                "workbench.action.quickOpen"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "f",
+                "g"
+            ],
+            "commands": [
+                "workbench.action.findInFiles"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "f",
+                "b"
+            ],
+            "commands": [
+                "workbench.action.showAllEditors"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "f",
+                "s"
+            ],
+            "commands": [
+                "workbench.action.gotoSymbol"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "f",
+                "w"
+            ],
+            "commands": [
+                "workbench.action.showAllSymbols"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "e"
+            ],
+            "commands": [
+                "workbench.view.explorer"
+            ]
+        },
+        {
+            "before": [
+                "<C-n>"
+            ],
+            "commands": [
+                "workbench.action.toggleSidebarVisibility"
+            ]
+        },
+        // LSP
+        {
+            "before": [
+                "g",
+                "d"
+            ],
+            "commands": [
+                "editor.action.revealDefinition"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "D"
+            ],
+            "commands": [
+                "editor.action.revealDeclaration"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "r"
+            ],
+            "commands": [
+                "editor.action.goToReferences"
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "i"
+            ],
+            "commands": [
+                "editor.action.goToImplementation"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "k"
+            ],
+            "commands": [
+                "editor.action.showHover"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "r",
+                "n"
+            ],
+            "commands": [
+                "editor.action.rename"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "c",
+                "a"
+            ],
+            "commands": [
+                "editor.action.quickFix"
+            ]
+        },
+        {
+            "before": [
+                "[",
+                "d"
+            ],
+            "commands": [
+                "editor.action.marker.prev"
+            ]
+        },
+        {
+            "before": [
+                "]",
+                "d"
+            ],
+            "commands": [
+                "editor.action.marker.next"
+            ]
+        },
+        // Tabs (editors)
+        {
+            "before": [
+                "<leader>",
+                "l"
+            ],
+            "commands": [
+                "workbench.action.nextEditor"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "h"
+            ],
+            "commands": [
+                "workbench.action.previousEditor"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "t",
+                "c"
+            ],
+            "commands": [
+                "workbench.action.closeActiveEditor"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "t",
+                "o"
+            ],
+            "commands": [
+                "workbench.action.closeOtherEditors"
+            ]
+        },
+        // Splits
+        {
+            "before": [
+                "<leader>",
+                "\\"
+            ],
+            "commands": [
+                "workbench.action.splitEditorRight"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "-"
+            ],
+            "commands": [
+                "workbench.action.splitEditorDown"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "x"
+            ],
+            "commands": [
+                "workbench.action.closeActiveEditor"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "m",
+                "h"
+            ],
+            "commands": [
+                "workbench.action.moveEditorToLeftGroup"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "m",
+                "l"
+            ],
+            "commands": [
+                "workbench.action.moveEditorToRightGroup"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "m",
+                "k"
+            ],
+            "commands": [
+                "workbench.action.moveEditorToAboveGroup"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "m",
+                "j"
+            ],
+            "commands": [
+                "workbench.action.moveEditorToBelowGroup"
+            ]
+        },
+        // Window navigation (Ctrl-h/j/k/l)
+        {
+            "before": [
+                "<C-h>"
+            ],
+            "commands": [
+                "workbench.action.focusLeftGroup"
+            ]
+        },
+        {
+            "before": [
+                "<C-j>"
+            ],
+            "commands": [
+                "workbench.action.focusBelowGroup"
+            ]
+        },
+        {
+            "before": [
+                "<C-k>"
+            ],
+            "commands": [
+                "workbench.action.focusAboveGroup"
+            ]
+        },
+        {
+            "before": [
+                "<C-l>"
+            ],
+            "commands": [
+                "workbench.action.focusRightGroup"
+            ]
+        }
+    ],
+    "vim.visualModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                ">"
+            ],
+            "commands": [
+                "editor.action.indentLines"
+            ]
+        },
+        {
+            "before": [
+                "<"
+            ],
+            "commands": [
+                "editor.action.outdentLines"
+            ]
+        },
+        {
+            "before": [
+                "p"
+            ],
+            "after": [
+                "p",
+                "g",
+                "v",
+                "y"
+            ]
+        },
+        {
+            "before": [
+                "J"
+            ],
+            "after": [
+                "5",
+                "j"
+            ]
+        },
+        {
+            "before": [
+                "K"
+            ],
+            "after": [
+                "5",
+                "k"
+            ]
+        }
+    ],
+    "vim.handleKeys": {
+        "<C-a>": false,
+        "<C-c>": false,
+        "<C-v>": false,
+        "<C-x>": false,
+        "<C-z>": false,
+        "<C-f>": false,
+        "<C-p>": false
+    },
+    "window.autoDetectColorScheme": false,
 }
