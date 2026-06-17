@@ -6,6 +6,7 @@
 # ============================================================
 # MACHINE_TYPE: macos, cluster, linux, or specific hostname
 # Add new machines by extending the case statement below
+export _ZO_DOCTOR=0
 
 IS_MACOS=false
 IS_CLUSTER=false
@@ -97,7 +98,6 @@ export PATH="$HOME/.local/bin:$PATH"
 
 command -v starship &>/dev/null && eval "$(starship init zsh)"
 
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
 
 # fzf configuration
 export FZF_DEFAULT_OPTS='--height 40% --reverse'
@@ -168,3 +168,6 @@ bindkey '^X^E' edit-command-line
 # ============================================================
 # Create ~/.zsh/local.zsh for machine-specific settings
 [[ -f "$HOME/.zsh/local.zsh" ]] && source "$HOME/.zsh/local.zsh"
+
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
+

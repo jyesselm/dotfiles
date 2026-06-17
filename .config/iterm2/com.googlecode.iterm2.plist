@@ -21,9 +21,9 @@
 	<key>AiMaxTokens</key>
 	<integer>200000</integer>
 	<key>AiModel</key>
-	<string>claude-sonnet-4-5</string>
+	<string>claude-opus-4-6</string>
 	<key>AiResponseMaxTokens</key>
-	<integer>64000</integer>
+	<integer>128000</integer>
 	<key>AitermURL</key>
 	<string>https://api.anthropic.com/v1/messages</string>
 	<key>AllowClipboardAccess</key>
