@@ -428,6 +428,7 @@ typeset -gA FSCOPES=(
 # docs + local data/code + notes + Downloads.
 typeset -ga FZ_ROOTS=(
   "$HOME/Library/CloudStorage"
+  "$HOME/cloud"
   "$HOME/local"
   "$HOME/notes"
   "$HOME/Downloads"
@@ -440,6 +441,44 @@ _froots() {
   [[ -z "$arg" ]] && { printf '%s\n' "${FZ_ROOTS[@]}"; return; }
   [[ -n "${FSCOPES[$arg]:-}" ]] && { print -r -- "${FSCOPES[$arg]}"; return; }
   print -r -- "$arg"   # fall back to a literal path
+}
+
+# ── File-index cache (stale-while-revalidate) ────────────────────────────
+# Crawling the default roots (~530k files) live takes ~3.5s. Instead we cache
+# the fd output per scope and let fzf read the cache instantly; a background
+# refresh keeps it warm. First-ever call for a scope builds synchronously.
+typeset -g FZ_CACHE_DIR="$HOME/.cache/mff"
+typeset -g FZ_CACHE_TTL=900            # seconds; older cache → background refresh
+
+# Cache file path for a scope arg ("" = all). Slashes in literal paths → %.
+_fz_cache_file() {
+  local key="${1:-all}"
+  print -r -- "$FZ_CACHE_DIR/${key//\//%}.idx"
+}
+
+# Build/rebuild the index for a scope synchronously (atomic via tmp+mv).
+_fz_reindex() {
+  local -a roots; roots=("${(@f)$(_froots "$1")}")
+  local cf; cf="$(_fz_cache_file "$1")"
+  mkdir -p "$FZ_CACHE_DIR"
+  fd --type f --hidden . "${roots[@]}" 2>/dev/null >| "$cf.tmp" && mv -f "$cf.tmp" "$cf"
+}
+
+# True if cache is missing/empty or older than FZ_CACHE_TTL.
+_fz_stale() {
+  local f="$1" mtime
+  [[ -s "$f" ]] || return 0
+  mtime=$(stat -f %m "$f" 2>/dev/null) || return 0
+  (( $(date +%s) - mtime > FZ_CACHE_TTL ))
+}
+
+# Force a full rebuild of every scope's index (run from cron/launchd or by hand).
+mffreindex() {
+  local k
+  for k in all ${(k)FSCOPES}; do
+    [[ "$k" == all ]] && _fz_reindex "" || _fz_reindex "$k"
+    printf "  reindexed %-10s → %s\n" "$k" "$(_fz_cache_file "${k:#all}")"
+  done
 }
 
 # List the defined scopes + the default root set.
@@ -455,8 +494,12 @@ scopes() {
 #   enter = copy path  ·  ctrl-o = open  ·  ctrl-e = $EDITOR  ·  tab = multi-select
 # Respects ~/.config/fd/ignore (dropbox_backup, .git, … auto-skipped).
 mff() {
-  local -a roots; roots=("${(@f)$(_froots "$1")}")
-  local selected
+  local selected cf
+  cf="$(_fz_cache_file "$1")"
+  # First-ever call for this scope: build the index synchronously.
+  [[ -s "$cf" ]] || _fz_reindex "$1"
+  # Stale-while-revalidate: serve the cache now, refresh in the background.
+  _fz_stale "$cf" && ( _fz_reindex "$1" &!)
   local preview_cmd='
     case {} in
       *.pdf) pdftotext -l 3 {} - 2>/dev/null | head -80 ;;
@@ -467,7 +510,7 @@ mff() {
       *) bat --color=always --style=plain --line-range=:80 {} 2>/dev/null || head -80 {} ;;
     esac'
 
-  selected=$(fd --type f --hidden . "${roots[@]}" 2>/dev/null | \
+  selected=$(FZF_DEFAULT_COMMAND="cat ${(q)cf}" \
     fzf --multi --height=80% --layout=reverse --border --info=inline \
         --prompt="${1:-all} ❯ " \
         --header="enter=copy  ctrl-o=open  ctrl-e=edit  tab=multi  ·  space=AND  'exact  !exclude  .ext\$" \
