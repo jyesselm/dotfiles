@@ -1,0 +1,24 @@
+---
+description: Draft the best possible version of a prose section by writing 2-3 distinct versions, picking the strongest, then stress-testing it with an independent editor until it holds up — always grounded in the writing voice guide and the surrounding text
+argument-hint: <which section to write and what it should cover/argue>
+---
+
+Produce the **best possible draft of a prose section**, then **stop**. This is for writing, not coding: a manuscript section, abstract, cover letter, grant aim, reviewer response, or any passage where the goal is finished text in my voice. The point is that the passage you hand me is the survivor of real alternative framings and real adversarial editing, written to fit the document it lives in.
+
+**Section to write:** $ARGUMENTS
+
+## Always do these two things first (non-negotiable)
+
+Before drafting a single sentence:
+
+1. **Load the writing voice guide.** Read `@~/.claude/standards/writing/CORE.md` plus the genre file that matches the task: `papers.md` (manuscripts), `grants.md` (aims/grants), `reviewer-responses.md`, or `short-form.md` (email/talks). The hard rules apply to every draft: active voice, short sentences, assertive claims, numbers inline, terms glossed on first use, **no dashes** (no em-dashes, no spaced-hyphen connectors), no AI-tells, no hedging stacks, no "we asked" framing.
+2. **Read the surrounding text.** Open the document the section belongs to (for the active manuscript, `manuscript_refinement/cycle_019/draft.md`) and read the paragraphs/sections immediately before and after where this passage goes. The draft is one paragraph per line. Match its terminology, level of detail, tense, and flow. Do not repeat a point already made, contradict an earlier claim, or re-gloss a term already defined. The new section must read as if it was always part of the document.
+
+If the task is underspecified (you do not know the exact claim to make, the audience, where the passage goes, or what data/numbers it must cite), **ask me 2-4 sharp clarifying questions and wait** before drafting.
+
+## Then run the multi-agent loop
+
+1. **Write alternatives** — spawn a `general-purpose` writer agent. Give it the full task, the relevant voice-guide files, and the surrounding text you read. Tell it NOT to settle on one version. It must produce **2-3 genuinely distinct drafts** of the section (different framing, structure, or opening — not light rewordings of one draft). For EACH: the draft itself, plus one line on the rhetorical bet it makes (what it leads with, what it emphasizes, what it leaves out).
+2. **Pick the best** — have the writer recommend ONE draft with a crisp justification: best fit to my voice, cleanest flow into the surrounding paragraphs, sharpest claim, every number supported. Keep the rejected drafts in a short **"Alternatives considered"** note so the reasoning and the discarded framings survive.
+3. **Stress-test, repeatedly** — spawn an **independent editor** in a fresh context, told to *attack* the prose, not praise it. Use `paper-adversary` for a manuscript/grant section (it also checks that claims follow from the data), otherwise a `general-purpose` agent as a hostile line editor. It must hunt: voice-guide violations (dashes, AI-tells, passive voice, hedging, vague intensifiers, "we asked"), claims unsupported by the data or the surrounding text, terms used before they are glossed, breaks in flow or tense with the neighboring paragraphs, repetition of points already made, and any sentence that runs out of breath. It must end with `VERDICT: APPROVED` or `VERDICT: REVISE` plus the blocking issues. If `REVISE`, send those issues back to the writer, rewrite the draft, and re-review. Loop **up to 3 rounds**, stating each round's verdict so the editing is visible.
+4. **Stop** — once `APPROVED` (or after 3 rounds, flagging any unresolved issues), show me: the final section (ready to paste, one paragraph per line if it is going into the draft), the "Alternatives considered" note, and the editor's final verdict. Do **not** edit the manuscript or any document yourself — hand me the text and offer to insert it where it goes if I want.
