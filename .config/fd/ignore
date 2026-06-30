@@ -3,6 +3,7 @@
 # NOTE: ~/local/data is intentionally NOT ignored — bulk data stays searchable.
 
 dropbox_backup
+.dropbox.cache
 .git
 node_modules
 .Trash

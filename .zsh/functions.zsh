@@ -1,5 +1,10 @@
 # ~/.zsh/functions.zsh
 # Custom shell functions
+#
+# File/content/fuzzy search tools (mff, ff, fdir, mf, sf, vf, vg, rgs, rgpy,
+# rgjs, rgmd, rgd, rgpdf, recent, recentf, search-dropbox, search-projects, and
+# the mff scope/cache machinery) were removed in favor of the `s` finder
+# (search-cli): `s`, `s -t docs`, `s <scope>`, `s content`, `s docgrep`, `s recent`.
 
 
 # ============================================================
@@ -42,49 +47,18 @@ upload_seqs_and_oligos() {
   cd "$current_dir" || return 1
 }
 
-# Show recent files in directory
-recent() {
-  # Usage:
-  #   recent              → 10 most recent in .
-  #   recent 20           → 20 most recent in .
-  #   recent DIR          → 10 most recent in DIR
-  #   recent DIR 20       → 20 most recent in DIR
-
-  local dir="."
-  local count=10
-
-  if [[ $# -ge 1 && -d "$1" ]]; then
-    dir="$1"
-    [[ $# -ge 2 ]] && count="$2"
-  elif [[ $# -ge 1 ]]; then
-    if [[ "$1" =~ ^[0-9]+$ ]]; then
-      count="$1"
-    else
-      echo "Usage: recent [DIR] [COUNT]"
-      return 1
-    fi
-  fi
-
-  if command -v lsd &> /dev/null; then
-    lsd -lt "$dir" | head -n "$((count + 1))"
-  else
-    ls -lt "$dir" | head -n "$((count + 1))"
-  fi
-}
-
-
 
 # ============================================================
-# File Operations
+# Filesystem Helpers
 # ============================================================
-# Create directory and cd into it
+# Make a directory and cd into it
 mkcd() {
   local dir="$1"
   if [[ -z "$dir" ]]; then
     echo "Usage: mkcd <directory>"
     return 1
   fi
-  
+
   if mkdir -p "$dir" && cd "$dir"; then
     echo "✓ Created and entered: $dir"
   else
@@ -93,7 +67,7 @@ mkcd() {
   fi
 }
 
-# work on the desktop 
+# Compress a directory to .tar.zst with a progress bar
 tarzip() {
   if [ -z "$1" ]; then
     echo "Usage: tarzip <directory>"
@@ -104,7 +78,7 @@ tarzip() {
     echo "Error: $dir is not a directory"
     return 1
   fi
-  
+
   # Cross-platform byte size
   local size
   if du -sb "$dir" &>/dev/null; then
@@ -112,15 +86,15 @@ tarzip() {
   else
     size=$(find "$dir" -type f -exec stat -f%z {} + 2>/dev/null | awk '{s+=$1} END {print s}')  # macOS (BSD)
   fi
-  
+
   echo "Compressing $dir ($(du -sh "$dir" | awk '{print $1}'))..."
-  
+
   if [ -n "$size" ] && [ "$size" -gt 0 ] 2>/dev/null; then
     tar -c "$dir" | pv -s "$size" | zstd -T0 -19 > "${dir}.tar.zst"
   else
     tar -c "$dir" | pv | zstd -T0 -19 > "${dir}.tar.zst"  # No size estimate
   fi
-  
+
   echo "Created ${dir}.tar.zst"
 }
 
@@ -130,13 +104,13 @@ extract() {
     echo "Usage: extract <archive>"
     return 1
   fi
-  
+
   local file="$1"
   if [[ ! -f "$file" ]]; then
     echo "Error: File not found: $file"
     return 1
   fi
-  
+
   case "$file" in
     *.tar.bz2|*.tbz2) tar xjf "$file" ;;
     *.tar.gz|*.tgz)   tar xzf "$file" ;;
@@ -151,39 +125,6 @@ extract() {
   esac
 }
 
-# Find files by name (case-insensitive) - uses fd if available
-ff() {
-  local pattern="$1"
-  local dir="${2:-.}"
-
-  if [[ -z "$pattern" ]]; then
-    echo "Usage: ff <pattern> [directory]"
-    return 1
-  fi
-
-  if command -v fd &>/dev/null; then
-    command fd --type f --ignore-case "$pattern" "$dir"
-  else
-    find "$dir" -iname "*${pattern}*" -type f 2>/dev/null
-  fi
-}
-
-# Find directories by name (case-insensitive) - uses fd if available
-fdir() {
-  local pattern="$1"
-  local dir="${2:-.}"
-
-  if [[ -z "$pattern" ]]; then
-    echo "Usage: fdir <pattern> [directory]"
-    return 1
-  fi
-
-  if command -v fd &>/dev/null; then
-    command fd --type d --ignore-case "$pattern" "$dir"
-  else
-    find "$dir" -iname "*${pattern}*" -type d 2>/dev/null
-  fi
-}
 
 # ============================================================
 # Git Helpers
@@ -195,7 +136,7 @@ quickcommit() {
     echo "Usage: quickcommit <message>"
     return 1
   fi
-  
+
   git add -A && git commit -m "$message"
 }
 
@@ -204,6 +145,7 @@ unalias glog 2>/dev/null || true
 glog() {
   git log --oneline --graph --decorate --stat "${@}"
 }
+
 
 # ============================================================
 # System Information
@@ -231,339 +173,6 @@ largest() {
   fi
 }
 
-# ============================================================
-# Search Functions
-# ============================================================
-
-# Spotlight search excluding Library and system folders
-# Usage: mf <name>  or  mf <name> <folder>
-mf() {
-  local query="$1"
-  local folder="${2:-$HOME}"
-  if [[ -z "$query" ]]; then
-    echo "Usage: mf <filename> [folder]"
-    return 1
-  fi
-  mdfind -name "$query" -onlyin "$folder" 2>/dev/null | grep -v -E "(Library|\.Trash|/\\.)"
-}
-
-# Search file contents with ripgrep (excludes hidden, respects .gitignore)
-# Usage: rgs <pattern>  or  rgs <pattern> <path>
-rgs() {
-  local pattern="$1"
-  local path="${2:-.}"
-  if [[ -z "$pattern" ]]; then
-    echo "Usage: rgs <pattern> [path]"
-    return 1
-  fi
-  rg --smart-case --hidden --glob '!.git' "$pattern" "$path"
-}
-
-# Search in specific file types
-# Usage: rgpy <pattern>  (Python files)
-rgpy() { rg --type py "$@"; }
-rgjs() { rg --type js "$@"; }
-rgmd() { rg --type md "$@"; }
-
-# Search Dropbox
-search-dropbox() {
-  local query="$1"
-  if [[ -z "$query" ]]; then
-    echo "Usage: search-dropbox <pattern>"
-    return 1
-  fi
-  mdfind -name "$query" -onlyin ~/Dropbox 2>/dev/null
-}
-
-# Search projects folder
-search-projects() {
-  local query="$1"
-  if [[ -z "$query" ]]; then
-    echo "Usage: search-projects <pattern>"
-    return 1
-  fi
-  mdfind -name "$query" -onlyin ~/projects 2>/dev/null
-}
-
-# Interactive file search with fzf + preview
-# Usage: sf [directory]
-sf() {
-  local dir="${1:-.}"
-  local file
-  file=$(fd --type f --hidden . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}' --preview-window=bottom --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
-  if [[ -n "$file" ]]; then
-    echo "$file"
-  fi
-}
-
-# Interactive file search and open in nvim
-# Usage: vf [directory]
-vf() {
-  local dir="${1:-.}"
-  local file
-  file=$(fd --type f --hidden . "$dir" | fzf --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}')
-  if [[ -n "$file" ]]; then
-    nvim "$file"
-  fi
-}
-
-# Search content and open in nvim (ripgrep + fzf)
-# Usage: vg <pattern> [directory]
-vg() {
-  local pattern="$1"
-  local dir="${2:-.}"
-  if [[ -z "$pattern" ]]; then
-    echo "Usage: vg <pattern> [directory]"
-    return 1
-  fi
-  local file
-  file=$(rg --files-with-matches "$pattern" "$dir" 2>/dev/null | fzf --preview "rg --color=always -C 3 '$pattern' {}")
-  if [[ -n "$file" ]]; then
-    nvim "$file"
-  fi
-}
-
-# Search inside PDFs, Office docs, etc. with ripgrep-all
-# Usage: rgd <pattern> [directory]
-rgd() {
-  local pattern="$1"
-  local dir="${2:-.}"
-  if [[ -z "$pattern" ]]; then
-    echo "Usage: rgd <pattern> [directory]"
-    echo "Searches PDFs, Word docs, spreadsheets, etc."
-    return 1
-  fi
-  rga --smart-case "$pattern" "$dir"
-}
-
-# Search PDFs only
-# Usage: rgpdf <pattern> [directory]
-rgpdf() {
-  local pattern="$1"
-  local dir="${2:-.}"
-  if [[ -z "$pattern" ]]; then
-    echo "Usage: rgpdf <pattern> [directory]"
-    return 1
-  fi
-  rga --type pdf "$pattern" "$dir"
-}
-
-# Recent files system-wide with fzf
-# Usage: recentf [-c] [days] [folder]
-#   -c  search by creation time instead of modification time
-# Finds files within N days (default: 7), excludes system files
-recentf() {
-  local created=false
-  local days=7
-  local folder="$HOME"
-
-  # Parse arguments
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -c) created=true; shift ;;
-      *)
-        if [[ "$1" =~ ^[0-9]+$ ]]; then
-          days="$1"
-        elif [[ -d "$1" ]]; then
-          folder="$1"
-        fi
-        shift ;;
-    esac
-  done
-
-  local selected
-  local header_type="modified"
-
-  if $created && [[ "$(uname)" == "Darwin" ]]; then
-    header_type="created"
-    # Use mdfind for fast creation time search (uses Spotlight index)
-    selected=$(mdfind "kMDItemFSCreationDate > \$time.now(-${days}d)" -onlyin "$folder" 2>/dev/null | \
-      grep -v -E "(Library|\.Trash|/\.|node_modules|\.cache)" | \
-      fzf --header="Files created in last ${days} days | $folder")
-  else
-    # Use fd for modification time (or created on Linux where we fall back to mtime)
-    selected=$(fd --type f --hidden \
-      --exclude .local/share \
-      --changed-within "${days}d" \
-      . "$folder" 2>/dev/null | \
-      fzf --header="Files ${header_type} in last ${days} days | $folder")
-  fi
-
-  if [[ -n "$selected" ]]; then
-    echo "$selected"
-    if [[ "$(uname)" == "Darwin" ]]; then
-      echo -n "$selected" | pbcopy
-      echo "(copied to clipboard)"
-    elif command -v xclip &>/dev/null; then
-      echo -n "$selected" | xclip -selection clipboard
-      echo "(copied to clipboard)"
-    fi
-  fi
-}
-
-# ── Search scopes ────────────────────────────────────────────────────────
-# Named roots for the fuzzy finders. Use a scope name OR a literal path:
-#   mff data        docs teaching        mff code        mff ~/some/dir
-# NOTE: cloud docs live under ~/Library/CloudStorage (~/Dropbox is a symlink
-# there); we point at the real paths so fd/ignore behave predictably.
-# Edit this table to add/rename scopes. `scopes` prints them.
-typeset -gA FSCOPES=(
-  data      "$HOME/local/data"
-  seq       "$HOME/local/data/sequencing"
-  papers    "$HOME/local/data/papers"
-  analysis  "$HOME/local/data/analysis"
-  code      "$HOME/local/code"
-  cloud     "$HOME/Library/CloudStorage"
-  docs      "$HOME/Library/CloudStorage/Dropbox/documents"
-  teaching  "$HOME/Library/CloudStorage/Dropbox/documents/teaching"
-  dropbox   "$HOME/Library/CloudStorage/Dropbox"
-  onedrive  "$HOME/Library/CloudStorage/OneDrive-UniversityofNebraska-Lincoln"
-  gdrive    "$HOME/Library/CloudStorage/GoogleDrive-yesselmanlab@gmail.com"
-  notes     "$HOME/notes"
-  dl        "$HOME/Downloads"
-)
-
-# Default roots when no scope is given — the real content trees, NOT raw $HOME
-# (which would drag in ~/Library caches, ~150k junk files). Covers all cloud
-# docs + local data/code + notes + Downloads.
-typeset -ga FZ_ROOTS=(
-  "$HOME/Library/CloudStorage"
-  "$HOME/cloud"
-  "$HOME/local"
-  "$HOME/notes"
-  "$HOME/Downloads"
-)
-
-# Print search root(s): no arg → default set; scope name → its root; else literal.
-# One root per line (callers read into an array via ${(@f)...}).
-_froots() {
-  local arg="${1:-}"
-  [[ -z "$arg" ]] && { printf '%s\n' "${FZ_ROOTS[@]}"; return; }
-  [[ -n "${FSCOPES[$arg]:-}" ]] && { print -r -- "${FSCOPES[$arg]}"; return; }
-  print -r -- "$arg"   # fall back to a literal path
-}
-
-# ── File-index cache (stale-while-revalidate) ────────────────────────────
-# Crawling the default roots (~530k files) live takes ~3.5s. Instead we cache
-# the fd output per scope and let fzf read the cache instantly; a background
-# refresh keeps it warm. First-ever call for a scope builds synchronously.
-typeset -g FZ_CACHE_DIR="$HOME/.cache/mff"
-typeset -g FZ_CACHE_TTL=900            # seconds; older cache → background refresh
-
-# Cache file path for a scope arg ("" = all). Slashes in literal paths → %.
-_fz_cache_file() {
-  local key="${1:-all}"
-  print -r -- "$FZ_CACHE_DIR/${key//\//%}.idx"
-}
-
-# Build/rebuild the index for a scope synchronously (atomic via tmp+mv).
-_fz_reindex() {
-  local -a roots; roots=("${(@f)$(_froots "$1")}")
-  local cf; cf="$(_fz_cache_file "$1")"
-  mkdir -p "$FZ_CACHE_DIR"
-  fd --type f --hidden . "${roots[@]}" 2>/dev/null >| "$cf.tmp" && mv -f "$cf.tmp" "$cf"
-}
-
-# True if cache is missing/empty or older than FZ_CACHE_TTL.
-_fz_stale() {
-  local f="$1" mtime
-  [[ -s "$f" ]] || return 0
-  mtime=$(stat -f %m "$f" 2>/dev/null) || return 0
-  (( $(date +%s) - mtime > FZ_CACHE_TTL ))
-}
-
-# Force a full rebuild of every scope's index (run from cron/launchd or by hand).
-mffreindex() {
-  local k
-  for k in all ${(k)FSCOPES}; do
-    [[ "$k" == all ]] && _fz_reindex "" || _fz_reindex "$k"
-    printf "  reindexed %-10s → %s\n" "$k" "$(_fz_cache_file "${k:#all}")"
-  done
-}
-
-# List the defined scopes + the default root set.
-scopes() {
-  local k
-  for k in ${(ok)FSCOPES}; do printf "  %-10s %s\n" "$k" "${FSCOPES[$k]}"; done
-  printf "  %-10s %s\n" "(default)" "${FZ_ROOTS[*]}"
-}
-
-# Interactive file finder with fzf (preview + actions)
-# Usage: mff [scope|folder]   (no arg = all content roots; e.g. `mff data`, `mff ~/dir`)
-#   filter: "2026 docx" = AND  ·  "'exact"  ·  "!exclude"  ·  ".ext$" = suffix
-#   enter = copy path  ·  ctrl-o = open  ·  ctrl-e = $EDITOR  ·  tab = multi-select
-# Respects ~/.config/fd/ignore (dropbox_backup, .git, … auto-skipped).
-mff() {
-  local selected cf
-  cf="$(_fz_cache_file "$1")"
-  # First-ever call for this scope: build the index synchronously.
-  [[ -s "$cf" ]] || _fz_reindex "$1"
-  # Stale-while-revalidate: serve the cache now, refresh in the background.
-  _fz_stale "$cf" && ( _fz_reindex "$1" &!)
-  local preview_cmd='
-    case {} in
-      *.pdf) pdftotext -l 3 {} - 2>/dev/null | head -80 ;;
-      *.docx|*.odt|*.epub) pandoc {} -t plain 2>/dev/null | head -80 ;;
-      *.pptx) unzip -p {} "ppt/slides/slide*.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
-      *.xlsx) unzip -p {} "xl/sharedStrings.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
-      *.png|*.jpg|*.jpeg|*.gif|*.heic) file -b {} ;;
-      *) bat --color=always --style=plain --line-range=:80 {} 2>/dev/null || head -80 {} ;;
-    esac'
-
-  selected=$(FZF_DEFAULT_COMMAND="cat ${(q)cf}" \
-    fzf --multi --height=80% --layout=reverse --border --info=inline \
-        --prompt="${1:-all} ❯ " \
-        --header="enter=copy  ctrl-o=open  ctrl-e=edit  tab=multi  ·  space=AND  'exact  !exclude  .ext\$" \
-        --preview="$preview_cmd" --preview-window='down,60%,wrap' \
-        --bind='ctrl-o:execute(open {})' \
-        --bind='ctrl-e:execute(${EDITOR:-nvim} {})')
-
-  if [[ -n "$selected" ]]; then
-    echo "$selected"
-    if [[ "$(uname)" == "Darwin" ]]; then
-      printf '%s' "$selected" | pbcopy
-      echo "(copied to clipboard)"
-    elif command -v xclip &>/dev/null; then
-      printf '%s' "$selected" | xclip -selection clipboard
-      echo "(copied to clipboard)"
-    fi
-  fi
-}
-
-# Interactive document finder with content preview
-# Usage: docs [scope|folder]   (e.g. `docs teaching`, `docs ~/dir`)
-# Searches: pdf, docx, pptx, xlsx, doc, odt, epub
-docs() {
-  local -a roots; roots=("${(@f)$(_froots "$1")}")
-  local selected
-  local preview_cmd='
-    case {} in
-      *.pdf) pdftotext -l 3 {} - 2>/dev/null | head -80 ;;
-      *.docx|*.odt|*.epub) pandoc {} -t plain 2>/dev/null | head -80 ;;
-      *.pptx) unzip -p {} "ppt/slides/slide*.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
-      *.xlsx) unzip -p {} "xl/sharedStrings.xml" 2>/dev/null | sed "s/<[^>]*>//g" | head -80 ;;
-      *.doc) catdoc {} 2>/dev/null | head -80 || echo "Install catdoc for .doc preview" ;;
-      *) echo "No preview available" ;;
-    esac
-  '
-
-  selected=$(fd --type f -e pdf -e docx -e pptx -e xlsx -e doc -e odt -e epub . "${roots[@]}" 2>/dev/null | \
-    fzf --header="Documents in ${1:-all roots}" \
-        --preview "$preview_cmd" \
-        --preview-window=bottom:50% \
-        --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up')
-
-  if [[ -n "$selected" ]]; then
-    echo "$selected"
-    if [[ "$(uname)" == "Darwin" ]]; then
-      echo -n "$selected" | pbcopy
-      echo "(copied to clipboard)"
-    elif command -v xclip &>/dev/null; then
-      echo -n "$selected" | xclip -selection clipboard
-      echo "(copied to clipboard)"
-    fi
-  fi
-}
 
 # ============================================================
 # Development Helpers
