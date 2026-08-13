@@ -19,9 +19,19 @@ Close on concrete utility, not hype:
 
 ## Significance: understated, comparative, utility-framed
 Frame impact as what becomes possible or what it beats, not as a breakthrough boast:
-> "These analyses establish that differential chemical mapping with TMO and DMS is a scalable strategy for identifying 3D structural features, outperforming both probes alone." (dms_vs_tmo/TMO_DMS_manuscript_draft3_JDY.docx)
+> "Together, these results establish that DMS reactivity contains predictive 3D structural information accessible through geometric, rather than thermodynamic, modeling." (dms-3d-features/abstract_intro_discussion_rewrite.md)
 
 Save the bold, field-level vision for grants (see grants.md).
+
+**Confirmed 2026-08-13.** He rejected a dense, numerically specific close as "way
+too boastful", and named the acceptable alternative himself: "we want to be much
+more measured in the discussion, we can say we are the first or something." So a
+priority claim is fine, stated flatly ("the first X"), and the hype around it is
+not: no *groundbreaking*, *unprecedented*, *major advance*, *exciting new
+possibilities*, *undoubtedly transform*, and no appeals to "the RNA community" or
+"broad interest". Predicting field-level transformation is a grant move and a
+paper violation; hype adjectives are a violation in both. `bin/voice-lint.py`
+enforces this.
 
 ## Methods
 Active and terse; include only parameters needed to reproduce. His Methods are
