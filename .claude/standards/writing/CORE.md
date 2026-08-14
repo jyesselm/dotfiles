@@ -36,6 +36,16 @@ carries it into a draft. For every paragraph:
 5. **Check `REJECTIONS.md`** and cut anything on it.
 6. **Run the gate:** `python3 ~/.claude/standards/writing/bin/voice-lint.py --genre paper|grant <file>`. Fix every FAIL and reconsider each WARN before anyone reads the draft.
 
+## Independent validation of these rules (2026-08-14)
+A model trained on 337 of his tracked revisions, comparing each edit against the
+text it replaced (topic and document held constant), rediscovered several rules in
+this file without being told them. His revisions carry **28% more numeric content**
+(8.39 vs 6.56 per 100 words), run **15% longer**, and use **fewer nominalizations**
+and **shorter words**. That is the "not enough detail" rule and the
+"Utilization → Use" rule confirmed in behaviour rather than in what he said.
+The same model **fails** at judging finished prose (4/9 on known authorship), so it
+is evidence for these rules, not a gate. See `METHOD.md`.
+
 ## File map (single-authority rule)
 Prose rules live **only in this file**. Everything else carries data, never rules:
 `EXEMPLARS.md` (verbatim paragraphs by job), `REJECTIONS.md` (never-say lexicon),
