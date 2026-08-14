@@ -29,9 +29,14 @@ import sys
 # CAUTION: his student's draft measures median 26 / 54% long, i.e. LONGER than
 # his own writing. Sentence length does not discriminate his voice; treat these
 # bands as advisory guardrails, not as a voice test.
-MEDIAN_BAND = (19, 32)        # papers, centered on ~25
-LONG_FRAC_BAND = (0.35, 0.70) # papers, ~50%
-GENRE_BANDS = {"grant": {"median": (16, 27), "long_frac": (0.22, 0.50)}}
+# Lowered 2026-08-14 after a blind generation test: his fresh introduction prose
+# ran a median of 17 words per sentence (lengths 17,17,15,14,20,29,22) while the
+# generated attempt ran 29. The older documents that produced the higher numbers
+# describe past practice; his current writing and his stated preference agree on
+# shorter. Bands now centre on ~18-20.
+MEDIAN_BAND = (13, 26)        # papers
+LONG_FRAC_BAND = (0.10, 0.55) # papers
+GENRE_BANDS = {"grant": {"median": (13, 24), "long_frac": (0.08, 0.45)}}
 # Upper bound on a single sentence, re-measured after the TMO draft was removed.
 # Papers p95 = 63, grants p95 = 42. He rejected an 88-word sentence outright as
 # "way too long" (2026-08-13 clinic), so the ceiling sits between 63 and 88.

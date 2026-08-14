@@ -13,6 +13,32 @@ Announce the contribution with the action and the scale:
 Close on concrete utility, not hype:
 > "DMS reactivity thus provides atomic-scale, geometric information for RNA 3D modeling." (same)
 
+## Introduction openings: give background first, climb to the gap
+**Confirmed 2026-08-14 by a blind generation test.** Asked to write the opening of
+an introduction, he produced a seven-sentence ladder before naming the gap:
+
+> Structured RNA plays a critical role throughout the cell, from translating proteins, regulating genes to maturing mRNA. To accomplish these tasks, RNAs must fold into complex 3D structures that must respond to cellular stimuli. RNA folds hierarchically, first forming secondary structure followed by long-range interactions known as tertiary contacts. These contacts lock an RNA into its functional form and are critical to function. While we have a reasonable model for predicting the secondary structure of RNAs no such model exists for tertiary contacts. To build such a model we must generate a large amount of experimental data to learn which sequences allow for the formation of a tertiary contact and which don't. DMS chemical mapping offers a potential new avenue to do this allowing the multiplexing of up to 100,000s of unique RNA sequences.
+
+The ladder: biological importance → what folding must achieve → the folding
+hierarchy → what the contacts do → **the missing model** → what building one
+requires → the method that makes it possible. His own words: *"you need to give
+background when its an intro."*
+
+The generated attempt reached the gap in sentence two and was identifiably wrong
+for it. **Do not open an introduction on the gap.** This is the same fault he
+writes in students' margins: *"this comes out of no where."*
+
+## Specificity is section-dependent (correction, 2026-08-14)
+His "too general" verdicts were all delivered on **results paragraphs and grant
+aims**. Applying that rule to an introduction opening is a mistake. In the blind
+test **his opening was less specific than the generated one**: he wrote "a
+reasonable model", "tertiary contacts", "DMS chemical mapping", where the
+generated version named Turner, kissing loops, pseudoknots, A-minor motifs and
+optical melting.
+
+- **Introductions** open broad and earn specificity as they narrow. Named methods and parameter sets belong later in the intro, not in the first two sentences.
+- **Results and aims** demand the number, the n, the error, and the named construct immediately.
+
 ## Results
 - Open with purpose and action ("To [goal], we [action]…"); one interpretive landing per paragraph (CORE).
 - Report finding + why it matters, number inline, "from-to" or "n of N" (CORE numbers rules).
