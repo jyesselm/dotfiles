@@ -227,9 +227,15 @@ def main():
         if not re.match(r"\bset\s+up\b", m.group(0), re.I):
             warnings.append(f"'{m.group(0)}': 'set' is never a verb in his corpus; "
                             f"he writes 'determines'")
-    # "carrying" where "containing" is his word (32 vs 2 occurrences).
+    # "carrying" where "containing" is his word (32 vs 2 occurrences). Rejected
+    # three separate times (2026-08-13 x2, 2026-08-14), so this now FAILS.
     for m in re.finditer(r"\bcarr(?:y|ies|ying)\b", text, re.I):
-        warnings.append(f"'{m.group(0)}': he writes 'containing' (32 uses vs 2)")
+        problems.append(f"'{m.group(0)}': he writes 'containing' (corpus: carries 0, "
+                        f"carry family 5, containing 32); rejected 3 times")
+    # "baseline": 3 uses in 28,599 words, and he asked for it to be avoided.
+    for m in re.finditer(r"\bbaselines?\b", text, re.I):
+        warnings.append(f"'{m.group(0)}': rare in his corpus (0.10/1000 words) and he "
+                        f"asked to avoid it; name the quantity instead")
 
     for m in FUZZED_COUNT.finditer(text):
         problems.append(f"fuzzed count '{m.group(0)}': give the exact number or write XXX "

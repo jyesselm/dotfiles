@@ -242,6 +242,19 @@ two parallel prepositional phrases, and keep the subject next to its verb.**
 ### Back-references that force the reader to hold something in memory
 - **"the first stage ... the second stage" → repeat the noun** | human-edit | *"first and second stage are not great since it forces the reader to remember"*. Any label that requires the reader to recall an earlier enumeration ("the former", "the latter", "the first case") should be replaced with the thing itself.
 
+### Blind-generation round 3 (2026-08-14): two more, both already gated
+- **carries / carry / carrying → containing, or restructure** | human-edit | *"'carries' is not used often"*. Third rejection of this family. Corpus: **carries 0 uses**, the whole family 5, against *containing* 32. **The linter already flagged this and it was sent anyway.**
+- **baseline → (drop, or name the quantity)** | human-edit | *"not big on baseline, you should generally not use those words"*. Corpus: 3 uses, 0.10 per 1,000 words. Rare rather than absent, so a dispreference.
+- **"sets the baseline"** compounded both faults: *set* as a verb (0 verb uses in the corpus) plus *baseline*.
+
+**Process rule, and the more important finding.** Both words were caught by
+`bin/voice-lint.py` before he saw the paragraph, and the draft went out without
+the gate being run. In the previous round the generated prose ran at double his
+sentence length against a rule already written in `CORE.md`. **Two consecutive
+rounds failed on rules the guide already contained.** Run the gate on every
+paragraph before showing it; the recurring failure is not missing rules but
+unenforced ones.
+
 ### The "words that don't fit" mechanism, identified 2026-08-13
 Reviewing generated prose that was otherwise correct, his objections were all of
 one kind: a **slightly compressed or literary construction where the plain

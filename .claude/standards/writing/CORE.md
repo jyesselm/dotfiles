@@ -1,5 +1,27 @@
 # Writing voice: core (all genres)
 
+## THE CARD — read this even if you read nothing else
+Ten rules carry most of the quality. Everything below this section is reference.
+Two consecutive blind tests (2026-08-14) failed on rules already in this file
+because they sat sixty lines down, so they are hoisted here.
+
+1. **Run the gate before showing any paragraph.** `python3 ~/.claude/standards/writing/bin/voice-lint.py --genre paper|grant FILE`. It has caught every recent miss. Skipping it is the most common failure.
+2. **Lead with purpose, at two levels.** Why the question matters, *and* why this measurement answers it. His most frequent margin note on other people's drafts is a demand for the missing why: *"its not clear why mg2+"*.
+3. **Sentence length is section-dependent.** Introduction ~17 words median. Results ~24. Measured on his fresh writing. Prefer short; reach for a long sentence deliberately, for interpretation, never by default.
+4. **Introductions give background first and climb to the gap.** Four or five sentences of ladder before naming what is missing. Never open on the gap.
+5. **Every number carries its n and its uncertainty.** Per subgroup, not just the total. If a number is missing, write the literal `XXX` and keep going. Never fuzz a countable figure ("approximately 5,000" was rejected; "hundreds of thousands" is fine).
+6. **Name every entity.** "GC-L4-A91G", not "some constructs". "the 205 discarded", not "low-quality data".
+7. **Plain conventional verbs.** determine, contain, provide, measure. **Never** *sets* (0 verb uses in 28,599 words), *carries* (0 uses), *supplies*, *closing on*, *baseline*. This is the mechanism behind "words that don't really fit".
+8. **Write sentences OF the science, not ABOUT it.** State the physical fact; do not comment on what your measurement reports, overstates, or is the readout for.
+9. **No em-dashes. No hype** (*groundbreaking*, *unprecedented*, *exciting*). **No hedging** (*we hope*, *we believe*, *it is anticipated*). Priority claims are stated flatly: "the first X".
+10. **Where his stated preference contradicts the measured corpus, the preference wins.** This has reversed three rules already. The corpus records where he has been.
+
+**Before drafting:** pull 2-3 matching exemplars from `EXEMPLARS.md` and map onto
+one, then rewrite once freely. Reuse his verbs verbatim rather than paraphrasing
+them; paraphrasing his own MIRA sentence produced *supplies* and *carry*, both rejected.
+
+---
+
 Universal rules for writing in Yesselman's voice. Genre files (papers, grants,
 reviewer-responses, short-form) `@import` this and add only their delta.
 
