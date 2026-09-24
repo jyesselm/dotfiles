@@ -1,0 +1,18 @@
+# These extend, rather than replace, the built-in keybindings.
+[mgr]
+prepend_keymap = [
+  { on = "?", run = "help", desc = "Show keyboard shortcuts" },
+  { on = "e", run = "open --with=edit", desc = "Edit selected file" },
+  { on = ["g", "n"], run = "cd ~/notes", desc = "Go to Obsidian notes" },
+  { on = ["g", "p"], run = "cd ~/Dropbox/papers", desc = "Go to papers" },
+  { on = ["g", "w"], run = "cd ~/local/code", desc = "Go to code / work" },
+  { on = ["g", "d"], run = "cd ~/Downloads", desc = "Go to downloads" },
+  { on = ["g", "y"], run = "cd ~/.config/yazi", desc = "Go to Yazi configuration" },
+  { on = [",", "r"], run = ["sort mtime --reverse=yes", "linemode mtime"], desc = "Recent first: newest modified files" },
+  { on = [",", "n"], run = ["sort natural --reverse=no", "linemode size"], desc = "Names: natural order and file sizes" },
+]
+
+[help]
+prepend_keymap = [
+  { on = "<Esc>", run = "close", desc = "Close help" },
+]

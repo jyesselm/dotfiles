@@ -12,6 +12,7 @@ STARTUP
   Open a new terminal to load the shared startup function.
 
 START HERE
+  Leader + y              Open Yazi file browser in a new window
   Leader + ?              Interactive action menu (Esc closes)
   Leader + w              Your familiar window/session tree picker
   Leader + f              Searchable popup for sessions and windows

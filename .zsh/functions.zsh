@@ -201,3 +201,19 @@ function tmux {
     TMUX_DEFAULT_STARTUP=work command tmux new-session -A -s work
   fi
 }
+
+# Yazi: q returns to the browsed directory; Q keeps the starting directory.
+function y() {
+  local yazi_cwd_file yazi_final_dir yazi_result
+  yazi_cwd_file=$(mktemp -t yazi-cwd.XXXXXX) || return
+  command yazi "$@" --cwd-file="$yazi_cwd_file"
+  yazi_result=$?
+  if IFS= read -r -d '' yazi_final_dir < "$yazi_cwd_file"; then
+    :
+  fi
+  command rm -f -- "$yazi_cwd_file"
+  if [[ $yazi_result -eq 0 && -n "$yazi_final_dir" && "$yazi_final_dir" != "$PWD" && -d "$yazi_final_dir" ]]; then
+    builtin cd -- "$yazi_final_dir" || return
+  fi
+  return "$yazi_result"
+}

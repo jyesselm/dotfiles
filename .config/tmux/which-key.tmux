@@ -74,7 +74,8 @@ set -g @wk_menu_copyandpaste \
 "Paste tmux buffer" "p" "paste-buffer -p"'
 
 set -g @wk_menu_root \
-'"+Sessions" "s" "show-wk-menu #{@wk_menu_sessions}" \
+'"Yazi file browser (leader+y)" "y" "new-window -n files -c \"#{pane_current_path}\" \"exec yazi\"" \
+"+Sessions" "s" "show-wk-menu #{@wk_menu_sessions}" \
 "+Windows" "w" "show-wk-menu #{@wk_menu_windows}" \
 "+Panes" "p" "show-wk-menu #{@wk_menu_panes}" \
 "+Resize pane" "r" "show-wk-menu #{@wk_menu_resizepane}" \

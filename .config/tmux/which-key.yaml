@@ -11,6 +11,9 @@ position:
 custom_variables: []
 macros: []
 items:
+  - name: 'Yazi file browser (leader+y)'
+    key: y
+    command: 'new-window -n files -c "#{pane_current_path}" "exec yazi"'
   - name: '+Sessions'
     key: s
     menu:

@@ -1,0 +1,19 @@
+# Yazi 26.9.1+; unspecified options retain Yazi defaults.
+[mgr]
+ratio = [1, 3, 4]
+sort_by = "natural"
+sort_dir_first = true
+show_hidden = false
+show_symlink = true
+linemode = "size"
+scrolloff = 5
+mouse_events = ["click", "scroll", "drag"]
+
+[preview]
+wrap = "yes"
+tab_size = 2
+
+[opener]
+edit = [
+  { run = '${EDITOR:-vi} %s', desc = "Edit in $EDITOR", for = "unix", block = true },
+]

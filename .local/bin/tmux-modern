@@ -1,0 +1,18 @@
+#!/bin/sh
+# A separate socket preserves sessions owned by Swan's old tmux 2.7 server.
+set -eu
+swan_tmux=/util/opt/anaconda/deployed-conda-envs/packages/tmux/envs/tmux-3.6a/bin/tmux
+if [ -x "$swan_tmux" ]; then
+    modern_tmux=$swan_tmux
+else
+    modern_tmux=$(command -v tmux) || { echo 'Install tmux 3.6+ first.' >&2; exit 1; }
+fi
+if [ "$#" -gt 0 ]; then
+    exec "$modern_tmux" -L modern "$@"
+fi
+if [ -n "${TMUX-}" ]; then
+    echo 'Detach from the current tmux first: Ctrl+Space, then d.' >&2
+    echo 'Then run tmux-modern from the cluster shell outside tmux.' >&2
+    exit 1
+fi
+TMUX_DEFAULT_STARTUP=work exec "$modern_tmux" -L modern new-session -A -s work
