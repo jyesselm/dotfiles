@@ -22,8 +22,6 @@ START HERE
   Ctrl + h/j/k/l          Pane left / down / up / right
 
 SESSIONS — no leader needed
-  Option + w              Jump to work
-  Option + r              Jump to remotes
   Option + n / p          Next / previous session
   Option + Tab            Last session
   Option + s              Session picker

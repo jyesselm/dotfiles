@@ -17,12 +17,6 @@ items:
   - name: '+Sessions'
     key: s
     menu:
-      - name: 'Work (Option+w)'
-        key: w
-        command: switch-client -t =work
-      - name: 'Remotes (Option+r)'
-        key: r
-        command: switch-client -t =remotes
       - name: 'Last session (Option+Tab)'
         key: Tab
         command: switch-client -l

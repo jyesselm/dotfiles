@@ -28,9 +28,7 @@ set -g @wk_cfg_pos_y "C"
 #
 
 set -g @wk_menu_sessions \
-'"Work (Option+w)" "w" "switch-client -t =work" \
-"Remotes (Option+r)" "r" "switch-client -t =remotes" \
-"Last session (Option+Tab)" "Tab" "switch-client -l" \
+'"Last session (Option+Tab)" "Tab" "switch-client -l" \
 "Choose session (Option+s)" "s" "choose-tree -sZ" \
 "Next session" "n" "switch-client -n" \
 "Previous session" "p" "switch-client -p" \
