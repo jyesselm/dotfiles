@@ -1,0 +1,82 @@
+TMUX SHORTCUTS — YOUR CURRENT SETUP
+
+Leader = Ctrl+Space, release, then press the next key.
+Option = LEFT Option. Uppercase letters require Shift.
+Close this sheet: q     Scroll: arrows / Page Up / Page Down
+Search this sheet: / then text, Enter; n for next match.
+
+STARTUP
+  tmux                    Open work (create it if missing)
+  tmux attach -t remotes  Open remotes explicitly
+  New terminal tabs load this default. For an already-open shell:
+  Open a new terminal to load the shared startup function.
+
+START HERE
+  Leader + ?              Interactive action menu (Esc closes)
+  Leader + w              Your familiar window/session tree picker
+  Leader + f              Searchable popup for sessions and windows
+  Option + s              Session picker
+  Option + Tab            Toggle last session
+  Ctrl + h/j/k/l          Pane left / down / up / right
+
+SESSIONS — no leader needed
+  Option + w              Jump to work
+  Option + r              Jump to remotes
+  Option + n / p          Next / previous session
+  Option + Tab            Last session
+  Option + s              Session picker
+  In the picker: arrows + Enter; Ctrl+s searches; q exits
+
+WINDOWS
+  Leader + w              Window picker (also shows other sessions)
+  Leader + n              Next window
+  Leader + Ctrl+p         Previous window (hold Ctrl for this second key)
+  Leader + 4–9            Jump to window 4–9
+  Leader + c              New window in current directory
+  Leader + ,              Rename current window
+  Leader + < / >          Move current window left / right
+  NOTE: Leader + 1–3 currently selects PANES, not windows.
+
+PANES
+  Ctrl + h/j/k/l          Left / down / up / right (Neovim-aware)
+  Ctrl + \                Cycle panes
+  Leader + 1 / 2 / 3      Select pane 1 / 2 / 3
+  Leader + q              Show pane numbers; press a number to select
+  Leader + z              Zoom / unzoom current pane
+  Leader + \              Split side by side
+  Leader + -              Split top / bottom
+  Leader + H/J/K/L        Resize left / down / up / right
+  Mouse                    Click panes; drag borders to resize
+
+COPY / PASTE
+  Leader + v              Enter copy mode
+  Then v                  Begin selection
+  Then y                  Copy selection and exit
+  Leader + p or ]         Paste tmux buffer
+  q                       Exit copy mode
+
+SESSION MANAGEMENT
+  Leader + S              Create named session
+  Leader + R              Rename current session
+  Leader + d              Detach (leave session running)
+  Leader + X              Kill session — asks for confirmation
+  Leader + x              Kill pane — asks for confirmation
+
+HELP / SETTINGS
+  Leader + ?              Action menu: s sessions, w windows, p panes
+  Then ?                  This cheat sheet (q closes)
+  Leader + B              Full live list of tmux bindings; q exits
+  Leader + r              Reload config
+  Leader + Ctrl+s         Save sessions (Resurrect)
+  Leader + Ctrl+r         Restore saved sessions (Resurrect)
+
+The sessions label turns red and says PREFIX while waiting for a key.
+These are installed shortcuts, not proposed future changes.
+
+PANE FOCUS
+  Bright cyan border + ACTIVE label = selected pane.
+  The active pane has a lighter background; inactive panes are darker.
+
+STATUS BAR
+  Sessions left; host, active pane command and folder at right.
+  Windows below; ? menu reminder and time at right.

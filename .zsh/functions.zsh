@@ -186,3 +186,18 @@ watchpy() {
   fi
   echo "$1" | entr -c python "$1"
 }
+
+# Plain `tmux` opens work. Commands with arguments retain standard behavior.
+function tmux {
+  if (( $# )); then
+    command tmux "$@"
+  elif [[ -n ${TMUX-} ]]; then
+    # Switch the current client instead of nesting tmux.
+    command tmux has-session -t '=work' 2>/dev/null ||
+      command tmux new-session -d -s work || return
+    command tmux switch-client -t '=work'
+  else
+    # The marker is inherited only when this command starts a new server.
+    TMUX_DEFAULT_STARTUP=work command tmux new-session -A -s work
+  fi
+}

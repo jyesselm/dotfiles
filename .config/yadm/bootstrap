@@ -39,4 +39,9 @@ if [[ -f "$HOME/.config/yadm/files/cursor-settings.json" ]]; then
     echo "Linked Cursor settings"
 fi
 
+# Shared tmux navigation, menus, and plugin dependencies.
+if [[ -f "$HOME/.config/tmux/setup.sh" ]]; then
+    sh "$HOME/.config/tmux/setup.sh"
+fi
+
 echo "Bootstrap complete!"

@@ -1,0 +1,141 @@
+command_alias_start_index: 200
+keybindings:
+  prefix_table: '?'
+title:
+  style: align=centre,bold
+  prefix: 'tmux actions · Esc closes'
+  prefix_style: 'fg=#89dceb,align=centre,bold'
+position:
+  x: C
+  y: C
+custom_variables: []
+macros: []
+items:
+  - name: '+Sessions'
+    key: s
+    menu:
+      - name: 'Work (Option+w)'
+        key: w
+        command: switch-client -t =work
+      - name: 'Remotes (Option+r)'
+        key: r
+        command: switch-client -t =remotes
+      - name: 'Last session (Option+Tab)'
+        key: Tab
+        command: switch-client -l
+      - name: 'Choose session (Option+s)'
+        key: s
+        command: choose-tree -sZ
+      - name: Next session
+        key: n
+        command: switch-client -n
+      - name: Previous session
+        key: p
+        command: switch-client -p
+      - separator: true
+      - name: New named session
+        key: N
+        command: 'command-prompt -p "New session:" { new-session -s "%%" }'
+      - name: Rename session
+        key: R
+        command: 'command-prompt -I "#S" -p "Rename session:" { rename-session "%%" }'
+      - name: Detach (leave running)
+        key: d
+        command: detach-client
+  - name: '+Windows'
+    key: w
+    menu:
+      - name: 'Choose window (leader+w)'
+        key: w
+        command: choose-tree -wZ
+      - name: Next window
+        key: n
+        command: next-window
+      - name: Previous window
+        key: p
+        command: previous-window
+      - name: Last window
+        key: Tab
+        command: last-window
+      - name: Jump to window number
+        key: g
+        command: 'command-prompt -p "Window number:" { select-window -t ":%%" }'
+      - separator: true
+      - name: New window
+        key: c
+        command: 'new-window -c "#{pane_current_path}"'
+      - name: Rename window
+        key: R
+        command: 'command-prompt -I "#W" -p "Rename window:" { rename-window "%%" }'
+  - name: '+Panes'
+    key: p
+    menu:
+      - name: 'Left (Ctrl+h)'
+        key: h
+        command: select-pane -L
+      - name: 'Down (Ctrl+j)'
+        key: j
+        command: select-pane -D
+      - name: 'Up (Ctrl+k)'
+        key: k
+        command: select-pane -U
+      - name: 'Right (Ctrl+l)'
+        key: l
+        command: select-pane -R
+      - name: Show pane numbers
+        key: q
+        command: display-panes
+      - name: 'Zoom / unzoom (leader+z)'
+        key: z
+        command: resize-pane -Z
+      - separator: true
+      - name: Split side by side
+        key: v
+        command: 'split-window -h -c "#{pane_current_path}"'
+      - name: Split top / bottom
+        key: s
+        command: 'split-window -v -c "#{pane_current_path}"'
+      - name: Rename pane label
+        key: R
+        command: 'command-prompt -I "#T" -p "Pane label:" { select-pane -T "%%" }'
+  - name: '+Resize pane'
+    key: r
+    menu:
+      - name: Left (repeat h)
+        key: h
+        command: resize-pane -L 5
+        transient: true
+      - name: Down (repeat j)
+        key: j
+        command: resize-pane -D 5
+        transient: true
+      - name: Up (repeat k)
+        key: k
+        command: resize-pane -U 5
+        transient: true
+      - name: Right (repeat l)
+        key: l
+        command: resize-pane -R 5
+        transient: true
+      - name: Even rows
+        key: e
+        command: select-layout even-vertical
+  - name: '+Copy and paste'
+    key: c
+    menu:
+      - name: 'Copy mode (then v selects, y copies)'
+        key: c
+        command: copy-mode
+      - name: Choose saved clipboard buffer
+        key: b
+        command: choose-buffer -Z
+      - name: Paste tmux buffer
+        key: p
+        command: paste-buffer -p
+  - separator: true
+  - name: Full shortcut cheat sheet
+    key: '?'
+    command: 'display-popup -E -w 88% -h 85% -T " tmux shortcuts · q closes " "less -R ~/.config/tmux/shortcuts.txt"'
+  - name: All live key bindings
+    key: B
+    command: list-keys
