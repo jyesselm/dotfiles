@@ -50,7 +50,9 @@ Only explicit values present on the source Mac are saved as values. Unset keys a
 
 Yadm already tracks iTerm2 (`.config/iterm2/com.googlecode.iterm2.plist`), Karabiner (`.config/karabiner/karabiner.json`), and VS Code/Cursor settings. The current Karabiner gaming profile is preserved with this change. A tracked file alone does not prove that an application is currently loading it; verify the app uses that configuration on a new Mac. Terminal fonts, privacy/accessibility permissions, and app sign-ins may need setup on the destination.
 
-Installed customization apps needing a separate review/export include **BetterTouchTool, Alfred, Bartender, Contexts, Rectangle, Magnet, and Ghostty**. Use each app's supported export/sync mechanism and review exports before adding them to yadm. They are not covered by this system snapshot. BetterTouchTool actions and Alfred workflows, for example, can live outside the usual preference plist.
+**Alfred and Bartender** are captured by the separate encrypted `mac-state save` command. It preserves their settings, workflows/shortcuts and available activation/license data plus an app inventory; see `~/.config/yadm/macos/app-state.md`. The system snapshot alone still does not include those app settings. Other installed customization apps are outside your requested scope.
+
+The encrypted backup is local by default. Save its separate recovery key in your password manager before relying on it from another computer. Alfred activation files do not replace the original purchase key.
 
 Intentionally excluded: app licenses, credentials, browser profiles, recent-file lists, Dock pinned-app/folder bookmarks, Finder favorites and folder-specific layouts, wallpaper files, text replacements, display layouts, login items, and account/cloud state. Keep full-machine backups (such as Time Machine) as well. Some app preference domains contain license keys; do not publish entire `~/Library/Preferences` or `Application Support` folders into the public dotfiles repo.
 

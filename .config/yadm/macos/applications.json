@@ -1,0 +1,1391 @@
+{
+  "created_utc": "2026-09-25T01:15:33.343895+00:00",
+  "macos": "26.6.2",
+  "architecture": "arm64",
+  "homebrew": {
+    "formula": [
+      "aom 3.14.1",
+      "assimp 5.4.3",
+      "atuin 18.10.0",
+      "bat 0.26.1",
+      "berkeley-db@5 5.3.28_1",
+      "boost 1.92.0",
+      "brotli 1.2.0",
+      "c-ares 1.34.5",
+      "ca-certificates 2026-08-13 2026-05-14 2025-12-02",
+      "cairo 1.18.4",
+      "cffi 2.0.0_1",
+      "chafa 1.18.0",
+      "clang-format 21.1.5",
+      "cmake 4.4.2",
+      "colima 0.9.1",
+      "coreutils 9.9",
+      "cpanminus 1.7048",
+      "cryptography 49.0.0",
+      "dav1d 1.5.2 1.5.3",
+      "dbus 1.16.2",
+      "docx2txt 1.4",
+      "double-conversion 3.3.1",
+      "duti 1.5.4_1",
+      "eigen 5.0.0",
+      "entr 5.8",
+      "fd 10.3.0",
+      "ffmpeg 8.0.1 8.1.2",
+      "fontconfig 2.18.3 2.17.1 2.18.1",
+      "freetype 2.14.3",
+      "fribidi 1.0.16",
+      "fx 35.0.0",
+      "fzf 0.56.0",
+      "gcc 14.2.0_1",
+      "gdbm 1.24",
+      "gdk-pixbuf 2.44.4",
+      "gettext 1.0",
+      "gh 2.95.0",
+      "ghostscript 10.07.1",
+      "giflib 6.1.3",
+      "git-filter-repo 2.47.0",
+      "git-lfs 3.7.1",
+      "glew 2.2.0_1",
+      "glib 2.84.4 2.88.3 2.86.2 2.88.2",
+      "glow 2.1.1",
+      "gmp 6.3.0",
+      "gnu-sed 4.9",
+      "gnupg 2.4.8",
+      "gnutls 3.8.11",
+      "gpgme 2.0.1",
+      "gpgmepp 2.0.0",
+      "graphite2 1.3.15",
+      "harfbuzz 12.2.0_1 14.2.1 14.4.0",
+      "hdf5 1.14.6",
+      "highway 1.3.0",
+      "hunspell 1.7.2",
+      "icu4c@76 76.1_1",
+      "icu4c@77 77.1",
+      "icu4c@78 78.3",
+      "imath 3.2.2",
+      "img2pdf 0.6.3_1",
+      "innoextract 1.9_14",
+      "isl 0.27",
+      "jasper 4.2.5",
+      "jbig2dec 0.20",
+      "jbig2enc 0.32",
+      "jpeg-turbo 3.2.0",
+      "jpeg-xl 0.11.1_3",
+      "jq 1.8.2",
+      "json-c 0.19",
+      "lame 3.100",
+      "lazygit 0.58.0",
+      "leptonica 1.87.0",
+      "libaec 1.1.3",
+      "libarchive 3.8.4 3.8.8",
+      "libassuan 3.0.2",
+      "libavif 1.4.2",
+      "libb2 0.98.1",
+      "libdatrie 0.2.14",
+      "libde265 1.1.1",
+      "libdeflate 1.25",
+      "libevent 2.1.12_1",
+      "libgcrypt 1.11.2",
+      "libgit2 1.9.7 1.9.1",
+      "libgpg-error 1.53 1.56",
+      "libheif 1.23.1",
+      "libidn 1.44",
+      "libidn2 2.3.8",
+      "libimagequant 4.4.1",
+      "libksba 1.6.7",
+      "libmediainfo 25.10",
+      "libmms 0.6.4",
+      "libmng 2.0.3_1",
+      "libmpc 1.3.1",
+      "libnghttp2 1.68.0",
+      "libomp 22.1.2",
+      "libpng 1.6.58",
+      "libraqm 0.10.5",
+      "librsvg 2.61.3_1",
+      "libssh2 1.11.1 1.11.1_5",
+      "libtasn1 4.20.0",
+      "libthai 0.1.30",
+      "libtiff 4.7.2",
+      "libunistring 1.4.2",
+      "libusb 1.0.29",
+      "libuv 1.51.0",
+      "libvmaf 3.2.0",
+      "libvpx 1.16.0",
+      "libx11 1.8.13",
+      "libxau 1.0.12",
+      "libxcb 1.17.0",
+      "libxdmcp 1.1.5",
+      "libxext 1.3.7",
+      "libxrender 0.9.12",
+      "libyaml 0.2.5",
+      "libzen 0.4.41_1",
+      "lima 2.0.2",
+      "little-cms2 2.19",
+      "llhttp 9.4.3",
+      "llvm 21.1.8",
+      "llvm@22 22.1.8",
+      "lpeg 1.1.0",
+      "lsd 1.1.5",
+      "luajit 2.1.1744318430 2.1.1765228720",
+      "luv 1.50.0-1 1.51.0-1",
+      "lz4 1.10.0",
+      "lzlib 1.14",
+      "lzo 2.10",
+      "maven 3.9.16",
+      "md4c 0.5.2",
+      "media-info 25.10",
+      "mlx 0.32.1",
+      "mlx-c 0.6.0_4",
+      "mpdecimal 4.0.1",
+      "mpfr 4.2.2",
+      "ncurses 6.5",
+      "neovim 0.11.5_1",
+      "netcdf 4.9.3",
+      "nettle 3.10.2",
+      "ninja 1.13.2",
+      "nnn 5.1",
+      "node 23.11.0",
+      "npth 1.8",
+      "nspr 4.38.2",
+      "nss 3.118.1 3.110",
+      "numpy 2.2.4",
+      "ocrmypdf 17.8.0",
+      "ollama 0.34.2",
+      "oniguruma 6.9.10",
+      "openblas 0.3.29",
+      "openexr 3.4.4",
+      "openjdk 26.0.2.1 23.0.2",
+      "openjpeg 2.5.4",
+      "openjph 0.25.3",
+      "openssl@3 3.6.4 3.6.3",
+      "opus 1.6.1",
+      "p11-kit 0.25.10",
+      "pandoc 3.8.3",
+      "pango 1.58.0",
+      "pcre 8.45",
+      "pcre2 10.47_1",
+      "perl 5.40.0",
+      "pillow 12.3.0",
+      "pinentry 1.3.2",
+      "pixman 0.46.4",
+      "pkgconf 3.0.7 2.5.1",
+      "plzip 1.11",
+      "pngquant 3.0.3",
+      "poppler 25.12.0",
+      "pv 1.10.2",
+      "pybind11 3.0.4",
+      "pycparser 3.0",
+      "pydantic 2.13.4",
+      "pymol 3.1.0_1",
+      "pyqt 6.9.0",
+      "python@3.13 3.13.3",
+      "python@3.14 3.14.7 3.14.6",
+      "qpdf 12.3.2",
+      "qt 6.9.0",
+      "rclone 1.72.1",
+      "readline 8.3.3 8.3.6",
+      "resvg 0.48.1",
+      "ripgrep 15.1.0",
+      "ripgrep-all 0.10.10",
+      "ruby 4.0.0",
+      "rust 1.98.1",
+      "sdl2-compat 2.32.70",
+      "sdl3 3.4.12",
+      "sevenzip 26.03",
+      "sqlite 3.53.4 3.53.3 3.51.1",
+      "sshpass 1.06",
+      "starship 1.21.1",
+      "stockfish 19",
+      "svt-av1 3.1.2 4.1.0",
+      "task 3.4.2",
+      "tesseract 5.5.2 5.5.1_1",
+      "tmux 3.6a",
+      "tmuxinator 3.3.7",
+      "tmuxinator-completion 3.3.7",
+      "todoist-cli 0.22.0",
+      "tree-sitter@0.25 0.25.10",
+      "unbound 1.24.2",
+      "unibilium 2.1.2",
+      "unpaper 7.0.0_3",
+      "utf8proc 2.11.2",
+      "uv 0.9.5",
+      "webp 1.6.0",
+      "wget 1.24.5",
+      "x264 r3222",
+      "x265 4.2",
+      "xorgproto 2025.1",
+      "xsv 0.13.0",
+      "xz 5.8.4 5.8.3",
+      "yadm 3.5.0",
+      "yazi 26.9.1",
+      "z3 4.15.4",
+      "zoxide 0.9.6",
+      "zsh 5.9",
+      "zsh-autocomplete 25.03.19",
+      "zsh-autosuggestions 0.7.1",
+      "zsh-completions 0.35.0",
+      "zsh-syntax-highlighting 0.8.0",
+      "zstd 1.5.7_1"
+    ],
+    "cask": [
+      "1password-cli 2.32.0",
+      "bartender 5.2.3",
+      "fantastical 3.9.2",
+      "font-3270-nerd-font 3.2.1",
+      "font-agave-nerd-font 3.2.1",
+      "font-anonymice-nerd-font 3.2.1",
+      "font-arimo-nerd-font 3.2.1",
+      "font-aurulent-sans-mono-nerd-font 3.2.1",
+      "font-bigblue-terminal-nerd-font 3.2.1",
+      "font-bitstream-vera-sans-mono-nerd-font 3.2.1",
+      "font-blex-mono-nerd-font 3.2.1",
+      "font-caskaydia-cove-nerd-font 3.2.1",
+      "font-code-new-roman-nerd-font 3.2.1",
+      "font-cousine-nerd-font 3.2.1",
+      "font-daddy-time-mono-nerd-font 3.2.1",
+      "font-dejavu-sans-mono-nerd-font 3.2.1",
+      "font-droid-sans-mono-nerd-font 3.2.1",
+      "font-fantasque-sans-mono-nerd-font 3.2.1",
+      "font-fira-code-nerd-font 3.2.1",
+      "font-fira-mono-nerd-font 3.2.1",
+      "font-go-mono-nerd-font 3.2.1",
+      "font-gohufont-nerd-font 3.2.1",
+      "font-hack-nerd-font 3.2.1",
+      "font-hasklug-nerd-font 3.2.1",
+      "font-heavy-data-nerd-font 3.2.1",
+      "font-hurmit-nerd-font 3.2.1",
+      "font-im-writing-nerd-font 3.2.1",
+      "font-inconsolata-go-nerd-font 3.2.1",
+      "font-inconsolata-lgc-nerd-font 3.2.1",
+      "font-inconsolata-nerd-font 3.2.1",
+      "font-iosevka-nerd-font 3.2.1",
+      "font-jetbrains-mono-nerd-font 3.2.1",
+      "font-lekton-nerd-font 3.2.1",
+      "font-liberation-nerd-font 3.2.1",
+      "font-m+-nerd-font 3.2.1",
+      "font-meslo-lg-nerd-font 3.2.1",
+      "font-monofur-nerd-font 3.2.1",
+      "font-monoid-nerd-font 3.2.1",
+      "font-mononoki-nerd-font 3.2.1",
+      "font-overpass-nerd-font 3.2.1",
+      "font-ubuntu-mono-nerd-font 3.2.1",
+      "ghostty 1.2.3",
+      "homerow 1.4.1",
+      "karabiner-elements 15.2.0",
+      "mambaforge 24.3.0-0",
+      "rectangle 0.93",
+      "slack 4.41.97",
+      "vienna 3.10.2",
+      "zed 0.225.12",
+      "zotero 7.0.8"
+    ]
+  },
+  "applications": [
+    {
+      "name": ".Karabiner-VirtualHIDDevice-Manager",
+      "bundle_id": "org.pqrs.Karabiner-VirtualHIDDevice-Manager",
+      "version": "8.3.0",
+      "build": "8.3.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "1Password",
+      "bundle_id": "com.1password.1password",
+      "version": "8.12.34",
+      "build": "8.12.34",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Acrobat Distiller",
+      "bundle_id": "com.adobe.distiller",
+      "version": "22.001.20169",
+      "build": "22.001.20169",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Activity Monitor",
+      "bundle_id": "com.apple.ActivityMonitor",
+      "version": "10.14",
+      "build": "1040",
+      "scope": "system"
+    },
+    {
+      "name": "Adobe Acrobat",
+      "bundle_id": "com.adobe.Acrobat.Pro",
+      "version": "22.001.20169",
+      "build": "22.001.20169",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Adobe Creative Cloud Diagnostics",
+      "bundle_id": "com.adobe.cc.Adobe-Creative-Cloud-Diagnostics",
+      "version": "1.4.0.15",
+      "build": "1.4.0.15",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Adobe Illustrator",
+      "bundle_id": "com.adobe.illustrator",
+      "version": "29.0.1",
+      "build": "29.0.1",
+      "scope": "user-installed"
+    },
+    {
+      "name": "AirPort Utility",
+      "bundle_id": "com.apple.airport.airportutility",
+      "version": "6.3.9",
+      "build": "639.29",
+      "scope": "system"
+    },
+    {
+      "name": "Alfred 5",
+      "bundle_id": "com.runningwithcrayons.Alfred",
+      "version": "5.5",
+      "build": "2257",
+      "scope": "user-installed"
+    },
+    {
+      "name": "App Store",
+      "bundle_id": "com.apple.AppStore",
+      "version": "3.0",
+      "build": "1011.6.3.1.1",
+      "scope": "system"
+    },
+    {
+      "name": "Apps",
+      "bundle_id": "com.apple.apps.launcher",
+      "version": "1.0",
+      "build": "79.2.1",
+      "scope": "system"
+    },
+    {
+      "name": "Audio MIDI Setup",
+      "bundle_id": "com.apple.audio.AudioMIDISetup",
+      "version": "3.8",
+      "build": "3.8",
+      "scope": "system"
+    },
+    {
+      "name": "Automator",
+      "bundle_id": "com.apple.Automator",
+      "version": "2.10",
+      "build": "534",
+      "scope": "system"
+    },
+    {
+      "name": "Bartender 5",
+      "bundle_id": "com.surteesstudios.Bartender",
+      "version": "5.2.3",
+      "build": "50203",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Battle.net",
+      "bundle_id": "net.battle.app",
+      "version": "2.52.4.17577",
+      "build": "2.52.4 (17577)",
+      "scope": "user-installed"
+    },
+    {
+      "name": "BetterTouchTool",
+      "bundle_id": "com.hegenberg.BetterTouchTool",
+      "version": "6.017",
+      "build": "2026010809",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Blizzard Error",
+      "bundle_id": "com.blizzard.blizzarderror",
+      "version": "2.3.24.0",
+      "build": "0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Bluetooth File Exchange",
+      "bundle_id": "com.apple.BluetoothFileExchange",
+      "version": "9.0",
+      "build": "1",
+      "scope": "system"
+    },
+    {
+      "name": "Books",
+      "bundle_id": "com.apple.iBooksX",
+      "version": "8.5",
+      "build": "6570",
+      "scope": "system"
+    },
+    {
+      "name": "Boot Camp Assistant",
+      "bundle_id": "com.apple.bootcampassistant",
+      "version": "6.1.0",
+      "build": "6345",
+      "scope": "system"
+    },
+    {
+      "name": "Caffeine",
+      "bundle_id": "net.domzilla.caffeine",
+      "version": "1.6.4",
+      "build": "30",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Calculator",
+      "bundle_id": "com.apple.calculator",
+      "version": "12.0",
+      "build": "225",
+      "scope": "system"
+    },
+    {
+      "name": "Calendar",
+      "bundle_id": "com.apple.iCal",
+      "version": "16.0",
+      "build": "3036.4.14",
+      "scope": "system"
+    },
+    {
+      "name": "CCXProcess",
+      "bundle_id": "com.adobe.CCXProcess",
+      "version": "7.12.0-4",
+      "build": "7.12.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "ChatGPT",
+      "bundle_id": "com.openai.codex",
+      "version": "26.915.31945",
+      "build": "9922",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Chess",
+      "bundle_id": "com.apple.Chess",
+      "version": "3.18",
+      "build": "3.18",
+      "scope": "system"
+    },
+    {
+      "name": "Claude",
+      "bundle_id": "com.anthropic.claudefordesktop",
+      "version": "2.9939.2",
+      "build": "2.9939.2",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Claude",
+      "bundle_id": "com.google.Chrome.app.fmpnliohjhemenmnlpbfagaolkdacoja",
+      "version": "",
+      "build": "7977.65",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Claude Code URL Handler",
+      "bundle_id": "com.anthropic.claude-code-url-handler",
+      "version": "",
+      "build": "1.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Clock",
+      "bundle_id": "com.apple.clock",
+      "version": "1.1",
+      "build": "62",
+      "scope": "system"
+    },
+    {
+      "name": "ColorSync Utility",
+      "bundle_id": "com.apple.ColorSyncUtility",
+      "version": "12.2.0",
+      "build": "431",
+      "scope": "system"
+    },
+    {
+      "name": "Console",
+      "bundle_id": "com.apple.Console",
+      "version": "1.1",
+      "build": "9.100.15",
+      "scope": "system"
+    },
+    {
+      "name": "Contact Sheets",
+      "bundle_id": "com.apple.ScriptEditor.id.Contact-Sheets",
+      "version": "",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Contacts",
+      "bundle_id": "com.apple.AddressBook",
+      "version": "14.0",
+      "build": "2732.700.1",
+      "scope": "system"
+    },
+    {
+      "name": "Contexts",
+      "bundle_id": "com.contextsformac.Contexts",
+      "version": "3.9.0",
+      "build": "390",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Core Sync",
+      "bundle_id": "com.adobe.accmac",
+      "version": "7.8.10.1",
+      "build": "7.8.10.1",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Cortex XDR",
+      "bundle_id": "com.paloaltonetworks.cortex.app",
+      "version": "9.2.0",
+      "build": "251",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Creative Cloud",
+      "bundle_id": "com.adobe.acc.AdobeCreativeCloud",
+      "version": "6.10.0.253",
+      "build": "6.10",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Creative Cloud Desktop App",
+      "bundle_id": "com.adobe.Creative-Cloud-Desktop-App",
+      "version": "6.10.0.253",
+      "build": "6.10.0.253",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Creative Cloud Helper",
+      "bundle_id": "com.adobe.ccd.helper",
+      "version": "6.10.0.253",
+      "build": "6.10.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Creative Cloud Installer",
+      "bundle_id": "com.adobe.Install",
+      "version": "6.10.0.253",
+      "build": "6.10.0.253",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Creative Cloud Uninstaller",
+      "bundle_id": "com.adobe.ACCC.Uninstaller",
+      "version": "6.10.0.253",
+      "build": "6.10.0.253",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Cursor",
+      "bundle_id": "com.todesktop.230313mzl4w4u92",
+      "version": "3.18.25",
+      "build": "3.18.25",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Dictionary",
+      "bundle_id": "com.apple.Dictionary",
+      "version": "2.3.0",
+      "build": "294",
+      "scope": "system"
+    },
+    {
+      "name": "Dictionary Converter",
+      "bundle_id": "com.ThomsonResearchSoft.Dictionary_Converter",
+      "version": "20.6.0.19133",
+      "build": "20.6.0.19133",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Digital Color Meter",
+      "bundle_id": "com.apple.DigitalColorMeter",
+      "version": "6.11",
+      "build": "6.11",
+      "scope": "system"
+    },
+    {
+      "name": "Disk Utility",
+      "bundle_id": "com.apple.DiskUtility",
+      "version": "22.7",
+      "build": "2511.1",
+      "scope": "system"
+    },
+    {
+      "name": "Docker",
+      "bundle_id": "com.docker.docker",
+      "version": "4.48.0",
+      "build": "207573",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Dropbox",
+      "bundle_id": "com.getdropbox.dropbox",
+      "version": "272.4.3731",
+      "build": "272.4.3731",
+      "scope": "user-installed"
+    },
+    {
+      "name": "EndNote 20",
+      "bundle_id": "com.ThomsonResearchSoft.EndNote",
+      "version": "20.6.0.19133",
+      "build": "2023.20.6.0.19133",
+      "scope": "user-installed"
+    },
+    {
+      "name": "ENService",
+      "bundle_id": "com.ThomsonResearchSoft.EndNote.ENService",
+      "version": "20.6.0.19133",
+      "build": "20.6.0.19133",
+      "scope": "user-installed"
+    },
+    {
+      "name": "FaceTime",
+      "bundle_id": "com.apple.FaceTime",
+      "version": "36",
+      "build": "36",
+      "scope": "system"
+    },
+    {
+      "name": "Fantastical",
+      "bundle_id": "com.flexibits.fantastical2.mac",
+      "version": "4.1.17",
+      "build": "2293",
+      "scope": "user-installed"
+    },
+    {
+      "name": "FindMy",
+      "bundle_id": "com.apple.findmy",
+      "version": "4.0",
+      "build": "442.26.4.19.1",
+      "scope": "system"
+    },
+    {
+      "name": "Firefox",
+      "bundle_id": "org.mozilla.firefox",
+      "version": "151.0.3",
+      "build": "15126.6.1",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Font Book",
+      "bundle_id": "com.apple.FontBook",
+      "version": "11.0",
+      "build": "526.4.0.1",
+      "scope": "system"
+    },
+    {
+      "name": "Freeform",
+      "bundle_id": "com.apple.freeform",
+      "version": "4.5",
+      "build": "630.120.3",
+      "scope": "system"
+    },
+    {
+      "name": "FreeYourMusic",
+      "bundle_id": "com.freeyourmusic.app",
+      "version": "9.20.0",
+      "build": "9.20.0.14216",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Games",
+      "bundle_id": "com.apple.games",
+      "version": "1.0",
+      "build": "1",
+      "scope": "system"
+    },
+    {
+      "name": "GarageBand",
+      "bundle_id": "com.apple.garageband10",
+      "version": "10.4.14",
+      "build": "6648",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Ghostty",
+      "bundle_id": "com.mitchellh.ghostty",
+      "version": "1.2.3",
+      "build": "12214",
+      "scope": "user-installed"
+    },
+    {
+      "name": "GlobalProtect",
+      "bundle_id": "com.paloaltonetworks.GlobalProtect.client",
+      "version": "6.3.3-711",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Google Chat 1",
+      "bundle_id": "com.google.Chrome.app.pommaclcbfghclhalboakcipcmmndhcj",
+      "version": "",
+      "build": "7922.76",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Google Chrome",
+      "bundle_id": "com.google.Chrome",
+      "version": "154.0.8037.57",
+      "build": "8037.57",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Google Docs",
+      "bundle_id": "com.google.drivefs.shortcuts.docs",
+      "version": "131.0",
+      "build": "131.0.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Google Drive",
+      "bundle_id": "com.google.drivefs",
+      "version": "131.0",
+      "build": "131.0.2",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Google Sheets",
+      "bundle_id": "com.google.drivefs.shortcuts.sheets",
+      "version": "131.0",
+      "build": "131.0.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Google Slides",
+      "bundle_id": "com.google.drivefs.shortcuts.slides",
+      "version": "131.0",
+      "build": "131.0.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Grapher",
+      "bundle_id": "com.apple.grapher",
+      "version": "2.8",
+      "build": "1",
+      "scope": "system"
+    },
+    {
+      "name": "Home",
+      "bundle_id": "com.apple.Home",
+      "version": "10.0",
+      "build": "1166.7.2",
+      "scope": "system"
+    },
+    {
+      "name": "Image Capture",
+      "bundle_id": "com.apple.Image_Capture",
+      "version": "8.0",
+      "build": "1106",
+      "scope": "system"
+    },
+    {
+      "name": "Image Playground",
+      "bundle_id": "com.apple.GenerativePlaygroundApp",
+      "version": "1.0",
+      "build": "148.5.2",
+      "scope": "system"
+    },
+    {
+      "name": "ImageJ",
+      "bundle_id": "ImageJ",
+      "version": "1.53",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "iMovie",
+      "bundle_id": "com.apple.iMovieApp",
+      "version": "10.4.4",
+      "build": "445223",
+      "scope": "user-installed"
+    },
+    {
+      "name": "iPhone Mirroring",
+      "bundle_id": "com.apple.ScreenContinuity",
+      "version": "1.6",
+      "build": "98.5",
+      "scope": "system"
+    },
+    {
+      "name": "iTerm",
+      "bundle_id": "com.googlecode.iterm2",
+      "version": "3.6.11",
+      "build": "3.6.11",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Jagex Launcher",
+      "bundle_id": "com.jagex.launcher",
+      "version": "2.10.0",
+      "build": "2.10.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Journal",
+      "bundle_id": "com.apple.journal",
+      "version": "2.0",
+      "build": "49.120.2",
+      "scope": "system"
+    },
+    {
+      "name": "Karabiner-Elements",
+      "bundle_id": "org.pqrs.Karabiner-Elements.Settings",
+      "version": "16.2.0",
+      "build": "16.2.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Karabiner-EventViewer",
+      "bundle_id": "org.pqrs.Karabiner-EventViewer",
+      "version": "16.2.0",
+      "build": "16.2.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Keynote",
+      "bundle_id": "com.apple.iWork.Keynote",
+      "version": "14.4",
+      "build": "7043.0.93",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Magnet",
+      "bundle_id": "com.crowdcafe.windowmagnet",
+      "version": "3.0.7",
+      "build": "208",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Magnifier",
+      "bundle_id": "com.apple.Magnifier",
+      "version": "1.0",
+      "build": "1",
+      "scope": "system"
+    },
+    {
+      "name": "Mail",
+      "bundle_id": "com.apple.mail",
+      "version": "16.0",
+      "build": "3864.700.51.1.1",
+      "scope": "system"
+    },
+    {
+      "name": "Make Calendar",
+      "bundle_id": "com.apple.ScriptEditor.id.Make-Calendar",
+      "version": "",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Maps",
+      "bundle_id": "com.apple.Maps",
+      "version": "3.0",
+      "build": "2921.26.4.23.12",
+      "scope": "system"
+    },
+    {
+      "name": "Messages",
+      "bundle_id": "com.apple.MobileSMS",
+      "version": "26.0",
+      "build": "1450.700.71",
+      "scope": "system"
+    },
+    {
+      "name": "Microsoft 365 Copilot Shim",
+      "bundle_id": "com.microsoft.m365copilot.shim",
+      "version": "0.2602.0501",
+      "build": "0.2602.0501.01",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Microsoft Excel",
+      "bundle_id": "com.microsoft.Excel",
+      "version": "16.112",
+      "build": "16.112.26081010",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Microsoft OneNote",
+      "bundle_id": "com.microsoft.onenote.mac",
+      "version": "16.113.2",
+      "build": "16.113.26092012",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Microsoft Outlook",
+      "bundle_id": "com.microsoft.Outlook",
+      "version": "16.113.2",
+      "build": "16.113.26092012",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Microsoft PowerPoint",
+      "bundle_id": "com.microsoft.Powerpoint",
+      "version": "16.112.4",
+      "build": "16.112.26090911",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Microsoft Teams",
+      "bundle_id": "com.microsoft.teams2",
+      "version": "26225.1708.5124.9749",
+      "build": "26225.1708.5124.9749",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Microsoft Word",
+      "bundle_id": "com.microsoft.Word",
+      "version": "16.112.4",
+      "build": "16.112.26090911",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Migration Assistant",
+      "bundle_id": "com.apple.MigrateAssistant",
+      "version": "26.6",
+      "build": "26.6",
+      "scope": "system"
+    },
+    {
+      "name": "Mission Control",
+      "bundle_id": "com.apple.exposelauncher",
+      "version": "1.2",
+      "build": "79.2.1",
+      "scope": "system"
+    },
+    {
+      "name": "Music",
+      "bundle_id": "com.apple.Music",
+      "version": "1.6.6",
+      "build": "1.6.6",
+      "scope": "system"
+    },
+    {
+      "name": "News",
+      "bundle_id": "com.apple.news",
+      "version": "11.5",
+      "build": "5890",
+      "scope": "system"
+    },
+    {
+      "name": "NordVPN",
+      "bundle_id": "com.nordvpn.macos",
+      "version": "10.4.0",
+      "build": "362",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Notes",
+      "bundle_id": "com.apple.Notes",
+      "version": "4.13",
+      "build": "3146.141.6",
+      "scope": "system"
+    },
+    {
+      "name": "Nudge",
+      "bundle_id": "com.github.macadmins.Nudge",
+      "version": "1.1.11.81465",
+      "build": "1.1.11.81465",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Numbers",
+      "bundle_id": "com.apple.iWork.Numbers",
+      "version": "14.4",
+      "build": "7043.0.93",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Obsidian",
+      "bundle_id": "md.obsidian",
+      "version": "1.12.7",
+      "build": "0.14.8",
+      "scope": "user-installed"
+    },
+    {
+      "name": "OneDrive",
+      "bundle_id": "com.microsoft.OneDrive",
+      "version": "26.168.0830",
+      "build": "26168.0830.0006",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Open in Obsidian",
+      "bundle_id": "com.custom.openinobsidian",
+      "version": "1.0",
+      "build": "1.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Pages",
+      "bundle_id": "com.apple.iWork.Pages",
+      "version": "14.4",
+      "build": "7043.0.93",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Pashua",
+      "bundle_id": "net.bluem.pashua",
+      "version": "",
+      "build": "0.11",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Passwords",
+      "bundle_id": "com.apple.Passwords",
+      "version": "2.6.2",
+      "build": "21624.5.1.11.3",
+      "scope": "system"
+    },
+    {
+      "name": "Phone",
+      "bundle_id": "com.apple.mobilephone",
+      "version": "1.0",
+      "build": "1",
+      "scope": "system"
+    },
+    {
+      "name": "Photo Booth",
+      "bundle_id": "com.apple.PhotoBooth",
+      "version": "13.1",
+      "build": "1177",
+      "scope": "system"
+    },
+    {
+      "name": "Photos",
+      "bundle_id": "com.apple.Photos",
+      "version": "11.0",
+      "build": "860.0.170",
+      "scope": "system"
+    },
+    {
+      "name": "Plaud",
+      "bundle_id": "ai.plaud.desktop.plaud",
+      "version": "1.3.11",
+      "build": "1.3.11",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Podcasts",
+      "bundle_id": "com.apple.podcasts",
+      "version": "1.1.0",
+      "build": "4025.700.3",
+      "scope": "system"
+    },
+    {
+      "name": "Preview",
+      "bundle_id": "com.apple.Preview",
+      "version": "11.0",
+      "build": "1113.5.3",
+      "scope": "system"
+    },
+    {
+      "name": "Print Center",
+      "bundle_id": "com.apple.printcenter",
+      "version": "1.0",
+      "build": "32.7",
+      "scope": "system"
+    },
+    {
+      "name": "PyMOL",
+      "bundle_id": "local.jyesselman.pymol-launcher",
+      "version": "",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "QuickTime Player",
+      "bundle_id": "com.apple.QuickTimePlayerX",
+      "version": "10.5",
+      "build": "1252.3",
+      "scope": "system"
+    },
+    {
+      "name": "Rectangle",
+      "bundle_id": "com.knollsoft.Rectangle",
+      "version": "0.93",
+      "build": "99",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Reminders",
+      "bundle_id": "com.apple.reminders",
+      "version": "7.0",
+      "build": "3976",
+      "scope": "system"
+    },
+    {
+      "name": "RescueTime",
+      "bundle_id": "com.rescuetime.RescueTime",
+      "version": "3.2.11.5",
+      "build": "3.2.11.5",
+      "scope": "user-installed"
+    },
+    {
+      "name": "RuneLite",
+      "bundle_id": "net.runelite.launcher",
+      "version": "2.7.6",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Safari",
+      "bundle_id": "com.apple.Safari",
+      "version": "26.6.2",
+      "build": "21624.5.1.11.3",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Screen Sharing",
+      "bundle_id": "com.apple.ScreenSharing",
+      "version": "6.1",
+      "build": "764.2",
+      "scope": "system"
+    },
+    {
+      "name": "Screenshot",
+      "bundle_id": "com.apple.screenshot.launcher",
+      "version": "1.0",
+      "build": "79.2.1",
+      "scope": "system"
+    },
+    {
+      "name": "Script Editor",
+      "bundle_id": "com.apple.ScriptEditor2",
+      "version": "2.11",
+      "build": "235",
+      "scope": "system"
+    },
+    {
+      "name": "Self Service",
+      "bundle_id": "com.jamf.selfserviceplus",
+      "version": "2.29.0",
+      "build": "2.29.9260825.1",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Shortcuts",
+      "bundle_id": "com.apple.shortcuts",
+      "version": "7.0",
+      "build": "4711",
+      "scope": "system"
+    },
+    {
+      "name": "Siri",
+      "bundle_id": "com.apple.siri.launcher",
+      "version": "1.0",
+      "build": "79.2.1",
+      "scope": "system"
+    },
+    {
+      "name": "Slack",
+      "bundle_id": "com.tinyspeck.slackmacgap",
+      "version": "4.50.128",
+      "build": "450000128",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Spotify",
+      "bundle_id": "com.spotify.client",
+      "version": "1.2.98.301",
+      "build": "1.2.98.301",
+      "scope": "user-installed"
+    },
+    {
+      "name": "StarCraft",
+      "bundle_id": "com.blizzard.Starcraft",
+      "version": "1.23.10.13515",
+      "build": "1.23.10.13515",
+      "scope": "user-installed"
+    },
+    {
+      "name": "StarCraft Launcher",
+      "bundle_id": "net.battle.bootstrapper",
+      "version": "1.18.5.3107",
+      "build": "1.18.5.3107",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Stickies",
+      "bundle_id": "com.apple.Stickies",
+      "version": "10.3",
+      "build": "10.3",
+      "scope": "system"
+    },
+    {
+      "name": "Stockfish",
+      "bundle_id": "com.daylenyang.Stockfish",
+      "version": "2.3.9",
+      "build": "44",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Stocks",
+      "bundle_id": "com.apple.stocks",
+      "version": "8.5",
+      "build": "1969",
+      "scope": "system"
+    },
+    {
+      "name": "Superhuman Go",
+      "bundle_id": "com.grammarly.ProjectLlama",
+      "version": "1.195.0",
+      "build": "1.195.0.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "System Information",
+      "bundle_id": "com.apple.SystemProfiler",
+      "version": "11.0",
+      "build": "915",
+      "scope": "system"
+    },
+    {
+      "name": "System Settings",
+      "bundle_id": "com.apple.systempreferences",
+      "version": "15.0",
+      "build": "15.0",
+      "scope": "system"
+    },
+    {
+      "name": "Terminal",
+      "bundle_id": "com.apple.Terminal",
+      "version": "2.15",
+      "build": "470.2",
+      "scope": "system"
+    },
+    {
+      "name": "TextEdit",
+      "bundle_id": "com.apple.TextEdit",
+      "version": "1.20",
+      "build": "415",
+      "scope": "system"
+    },
+    {
+      "name": "Time Machine",
+      "bundle_id": "com.apple.backup.launcher",
+      "version": "1.3",
+      "build": "79.2.1",
+      "scope": "system"
+    },
+    {
+      "name": "Tips",
+      "bundle_id": "com.apple.helpviewer",
+      "version": "26.6",
+      "build": "527.5.1",
+      "scope": "system"
+    },
+    {
+      "name": "Todoist",
+      "bundle_id": "com.todoist.mac.Todoist",
+      "version": "9.29.2",
+      "build": "12378",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Transmission",
+      "bundle_id": "org.m0k.transmission",
+      "version": "4.0.6",
+      "build": "14718.0.699",
+      "scope": "user-installed"
+    },
+    {
+      "name": "TV",
+      "bundle_id": "com.apple.TV",
+      "version": "1.6.6",
+      "build": "1.6.6",
+      "scope": "system"
+    },
+    {
+      "name": "Typora",
+      "bundle_id": "abnerworks.Typora",
+      "version": "1.13.7",
+      "build": "7711",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Vienna",
+      "bundle_id": "uk.co.opencommunity.vienna2",
+      "version": "3.10.2 :be40651f:",
+      "build": "8843",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Visual Studio Code",
+      "bundle_id": "com.microsoft.VSCode",
+      "version": "1.137.0",
+      "build": "1.137.0",
+      "scope": "user-installed"
+    },
+    {
+      "name": "VoiceMemos",
+      "bundle_id": "com.apple.VoiceMemos",
+      "version": "3.2",
+      "build": "1380",
+      "scope": "system"
+    },
+    {
+      "name": "VoiceOver Utility",
+      "bundle_id": "com.apple.VoiceOverUtility",
+      "version": "10",
+      "build": "993",
+      "scope": "system"
+    },
+    {
+      "name": "Weather",
+      "bundle_id": "com.apple.weather",
+      "version": "6.0",
+      "build": "1318",
+      "scope": "system"
+    },
+    {
+      "name": "Web Gallery",
+      "bundle_id": "com.apple.ScriptEditor.id.Web-Gallery",
+      "version": "",
+      "build": "",
+      "scope": "user-installed"
+    },
+    {
+      "name": "WhatsApp",
+      "bundle_id": "net.whatsapp.WhatsApp",
+      "version": "25.7.77",
+      "build": "710027552",
+      "scope": "user-installed"
+    },
+    {
+      "name": "YouTube Music",
+      "bundle_id": "com.google.Chrome.app.cinhimbnkkaeohfgghhklpknlkffjgod",
+      "version": "",
+      "build": "7871.115",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Zed",
+      "bundle_id": "dev.zed.Zed",
+      "version": "0.225.13",
+      "build": "20260303.234740",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Zoom",
+      "bundle_id": "com.google.Chrome.app.Default-hmbjbjdpkobdjplfobhljndfdfdipjhg",
+      "version": "5.0.1 (4301.0407)",
+      "build": "7339.81",
+      "scope": "user-installed"
+    },
+    {
+      "name": "zoom.us",
+      "bundle_id": "us.zoom.xos",
+      "version": "7.0.6 (84834)",
+      "build": "7.0.6.84834",
+      "scope": "user-installed"
+    },
+    {
+      "name": "Zotero",
+      "bundle_id": "org.zotero.zotero",
+      "version": "9.0.6",
+      "build": "9.0.6",
+      "scope": "user-installed"
+    }
+  ]
+}
