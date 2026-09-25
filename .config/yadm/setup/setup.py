@@ -256,6 +256,8 @@ class Setup:
                 failures.append('Missing archive preview tool: 7z or 7zz')
         self.say('  Manual: select JetBrainsMono Nerd Font in your terminal; fonts belong on the client for SSH.')
         self.say('  Accounts: gh auth login / atuin login as needed; bootstrap does not copy credentials.')
+        if self.profile == 'mac':
+            self.say('  Mac preferences: mac-settings plan previews saved settings; mac-settings restore explicitly applies them with a backup.')
         self.say('  Existing tmux servers keep their old version/config. On Swan use tmux-modern after detaching.')
         for failure in failures:
             self.say('  NEEDS ATTENTION: ' + failure)

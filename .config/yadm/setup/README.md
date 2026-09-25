@@ -81,3 +81,7 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 ## Validation
 
 Run `python3 ~/.config/yadm/setup/test_setup.py` for isolated filesystem/mocked-process tests. Package managers and desktop applications are never run by the test suite. Mac/Linux plans and the current Mac doctor can be checked without installing anything. A full fresh Linux dependency solve still depends on conda-forge availability and that machine's runtime.
+
+## Your Mac preferences
+
+The separate `~/.local/bin/mac-settings save` command captures selected current Mac preferences into yadm. On a new Mac, preview with `mac-settings plan` and explicitly apply with `mac-settings restore`; every restore first saves a rollback snapshot. Regular bootstrap never applies these system preferences automatically. See `~/.config/yadm/macos/README.md` for coverage, app exports, and limitations.
