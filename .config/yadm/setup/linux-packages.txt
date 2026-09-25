@@ -1,0 +1,19 @@
+# Dedicated terminal tool environment, separate from research environments.
+python>=3.12,<3.13
+git
+tmux>=3.6
+nvim>=0.11,<0.12
+yazi>=26.9.1
+fzf>=0.53
+fd-find
+ripgrep
+zoxide
+starship
+atuin
+bat
+jq
+uv
+gh
+lazygit
+nodejs>=22,<25
+zsh

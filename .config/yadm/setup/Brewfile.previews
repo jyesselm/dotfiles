@@ -1,0 +1,4 @@
+brew "sevenzip"
+brew "resvg"
+brew "poppler"
+brew "ffmpeg"

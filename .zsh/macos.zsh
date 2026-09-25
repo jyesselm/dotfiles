@@ -33,3 +33,6 @@ mamba activate py3 2>/dev/null
 if [[ -n "$CONDA_PREFIX" ]]; then
   export PATH="$CONDA_PREFIX/bin:${PATH//$CONDA_PREFIX\/bin:/}"
 fi
+
+# Discover bootstrap-managed tools before shell plugins load.
+[[ -f "$HOME/.zsh/bootstrap.zsh" ]] && source "$HOME/.zsh/bootstrap.zsh"

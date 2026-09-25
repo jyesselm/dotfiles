@@ -1,47 +1,8 @@
-#!/bin/bash
-# yadm bootstrap script - sets up OS-specific symlinks
-
-set -e
-
-echo "Running yadm bootstrap..."
-
-# Determine OS-specific paths
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    VSCODE_DIR="$HOME/Library/Application Support/Code/User"
-    CURSOR_DIR="$HOME/Library/Application Support/Cursor/User"
-else
-    # Linux
-    VSCODE_DIR="$HOME/.config/Code/User"
-    CURSOR_DIR="$HOME/.config/Cursor/User"
+#!/bin/sh
+# yadm does not forward arguments to bootstrap; use dotfiles-setup for options.
+set -eu
+if ! command -v python3 >/dev/null 2>&1; then
+  echo 'Bootstrap needs Python 3.9+. On a new Mac: brew install python yadm' >&2
+  exit 1
 fi
-
-# VSCode settings
-if [[ -f "$HOME/.config/yadm/files/vscode-settings.json" ]]; then
-    mkdir -p "$VSCODE_DIR"
-    # Backup existing if not a symlink
-    if [[ -f "$VSCODE_DIR/settings.json" && ! -L "$VSCODE_DIR/settings.json" ]]; then
-        mv "$VSCODE_DIR/settings.json" "$VSCODE_DIR/settings.json.bak"
-        echo "Backed up existing VSCode settings to settings.json.bak"
-    fi
-    ln -sf "$HOME/.config/yadm/files/vscode-settings.json" "$VSCODE_DIR/settings.json"
-    echo "Linked VSCode settings"
-fi
-
-# Cursor settings
-if [[ -f "$HOME/.config/yadm/files/cursor-settings.json" ]]; then
-    mkdir -p "$CURSOR_DIR"
-    # Backup existing if not a symlink
-    if [[ -f "$CURSOR_DIR/settings.json" && ! -L "$CURSOR_DIR/settings.json" ]]; then
-        mv "$CURSOR_DIR/settings.json" "$CURSOR_DIR/settings.json.bak"
-        echo "Backed up existing Cursor settings to settings.json.bak"
-    fi
-    ln -sf "$HOME/.config/yadm/files/cursor-settings.json" "$CURSOR_DIR/settings.json"
-    echo "Linked Cursor settings"
-fi
-
-# Shared tmux navigation, menus, and plugin dependencies.
-if [[ -f "$HOME/.config/tmux/setup.sh" ]]; then
-    sh "$HOME/.config/tmux/setup.sh"
-fi
-
-echo "Bootstrap complete!"
+exec python3 "$HOME/.config/yadm/setup/setup.py" "$@"

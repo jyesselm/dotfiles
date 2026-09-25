@@ -3,3 +3,6 @@
 if command -v module &>/dev/null; then
   module load tmux/3.6a 2>/dev/null
 fi
+
+# Discover bootstrap-managed tools before shell plugins load.
+[[ -f "$HOME/.zsh/bootstrap.zsh" ]] && source "$HOME/.zsh/bootstrap.zsh"

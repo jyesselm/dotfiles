@@ -217,3 +217,8 @@ function y() {
   fi
   return "$yazi_result"
 }
+
+# Optional search-cli installation managed by dotfiles-setup --search.
+if [[ -f "$HOME/.local/share/dotfiles/repos/search-cli/shell/search-cli.sh" ]]; then
+  source "$HOME/.local/share/dotfiles/repos/search-cli/shell/search-cli.sh"
+fi

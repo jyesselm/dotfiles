@@ -1,0 +1,4 @@
+# relative-install-path repository pinned-commit required-file
+.oh-my-zsh https://github.com/ohmyzsh/ohmyzsh.git b54a71977574cfcf659cc2f15a5e6422f17a8da7 oh-my-zsh.sh
+.oh-my-zsh/custom/plugins/zsh-autosuggestions https://github.com/zsh-users/zsh-autosuggestions.git 85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5 zsh-autosuggestions.zsh
+.oh-my-zsh/custom/plugins/zsh-syntax-highlighting https://github.com/zsh-users/zsh-syntax-highlighting.git 5eb677bb0fa9a3e60f0eff031dc13926e093df92 zsh-syntax-highlighting.zsh
