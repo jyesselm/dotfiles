@@ -1,9 +1,7 @@
 # ~/.zshrc
 # Unified zsh configuration - works on macOS and HPC cluster
 
-# ============================================================
 # Platform Detection
-# ============================================================
 # MACHINE_TYPE: macos, cluster, linux, or specific hostname
 # Add new machines by extending the case statement below
 export _ZO_DOCTOR=0
@@ -34,19 +32,13 @@ case "$(uname)" in
     ;;
 esac
 
-# ============================================================
-# Machine-Specific Configuration (EARLY - before Oh My Zsh)
-# ============================================================
-# Sources ~/.zsh/<machine_type>.zsh if it exists (e.g., swan.zsh, macos.zsh)
-# Also sources cluster.zsh for any cluster machine
+# Configuration map: tools = setup; science = lab tools; commands = shortcuts.
+source "$HOME/.zsh/tools.zsh"
 if $IS_CLUSTER; then
-  [[ -f "$HOME/.zsh/cluster.zsh" ]] && source "$HOME/.zsh/cluster.zsh"
+  source "$HOME/.zsh/swan.zsh"
 fi
-[[ -f "$HOME/.zsh/${MACHINE_TYPE}.zsh" ]] && source "$HOME/.zsh/${MACHINE_TYPE}.zsh"
 
-# ============================================================
 # History Settings
-# ============================================================
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=50000
 SAVEHIST=50000
@@ -54,9 +46,7 @@ setopt SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_FIND_NO_DUPS
 setopt HIST_SAVE_NO_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 setopt INC_APPEND_HISTORY
 
-# ============================================================
 # Oh My Zsh Configuration
-# ============================================================
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME=""  # Using Starship instead
 DISABLE_COMPFIX=true
@@ -66,38 +56,23 @@ export ZSH_COMPDUMP="$HOME/.cache/zsh/zcompdump-${HOST}-${ZSH_VERSION}"
 
 # Platform-specific plugins
 if $IS_MACOS; then
-  plugins=(git macos python colored-man-pages extract fzf copypath copyfile dirhistory zsh-autosuggestions zsh-syntax-highlighting)
+  plugins=(macos python colored-man-pages extract fzf copypath copyfile dirhistory zsh-autosuggestions zsh-syntax-highlighting)
 else
-  plugins=(git colored-man-pages extract fzf zsh-autosuggestions zsh-syntax-highlighting)
+  plugins=(colored-man-pages extract fzf zsh-autosuggestions zsh-syntax-highlighting)
 fi
 
-[[ -d "$ZSH" ]] && source "$ZSH/oh-my-zsh.sh"
+[[ -f "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
 
-# ============================================================
-# Modular Configuration (shared across platforms)
-# ============================================================
-if [[ -d "$HOME/.zsh" ]]; then
-  for f in env.zsh paths.zsh aliases.zsh functions.zsh; do
-    [[ -f "$HOME/.zsh/$f" ]] && source "$HOME/.zsh/$f"
-  done
-fi
-
-# ============================================================
-# macOS-Specific Configuration (after Oh My Zsh)
-# ============================================================
+# Everyday aliases and functions.
+source "$HOME/.zsh/commands.zsh"
 if $IS_MACOS; then
-  [[ -f "$HOME/.zsh/macos.zsh" ]] && source "$HOME/.zsh/macos.zsh"
-  # Fix terminal detection for Claude Code (prevents Ghostty prompt in iTerm2/tmux)
   export TERM_PROGRAM=iTerm.app
 fi
 
-# ============================================================
 # Modern Tools (shared)
-# ============================================================
 export PATH="$HOME/.local/bin:$PATH"
 
 command -v starship &>/dev/null && eval "$(starship init zsh)"
-
 
 # fzf configuration
 export FZF_DEFAULT_OPTS='--height 40% --reverse'
@@ -135,20 +110,12 @@ zoxide-widget() {
 zle -N zoxide-widget
 bindkey '^G' zoxide-widget
 
-# Ctrl+F: file search - fuzzy find files with preview
-file-widget() {
-  local selected
-  selected=$(fd --type f --hidden --exclude .git 2>/dev/null | fzf --height 40% --reverse --preview 'bat --style=numbers --color=always {} 2>/dev/null || cat {}' --preview-window=bottom --bind 'ctrl-d:preview-page-down,ctrl-u:preview-page-up') || return 0
-  [[ -n "$selected" ]] && LBUFFER+="${selected}"
-  zle reset-prompt
-}
-zle -N file-widget
-bindkey '^F' file-widget
+# File and content search: use s, s dir, s content, or s docgrep.
 
-# ============================================================
 # Completion & Keybindings
-# ============================================================
-autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
+if (( ! $+functions[compdef] )); then
+  autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
+fi
 
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
@@ -163,11 +130,20 @@ autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey '^X^E' edit-command-line
 
-# ============================================================
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
+
+if $IS_MACOS; then
+  if (( ! $+functions[_zsh_autosuggest_start] )); then
+    [[ -f /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  fi
+  if (( ! $+functions[_zsh_highlight] )); then
+    [[ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+  fi
+fi
+
 # Local Overrides (not tracked in git)
-# ============================================================
 # Create ~/.zsh/local.zsh for machine-specific settings
 [[ -f "$HOME/.zsh/local.zsh" ]] && source "$HOME/.zsh/local.zsh"
 
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh --cmd cd)"
-
+# Discover science tools after machine overrides, so explicit paths take priority.
+source "$HOME/.zsh/science.zsh"
