@@ -66,7 +66,7 @@ Flags combine, for example `dotfiles-setup --plan --desktop --previews --games -
 
 Existing shell/plugin/private-repository checkouts are retained, including local changes. Bootstrap does not pull or reset those checkouts. To update a game, use `git pull --ff-only` then its `install.sh` in `~/.local/share/dotfiles/repos/<name>` (Neovim uses `--lazy`). Private game source stays outside the public yadm repository.
 
-Search CLI is installed into a uv-managed tool environment from its default branch. It does not copy a developer's uncommitted checkout, database, vaults or papers. The portable shell helper is loaded only when that optional checkout exists. Configure your search roots/vaults on the new machine.
+Search CLI is installed into a uv-managed tool environment from its default branch. It does not copy a developer's uncommitted checkout, database, vaults or papers. The portable shell helper is loaded only when that optional checkout exists. The tracked `~/.config/search-cli/config.yaml` configures `~/notes` as the Obsidian vault on each computer; sync the notes themselves separately. If a computer uses a different layout, edit `live.vaults` in that file. Search indexes are built locally and are not synced.
 
 ## Finish once per computer
 
