@@ -1,3 +1,13 @@
 live:
   vaults:
     - ~/notes
+  roots:
+    - ~/Dropbox
+    - ~/Library/CloudStorage/Dropbox
+    - ~/cloud/Dropbox
+    - ~/cloud/gdrive
+    - ~/local
+    - ~/Downloads
+    - ~/Documents
+    - ~/Desktop
+    - ~/notes
