@@ -85,3 +85,7 @@ Run `python3 ~/.config/yadm/setup/test_setup.py` for isolated filesystem/mocked-
 ## Your Mac preferences
 
 The separate `~/.local/bin/mac-settings save` command captures selected current Mac preferences into yadm. On a new Mac, preview with `mac-settings plan` and explicitly apply with `mac-settings restore`; every restore first saves a rollback snapshot. Regular bootstrap never applies these system preferences automatically. See `~/.config/yadm/macos/README.md` for coverage, app exports, and limitations.
+
+### Hourly search indexing on the MacBook
+
+The hostname-specific `Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist##hostname.Joseph’s-MacBook-Pro` runs `s warm` every 3,600 seconds at low priority while logged in. It is specific to this computer’s executable path; other computers need their own matching job. After restoring this Mac’s dotfiles, load it with `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist`. It does not run immediately on load. Logs are in `~/Library/Logs/search-cli/`; create that directory before loading the job on a fresh installation.
