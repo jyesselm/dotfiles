@@ -8,12 +8,15 @@ if [[ -d "$HOME/.local/share/dotfiles/bin" ]]; then
 fi
 for dotfiles_brew_prefix in /opt/homebrew /usr/local /home/linuxbrew/.linuxbrew; do
   if [[ -x "$dotfiles_brew_prefix/bin/brew" ]]; then
-    path+=("$dotfiles_brew_prefix/bin" "$dotfiles_brew_prefix/sbin")
+    if $IS_MACOS; then
+      eval "$("$dotfiles_brew_prefix/bin/brew" shellenv)"
+    else
+      path+=("$dotfiles_brew_prefix/bin" "$dotfiles_brew_prefix/sbin")
+    fi
     break
   fi
 done
 unset dotfiles_brew_prefix
-typeset -U path
 export PATH
 
 # Load secrets (API tokens, etc.) - not tracked by yadm
@@ -89,27 +92,13 @@ ex=1;38;5;217:\
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # Disable "zsh: no matches found" error for globs
   setopt NO_NOMATCH
-  
-  # Homebrew
-  [[ -f "/opt/homebrew/bin/brew" ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
-export PATH="$PATH:$HOME/go/bin"
-# Core Paths (appended to not interfere with conda/mamba)
+path=("$HOME/.local/bin" $path "$HOME/go/bin")
 # Mamba initializes after these paths and takes precedence.
 
-# Local user binaries (appended, not prepended)
-[[ -d "$HOME/.local/bin" ]] && export PATH="$PATH:$HOME/.local/bin"
-
-# Homebrew (appended so conda takes precedence for Python tools)
-if [[ -d "/opt/homebrew/bin" ]]; then
-  export PATH="$PATH:/opt/homebrew/bin:/opt/homebrew/sbin"
-fi
-
-# Homebrew (macOS Intel or Linux)
-if [[ -d "/usr/local/bin" ]] && [[ "$PATH" != *"/usr/local/bin"* ]]; then
-  export PATH="$PATH:/usr/local/bin:/usr/local/sbin"
-fi
+# Additional system paths; path is unique, so reloads do not duplicate entries.
+[[ -d /usr/local/bin ]] && path+=(/usr/local/bin /usr/local/sbin)
 
 # Language Runtimes
 # Java (OpenJDK via Homebrew) - appended

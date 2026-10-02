@@ -18,7 +18,6 @@ if command -v module &>/dev/null; then
 fi
 
 # Cluster-specific PATH
-export PATH="$HOME/.local/bin:$PATH"
 export PATH="/util/src/OLD-CRANE/git/git-2.7.4:$PATH"
 export PATH="$PATH:/work/yesselmanlab/jyesselm/Rosetta/main/source/build/src/release/linux/4.18/64/x86/gcc/11.2/default/"
 export PATH="$PATH:/work/yesselmanlab/jyesselm/installs/TrimGalore-0.6.6"

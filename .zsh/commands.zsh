@@ -264,3 +264,6 @@ alias ezf=ezc
 alias ezp=ezt
 alias eze=ezt
 alias egc='nvim ~/.gitconfig'
+
+# Remote desktop
+alias home-gpu-rdp='sdl-freerdp /v:100.103.114.116 /u:yesselman +force-console-callbacks /size:1920x1080 +smart-sizing'
