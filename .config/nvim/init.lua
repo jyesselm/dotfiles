@@ -28,6 +28,13 @@ vim.opt.mouse = "a"              -- Enable mouse in all modes
 vim.opt.autoread = true            -- Auto-reload files changed outside Neovim
 vim.opt.winbar = "%f"              -- Show filename at top of each split
 
+-- Option-r runs Python without moving focus away from the editor.
+if not vim.g.vscode then
+    vim.keymap.set({ "n", "i" }, "<M-r>", function()
+        require("python_runner").run()
+    end, { desc = "Run Python in output split" })
+end
+
 -- Clipboard: use OSC 52 over SSH (works through terminal), otherwise system clipboard
 -- Neovim 0.10+ has built-in OSC52, older versions use ojroques/nvim-osc52 plugin
 if os.getenv("SSH_TTY") then
@@ -162,4 +169,3 @@ else
     vim.keymap.set('n', '<leader>tc', ':tabclose<CR>', { noremap = true, silent = true, desc = 'Close current tab' })
     vim.keymap.set('n', '<leader>to', ':tabonly<CR>', { noremap = true, silent = true, desc = 'Close all tabs but the current one' })
 end
-
