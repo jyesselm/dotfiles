@@ -1,10 +1,11 @@
 # Hotkey layers
 
 One modifier per layer. A new binding must fit a row here or it does not get added.
+Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 
 | Modifier | Owner | Scope | Details |
 |---|---|---|---|
-| Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch apps, place windows, clipboard | below |
+| Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch apps, place windows, clipboard, search | below |
 | ⌃⌥ | Magnet | Window placement, system-wide | below |
 | ⌘ | macOS + each app | Native in-app commands | untouched |
 | ⌘Tab (Contexts) / ⌘` | Contexts, macOS | Switch apps / windows | below |
@@ -13,41 +14,83 @@ One modifier per layer. A new binding must fit a row here or it does not get add
 | Left ⌥ | tmux, zsh | Sessions; word motion; fzf cd | `tmux/shortcuts.txt`, `~/.zsh/keybindings.zsh` |
 | Space | Neovim | Leader | `nvim/KEYBINDINGS.md` |
 
-Tap Caps Lock alone = Escape. F3 = screenshot to clipboard.
+## Hyper: apps  (`karabiner/karabiner.json`)
 
-## Hyper + letter → app  (`karabiner/karabiner.json`)
-
-| Key | App | | Key | App |
-|---|---|---|---|---|
-| A | Claude | | M | Messages |
-| B | Chrome (browser) | | O | Obsidian |
-| C | Cursor | | S | Slack |
-| E | Finder (explorer) | | T | iTerm (terminal) |
-| G | ChatGPT | | W | Word |
-| H | Google Chat | | V | Alfred clipboard history |
-
-Hyper window placement (forwarded to Magnet): ←→↑↓ halves · U I J K quarters · F center ·
-1 2 3 thirds left/center/right · 4 5 6 two-thirds left/center/right · numpad 1–6 sixths left→right ·
-N / P next/previous display ·
-Return maximize · Delete restore.
+| Key | Action |
+|---|---|
+| Hyper+A | Claude |
+| Hyper+B | Chrome (browser) |
+| Hyper+C | Cursor |
+| Hyper+E | Finder (explorer) |
+| Hyper+G | ChatGPT |
+| Hyper+H | Google Chat |
+| Hyper+M | Messages |
+| Hyper+O | Obsidian |
+| Hyper+S | Slack |
+| Hyper+T | iTerm (terminal) |
+| Hyper+W | Word |
+| Hyper+V | Alfred clipboard history |
+| Hyper+/ | Search hotkeys (this sheet, tmux, Neovim) |
+| Caps Lock tap | Escape |
+| F3 | Screenshot to clipboard |
 
 Free: D L Q R X Y Z, 7 8 9 0.
 
-## ⌃⌥ + key → window placement (Magnet, native keys)
+## Hyper: window placement  (forwarded to Magnet)
 
-Arrows = halves · U I J K = quarters · D F G = thirds · E R T = two-thirds ·
-Return = maximize · C = center · Delete = restore · ⌘⌃⌥ ←/→ = move to display.
+| Key | Action |
+|---|---|
+| Hyper+← → ↑ ↓ | Left / right / top / bottom half |
+| Hyper+U I J K | Top-left / top-right / bottom-left / bottom-right quarter |
+| Hyper+F | Center (keeps size) |
+| Hyper+1 2 3 | Left / center / right third |
+| Hyper+4 5 6 | Left / center / right two-thirds |
+| Hyper+numpad 1–6 | Sixths, left to right (full keyboard only) |
+| Hyper+N / P | Move to next / previous display |
+| Hyper+Return | Maximize |
+| Hyper+Delete | Restore |
+
+## Magnet native keys  (⌃⌥)
+
+| Key | Action |
+|---|---|
+| ⌃⌥+arrows | Halves |
+| ⌃⌥+U I J K | Quarters |
+| ⌃⌥+D F G | Thirds |
+| ⌃⌥+E R T | Two-thirds |
+| ⌃⌥+numpad 1–6 | Sixths |
+| ⌃⌥+Return | Maximize |
+| ⌃⌥+C | Center |
+| ⌃⌥+Delete | Restore |
+| ⌘⌃⌥+← → | Previous / next display |
 
 ## Switching without the mouse
 
-- ⌘Tab = Contexts' app switcher (sidebar list). ⌘` next window of this app, ⇧⌘` previous, ⌃↓ all windows of this app.
-- ⇧⌘/ in any app searches menus; type the command name and press Return.
+| Key | Action |
+|---|---|
+| ⌘Tab | Contexts app switcher (sidebar list) |
+| ⌘` | Next window of this app |
+| ⇧⌘` | Previous window of this app |
+| ⌃↓ | All windows of this app |
+| ⇧⌘/ | Search any app's menus; type the command, Return runs it |
+| ⌘Space | Alfred |
 
-## Chrome: Vimium (`yadm/files/vimium/`)
+## Chrome: Vimium  (`yadm/files/vimium/`)
 
-`f` click a link · `F` open in new tab · `H` / `L` prev/next tab · `J` / `K` page down/up ·
-`x` close tab · `X` reopen · `o` / `O` open URL or bookmark here/new tab · `T` search tabs ·
-`/` find · `gi` focus first input · `⌃o` / `⌃i` back/forward · `?` show all.
+| Key | Action |
+|---|---|
+| f | Click a link (hints) |
+| F | Open link in new tab |
+| H / L | Previous / next tab |
+| J / K | Page down / up |
+| x / X | Close / reopen tab |
+| o / O | Open URL or bookmark here / in new tab |
+| T | Search open tabs |
+| / | Find in page |
+| gi | Focus first input |
+| ⌃o / ⌃i | Back / forward |
+| ? | Show all Vimium keys |
+
 Settings sync through Chrome Sync; the dotfiles copy is a backup, restore via Vimium Options → Backup and Restore.
 
 ## Retired

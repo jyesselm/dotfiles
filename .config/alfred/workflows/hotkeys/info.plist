@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key><string>com.yesselman.hotkeys</string>
+	<key>name</key><string>Hotkey Search</string>
+	<key>description</key><string>Fuzzy-search every documented hotkey (HOTKEYS.md, tmux, Neovim)</string>
+	<key>createdby</key><string>Joe Yesselman</string>
+	<key>category</key><string>Productivity</string>
+	<key>readme</key><string>Hyper+/ or keyword "hk". Source: ~/.config/alfred/workflows/hotkeys (dotfiles). Enter copies the key.</string>
+	<key>disabled</key><false/>
+	<key>version</key><string>1.0</string>
+	<key>webaddress</key><string></string>
+	<key>connections</key>
+	<dict>
+		<key>HK-TRIGGER</key>
+		<array><dict><key>destinationuid</key><string>HK-FILTER</string><key>modifiers</key><integer>0</integer><key>modifiersubtext</key><string></string><key>vitoclose</key><false/></dict></array>
+		<key>HK-FILTER</key>
+		<array><dict><key>destinationuid</key><string>HK-COPY</string><key>modifiers</key><integer>0</integer><key>modifiersubtext</key><string></string><key>vitoclose</key><false/></dict></array>
+	</dict>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>uid</key><string>HK-TRIGGER</string>
+			<key>type</key><string>alfred.workflow.trigger.hotkey</string>
+			<key>version</key><integer>2</integer>
+			<key>config</key>
+			<dict>
+				<key>action</key><integer>0</integer>
+				<key>argument</key><integer>0</integer>
+				<key>focusedappvariable</key><false/>
+				<key>focusedappvariablename</key><string></string>
+				<key>hotkey</key><integer>44</integer>
+				<key>hotmod</key><integer>1966080</integer>
+				<key>hotstring</key><string>/</string>
+				<key>leftcursor</key><false/>
+				<key>modsmode</key><integer>0</integer>
+				<key>relatedAppsMode</key><integer>0</integer>
+			</dict>
+		</dict>
+		<dict>
+			<key>uid</key><string>HK-FILTER</string>
+			<key>type</key><string>alfred.workflow.input.scriptfilter</string>
+			<key>version</key><integer>3</integer>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key><true/>
+				<key>alfredfiltersresultsmatchmode</key><integer>2</integer>
+				<key>argumenttreatemptyqueryasnil</key><false/>
+				<key>argumenttrimmode</key><integer>0</integer>
+				<key>argumenttype</key><integer>1</integer>
+				<key>escaping</key><integer>102</integer>
+				<key>keyword</key><string>hk</string>
+				<key>queuedelaycustom</key><integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key><true/>
+				<key>queuedelaymode</key><integer>0</integer>
+				<key>queuemode</key><integer>1</integer>
+				<key>runningsubtext</key><string>Loading hotkeys…</string>
+				<key>script</key><string>/usr/bin/python3 "$HOME/.config/alfred/workflows/hotkeys/search.py"</string>
+				<key>scriptargtype</key><integer>1</integer>
+				<key>scriptfile</key><string></string>
+				<key>subtext</key><string>Type any key, app, or action</string>
+				<key>title</key><string>Search hotkeys</string>
+				<key>type</key><integer>0</integer>
+				<key>withspace</key><true/>
+			</dict>
+		</dict>
+		<dict>
+			<key>uid</key><string>HK-COPY</string>
+			<key>type</key><string>alfred.workflow.output.clipboard</string>
+			<key>version</key><integer>3</integer>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key><false/>
+				<key>clipboardtext</key><string>{query}</string>
+				<key>ignoredynamicplaceholders</key><false/>
+				<key>transient</key><false/>
+			</dict>
+		</dict>
+	</array>
+	<key>uidata</key>
+	<dict>
+		<key>HK-TRIGGER</key><dict><key>xpos</key><integer>50</integer><key>ypos</key><integer>50</integer></dict>
+		<key>HK-FILTER</key><dict><key>xpos</key><integer>250</integer><key>ypos</key><integer>50</integer></dict>
+		<key>HK-COPY</key><dict><key>xpos</key><integer>450</integer><key>ypos</key><integer>50</integer></dict>
+	</dict>
+</dict>
+</plist>
