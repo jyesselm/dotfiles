@@ -115,3 +115,6 @@ source "$HOME/.zsh/science.zsh"
 
 # Apply hotkeys after all plugins and machine overrides.
 source "$HOME/.zsh/keybindings.zsh"
+
+# search-cli: allow s dir to change this shell directory.
+[[ -f "$HOME/local/code/python/developing/search-cli/shell/search-cli.sh" ]] && source "$HOME/local/code/python/developing/search-cli/shell/search-cli.sh"
