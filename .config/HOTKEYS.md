@@ -26,9 +26,11 @@ Tap Caps Lock alone = Escape. F3 = screenshot to clipboard.
 | G | ChatGPT | | W | Word |
 | H | Google Chat | | V | Alfred clipboard history |
 
-Hyper + ←→↑↓ = halves · U I J K = quarters · Return = maximize · Delete = restore (all forwarded to Magnet).
+Hyper window placement (forwarded to Magnet): ←→↑↓ halves · U I J K quarters · F center ·
+1 2 3 thirds left/center/right · 4 5 6 two-thirds left/center/right · N / P next/previous display ·
+Return maximize · Delete restore.
 
-Free: D F L N P Q R X Y Z, digits.
+Free: D L Q R X Y Z, 7 8 9 0.
 
 ## ⌃⌥ + key → window placement (Magnet, native keys)
 
