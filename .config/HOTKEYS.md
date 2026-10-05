@@ -6,7 +6,7 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Modifier | Owner | Scope | Details |
 |---|---|---|---|
 | Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch apps, place windows, clipboard, search | below |
-| ⌃⌥ | Magnet | Window placement, system-wide | below |
+| ⌃⌥ | Magnet | Backend for Hyper placement only; never used directly | — |
 | ⌘ | macOS + each app | Native in-app commands | untouched |
 | ⌘Tab (Contexts) / ⌘` | Contexts, macOS | Switch apps / windows | below |
 | ⌃Space | tmux | Leader | `tmux/shortcuts.txt` |
@@ -50,19 +50,7 @@ Free: D L Q R X Y Z, 7 8 9 0.
 | Hyper+Return | Maximize |
 | Hyper+Delete | Restore |
 
-## Magnet native keys  (⌃⌥)
-
-| Key | Action |
-|---|---|
-| ⌃⌥+arrows | Halves |
-| ⌃⌥+U I J K | Quarters |
-| ⌃⌥+D F G | Thirds |
-| ⌃⌥+E R T | Two-thirds |
-| ⌃⌥+numpad 1–6 | Sixths |
-| ⌃⌥+Return | Maximize |
-| ⌃⌥+C | Center |
-| ⌃⌥+Delete | Restore |
-| ⌘⌃⌥+← → | Previous / next display |
+Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord to one of them. Don't bind ⌃⌥ elsewhere.
 
 ## Switching without the mouse
 
