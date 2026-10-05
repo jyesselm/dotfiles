@@ -22,7 +22,7 @@ items:
         command: switch-client -l
       - name: 'Choose session (Option+s)'
         key: s
-        command: choose-tree -sZ
+        command: choose-tree -sZ -O index -F "#{E:@picker-format}"
       - name: Next session
         key: n
         command: switch-client -n
@@ -44,7 +44,7 @@ items:
     menu:
       - name: 'Choose window (leader+w)'
         key: w
-        command: choose-tree -wZ
+        command: choose-tree -wZ -O index -F "#{E:@picker-format}"
       - name: Next window
         key: n
         command: next-window

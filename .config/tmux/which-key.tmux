@@ -29,7 +29,7 @@ set -g @wk_cfg_pos_y "C"
 
 set -g @wk_menu_sessions \
 '"Last session (Option+Tab)" "Tab" "switch-client -l" \
-"Choose session (Option+s)" "s" "choose-tree -sZ" \
+"Choose session (Option+s)" "s" "choose-tree -sZ -O index -F \"#{E:@picker-format}\"" \
 "Next session" "n" "switch-client -n" \
 "Previous session" "p" "switch-client -p" \
 "" \
@@ -38,7 +38,7 @@ set -g @wk_menu_sessions \
 "Detach (leave running)" "d" detach-client'
 
 set -g @wk_menu_windows \
-'"Choose window (leader+w)" "w" "choose-tree -wZ" \
+'"Choose window (leader+w)" "w" "choose-tree -wZ -O index -F \"#{E:@picker-format}\"" \
 "Next window" "n" next-window \
 "Previous window" "p" previous-window \
 "Last window" "Tab" last-window \
