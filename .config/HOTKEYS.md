@@ -27,7 +27,8 @@ Tap Caps Lock alone = Escape. F3 = screenshot to clipboard.
 | H | Google Chat | | V | Alfred clipboard history |
 
 Hyper window placement (forwarded to Magnet): ←→↑↓ halves · U I J K quarters · F center ·
-1 2 3 thirds left/center/right · 4 5 6 two-thirds left/center/right · N / P next/previous display ·
+1 2 3 thirds left/center/right · 4 5 6 two-thirds left/center/right · numpad 1–6 sixths left→right ·
+N / P next/previous display ·
 Return maximize · Delete restore.
 
 Free: D L Q R X Y Z, 7 8 9 0.
