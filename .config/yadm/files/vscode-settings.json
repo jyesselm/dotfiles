@@ -205,9 +205,9 @@
         "statusBar.foreground": "#11111b",
         "statusBar.debuggingForeground": "#11111b",
         "statusBar.noFolderForeground": "#11111b",
-        "statusBar.background": "#cba6f7",
-        "statusBar.noFolderBackground": "#cba6f7",
-        "statusBar.debuggingBackground": "#cba6f7"
+        "statusBar.background": "#89b4fa",
+        "statusBar.noFolderBackground": "#89b4fa",
+        "statusBar.debuggingBackground": "#89b4fa"
     },
     "jupyter.askForKernelRestart": false,
     "jupyter.useDefaultConfigForJupyter": false,
