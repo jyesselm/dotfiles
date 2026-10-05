@@ -18,7 +18,7 @@ date: YYYY-MM-DD          # Required: creation date
 week: YYYY-[W]WW          # Auto-calculated
 month: YYYY-MM            # Auto-calculated
 type: <type>              # Required: note type
-status: <status>          # Required: draft/active/archive
+status: <status>          # Required: see 900-structure/meta/metadata_schema.md (draft/active/planned/needs-update/complete/archived)
 tags: [list]              # Recommended
 updated: YYYY-MM-DD       # Auto-set to today
 ---
@@ -34,7 +34,7 @@ packages: [pandas, numpy]
 source: /path/to/file.py
 ```
 
-### ref/paper
+### literature
 ```yaml
 authors: [Author1, Author2]
 year: 2024
@@ -74,8 +74,8 @@ last-tested: YYYY-MM-DD
 | Pattern | Type |
 |---------|------|
 | `def `, `class `, `import ` | ref/code |
-| `doi:`, `journal`, `abstract` | ref/paper |
-| `## Step`, `## Procedure` | howto |
+| `doi:`, `journal`, `abstract` | literature |
+| `## Step`, `## Procedure` | ref/howto |
 | `## Attendees`, `## Agenda` | meeting |
 | `## Hypothesis`, `## Experiment` | research |
 

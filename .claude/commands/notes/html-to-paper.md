@@ -92,7 +92,7 @@ title: [Paper title]
 date: [Today]
 week: [Current week]
 month: [Current month]
-type: ref/paper
+type: literature
 status: active
 authors: [wikilinked author list]
 year: [Publication year]

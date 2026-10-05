@@ -17,7 +17,7 @@ Expects either:
 date: [TODAY]
 week: [CURRENT_WEEK]
 month: [YYYY-MM]
-type: ref/paper
+type: literature
 status: active
 authors: [list]
 year: [publication year]

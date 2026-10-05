@@ -16,7 +16,7 @@ Create a structured how-to guide in Obsidian.
 date: [TODAY]
 week: [CURRENT_WEEK]
 month: [YYYY-MM]
-type: howto
+type: ref/howto
 status: draft
 category: [specified or inferred]
 difficulty: [beginner/intermediate/advanced]

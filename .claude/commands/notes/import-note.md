@@ -8,7 +8,7 @@ Convert any markdown or text file into a properly formatted Obsidian note.
 
 - File path to import (required)
 - Optional: destination folder in vault
-- Optional: note type (ref/code, ref/paper, research, meeting, etc.)
+- Optional: note type (ref/code, literature, research, meeting, etc.)
 
 ## Process
 
@@ -46,10 +46,10 @@ updated: [TODAY]
 | Content Pattern | Inferred Type |
 |-----------------|---------------|
 | Code blocks, function refs | ref/code |
-| Citations, abstracts | ref/paper |
+| Citations, abstracts | literature |
 | Meeting, attendees | meeting |
 | TODO lists, goals | project |
-| How-to, steps | howto |
+| How-to, steps | ref/howto |
 | General notes | note |
 
 ## Destination Mapping
@@ -57,8 +57,8 @@ updated: [TODAY]
 | Type | Default Location |
 |------|------------------|
 | ref/code | 300-reference/code/ |
-| ref/paper | 300-reference/science/ |
-| howto | 300-reference/howto/ |
+| literature | 300-reference/science/ |
+| ref/howto | 300-reference/howto/ |
 | meeting | 000-journals/ |
 | project | 200-projects/210_active/ |
 | note | 100-inbox/ |

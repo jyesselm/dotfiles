@@ -184,7 +184,7 @@ title: [Paper title - clean]
 date: YYYY-MM-DD           # Today
 week: YYYY-Www
 month: YYYY-MM
-type: ref/paper
+type: literature
 status: active
 authors:
   - "[[First Author]]"

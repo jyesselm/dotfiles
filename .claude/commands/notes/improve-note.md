@@ -30,8 +30,8 @@ updated: [today]
 | Content Signals | Inferred Type |
 |-----------------|---------------|
 | Code blocks, functions | ref/code |
-| Citations, DOI, journal | ref/paper |
-| Steps, procedure | howto or protocol |
+| Citations, DOI, journal | literature |
+| Steps, procedure | ref/howto or protocol |
 | Attendees, agenda | meeting |
 | Hypothesis, experiment | research |
 | TODO heavy, goals | project |
@@ -56,8 +56,8 @@ updated: [today]
 | Type | Expected Sections |
 |------|-------------------|
 | ref/code | Purpose, Code, Usage, Notes |
-| ref/paper | Key Findings, Methods, Relevance |
-| howto | Prerequisites, Steps, Troubleshooting |
+| literature | Key Findings, Methods, Relevance |
+| ref/howto | Prerequisites, Steps, Troubleshooting |
 | research | Question, Approach, Results, Next Steps |
 | meeting | Attendees, Agenda, Action Items |
 

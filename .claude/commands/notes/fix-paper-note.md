@@ -27,7 +27,7 @@ Ensure frontmatter matches this schema:
 ---
 title: [Paper title - clean, no journal suffix]
 date: YYYY-MM-DD          # Creation date
-type: ref/paper
+type: literature
 status: active
 authors:
   - "[[First Author]]"    # Wikilink format for linking
@@ -46,7 +46,7 @@ updated: YYYY-MM-DD       # Today's date
 - Extract year from `published` field if present
 - Parse journal from title or source URL
 - Remove redundant fields (e.g., `published` if `year` exists)
-- Add missing `type: ref/paper`
+- Add missing `type: literature`
 - Calculate `week` and `month` from `date`
 - Infer tags from content (methods, organisms, techniques)
 
@@ -145,7 +145,7 @@ Use `mcp__obsidian__write_note` to save the improved note.
 ## Paper Note Fix: [[paper-title]]
 
 ### Frontmatter Changes
-- Added: type: ref/paper
+- Added: type: literature
 - Fixed: authors now wikilinked
 - Added: week, month fields
 - Inferred tags: [rna, k-turn, crystallography]
