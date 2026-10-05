@@ -285,6 +285,25 @@
                                         "shell_command": "osascript -e 'tell application id \"com.runningwithcrayons.Alfred\" to search \"hk \"'"
                                     }
                                 ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "l",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "osascript -e 'tell application id \"com.runningwithcrayons.Alfred\" to search \"1p \"'"
+                                    }
+                                ]
                             }
                         ]
                     },

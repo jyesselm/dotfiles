@@ -30,11 +30,12 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Hyper+T | iTerm (terminal) |
 | Hyper+W | Word |
 | Hyper+V | Alfred clipboard history |
+| Hyper+L | 1Password login search (Alfred `1p`): ↩ open site and fill · ⌃↩ copy password · ⌥↩ copy username · ⇧↩ copy one-time code |
 | Hyper+/ | Search hotkeys (this sheet, tmux, Neovim) |
 | Caps Lock tap | Escape |
 | F3 | Screenshot to clipboard |
 
-Free: D L Q R X Y Z, 7 8 9 0.
+Free: D Q R X Y Z, 7 8 9 0.
 
 ## Hyper: window placement  (forwarded to Magnet)
 
