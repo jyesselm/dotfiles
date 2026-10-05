@@ -1,0 +1,30 @@
+{
+  "keyMappings": "# Vimium custom mappings (neovim-style)\n# Format: map <key> <command>\n\n# Tab navigation like neovim <leader>h/l\nmap H previousTab\nmap L nextTab\n\n# Scroll with J/K (like vim j/k but faster)\nmap J scrollPageDown\nmap K scrollPageUp\n\n# History navigation like vim jumplist\nmap <c-o> goBack\nmap <c-i> goForward\n\n# Close/restore tabs\nmap x removeTab\nmap X restoreTab",
+  "userDefinedLinkHintCss": "/* Vimium Custom CSS */\n\n/* Link hints - cleaner look */\ndiv > .vimiumHintMarker {\n  background: #1a1a2e;\n  border: 1px solid #4a9eff;\n  border-radius: 4px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);\n  padding: 2px 5px;\n}\n\ndiv > .vimiumHintMarker span {\n  color: #4a9eff;\n  font-family: \"JetBrains Mono\", \"SF Mono\", Menlo, monospace;\n  font-size: 12px;\n  font-weight: bold;\n}\n\ndiv > .vimiumHintMarker > .matchingCharacter {\n  color: #98c379;\n}\n\n/* Vomnibar (command palette) */\n#vomnibar {\n  background: #1a1a2e;\n  border: 1px solid #3d3d5c;\n  border-radius: 8px;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);\n  max-width: 700px;\n  margin-top: 10vh;\n}\n\n#vomnibar input {\n  background: #252540;\n  border: none;\n  border-bottom: 1px solid #3d3d5c;\n  border-radius: 8px 8px 0 0;\n  color: #e0e0e0;\n  font-family: \"JetBrains Mono\", \"SF Mono\", Menlo, monospace;\n  font-size: 16px;\n  padding: 12px 16px;\n}\n\n#vomnibar input::placeholder {\n  color: #6c6c8a;\n}\n\n#vomnibar .vomnibarSearchArea {\n  background: #1a1a2e;\n  border: none;\n  padding: 8px;\n}\n\n#vomnibar ul {\n  background: #1a1a2e;\n  border-radius: 0 0 8px 8px;\n  margin: 0;\n  padding: 4px;\n}\n\n#vomnibar li {\n  border-radius: 4px;\n  color: #b0b0c0;\n  font-family: -apple-system, BlinkMacSystemFont, sans-serif;\n  font-size: 13px;\n  padding: 8px 12px;\n}\n\n#vomnibar li .vomnibarMatch {\n  color: #4a9eff;\n  font-weight: 600;\n}\n\n#vomnibar li.vomnibarSelected {\n  background: #2d2d4a;\n  color: #ffffff;\n}\n\n#vomnibar li.vomnibarSelected .vomnibarMatch {\n  color: #61afef;\n}\n\n/* HUD (status messages) */\ndiv.vimiumHUD {\n  background: #1a1a2e;\n  border: 1px solid #3d3d5c;\n  border-radius: 6px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);\n  padding: 8px 16px;\n  bottom: 16px;\n  right: 16px;\n  min-width: 120px;\n  text-align: center;\n}\n\ndiv.vimiumHUD span {\n  color: #98c379;\n  font-family: \"JetBrains Mono\", \"SF Mono\", Menlo, monospace;\n  font-size: 13px;\n  font-weight: 500;\n  text-shadow: none;\n}\n\ndiv.vimiumHUD .vimiumHUDSearchArea {\n  background: transparent;\n}\n\ndiv.vimiumHUD .vimiumHUDSearchAreaInner {\n  color: #e0e0e0;\n  font-family: \"JetBrains Mono\", \"SF Mono\", Menlo, monospace;\n}\n\n/* Find mode input */\ndiv.vimiumHUD input {\n  background: #252540;\n  border: 1px solid #4a9eff;\n  border-radius: 4px;\n  color: #e0e0e0;\n  font-family: \"JetBrains Mono\", \"SF Mono\", Menlo, monospace;\n  padding: 4px 8px;\n}\n\n/* Help dialog */\ndiv#vimiumHelpDialog {\n  background: #1a1a2e;\n  border: 1px solid #3d3d5c;\n  border-radius: 12px;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);\n}\n\ndiv#vimiumHelpDialog .vimiumHelpDialogTitle {\n  color: #4a9eff;\n  font-weight: 600;\n}\n\ndiv#vimiumHelpDialog td {\n  color: #b0b0c0;\n  font-family: -apple-system, BlinkMacSystemFont, sans-serif;\n  font-size: 12px;\n  padding: 4px 8px;\n}\n\ndiv#vimiumHelpDialog td.vimiumHelpDialogKey {\n  background: #252540;\n  border-radius: 4px;\n  color: #98c379;\n  font-family: \"JetBrains Mono\", \"SF Mono\", Menlo, monospace;\n  font-weight: 500;\n}",
+  "exclusionRules": [
+    {
+      "passKeys": "",
+      "pattern": "https?://www.speedcoder.net/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://www.typedojo.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://www.typedojo.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://vim-adventures.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://vim-adventures.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://www.united.com/*"
+    }
+  ]
+}

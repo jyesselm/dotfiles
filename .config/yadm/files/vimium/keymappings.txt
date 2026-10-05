@@ -1,0 +1,18 @@
+# Vimium custom mappings (neovim-style)
+# Format: map <key> <command>
+
+# Tab navigation like neovim <leader>h/l
+map H previousTab
+map L nextTab
+
+# Scroll with J/K (like vim j/k but faster)
+map J scrollPageDown
+map K scrollPageUp
+
+# History navigation like vim jumplist
+map <c-o> goBack
+map <c-i> goForward
+
+# Close/restore tabs
+map x removeTab
+map X restoreTab

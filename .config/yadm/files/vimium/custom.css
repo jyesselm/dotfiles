@@ -1,0 +1,149 @@
+/* Vimium Custom CSS */
+
+/* Link hints - cleaner look */
+div > .vimiumHintMarker {
+  background: #1a1a2e;
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 2px 5px;
+}
+
+div > .vimiumHintMarker span {
+  color: #4a9eff;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+div > .vimiumHintMarker > .matchingCharacter {
+  color: #98c379;
+}
+
+/* Vomnibar (command palette) */
+#vomnibar {
+  background: #1a1a2e;
+  border: 1px solid #3d3d5c;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: 700px;
+  margin-top: 10vh;
+}
+
+#vomnibar input {
+  background: #252540;
+  border: none;
+  border-bottom: 1px solid #3d3d5c;
+  border-radius: 8px 8px 0 0;
+  color: #e0e0e0;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 16px;
+  padding: 12px 16px;
+}
+
+#vomnibar input::placeholder {
+  color: #6c6c8a;
+}
+
+#vomnibar .vomnibarSearchArea {
+  background: #1a1a2e;
+  border: none;
+  padding: 8px;
+}
+
+#vomnibar ul {
+  background: #1a1a2e;
+  border-radius: 0 0 8px 8px;
+  margin: 0;
+  padding: 4px;
+}
+
+#vomnibar li {
+  border-radius: 4px;
+  color: #b0b0c0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+#vomnibar li .vomnibarMatch {
+  color: #4a9eff;
+  font-weight: 600;
+}
+
+#vomnibar li.vomnibarSelected {
+  background: #2d2d4a;
+  color: #ffffff;
+}
+
+#vomnibar li.vomnibarSelected .vomnibarMatch {
+  color: #61afef;
+}
+
+/* HUD (status messages) */
+div.vimiumHUD {
+  background: #1a1a2e;
+  border: 1px solid #3d3d5c;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 8px 16px;
+  bottom: 16px;
+  right: 16px;
+  min-width: 120px;
+  text-align: center;
+}
+
+div.vimiumHUD span {
+  color: #98c379;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  text-shadow: none;
+}
+
+div.vimiumHUD .vimiumHUDSearchArea {
+  background: transparent;
+}
+
+div.vimiumHUD .vimiumHUDSearchAreaInner {
+  color: #e0e0e0;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
+
+/* Find mode input */
+div.vimiumHUD input {
+  background: #252540;
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  padding: 4px 8px;
+}
+
+/* Help dialog */
+div#vimiumHelpDialog {
+  background: #1a1a2e;
+  border: 1px solid #3d3d5c;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+div#vimiumHelpDialog .vimiumHelpDialogTitle {
+  color: #4a9eff;
+  font-weight: 600;
+}
+
+div#vimiumHelpDialog td {
+  color: #b0b0c0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+div#vimiumHelpDialog td.vimiumHelpDialogKey {
+  background: #252540;
+  border-radius: 4px;
+  color: #98c379;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-weight: 500;
+}

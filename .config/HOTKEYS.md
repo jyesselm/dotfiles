@@ -4,7 +4,7 @@ One modifier per layer. A new binding must fit a row here or it does not get add
 
 | Modifier | Owner | Scope | Details |
 |---|---|---|---|
-| Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch / focus apps, system-wide | below |
+| Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch apps, place windows, clipboard | below |
 | ⌃⌥ | Magnet | Window placement, system-wide | below |
 | ⌘ | macOS + each app | Native in-app commands | untouched |
 | ⌘Tab (Contexts) / ⌘` | Contexts, macOS | Switch apps / windows | below |
@@ -24,11 +24,13 @@ Tap Caps Lock alone = Escape. F3 = screenshot to clipboard.
 | C | Cursor | | S | Slack |
 | E | Finder (explorer) | | T | iTerm (terminal) |
 | G | ChatGPT | | W | Word |
-| H | Google Chat | | | |
+| H | Google Chat | | V | Alfred clipboard history |
 
-Free: D F I J K L N P Q R U V X Y Z, digits, arrows.
+Hyper + ←→↑↓ = halves · U I J K = quarters · Return = maximize · Delete = restore (all forwarded to Magnet).
 
-## ⌃⌥ + key → window placement (Magnet)
+Free: D F L N P Q R X Y Z, digits.
+
+## ⌃⌥ + key → window placement (Magnet, native keys)
 
 Arrows = halves · U I J K = quarters · D F G = thirds · E R T = two-thirds ·
 Return = maximize · C = center · Delete = restore · ⌘⌃⌥ ←/→ = move to display.
@@ -37,6 +39,13 @@ Return = maximize · C = center · Delete = restore · ⌘⌃⌥ ←/→ = move 
 
 - ⌘Tab = Contexts' app switcher (sidebar list). ⌘` next window of this app, ⇧⌘` previous, ⌃↓ all windows of this app.
 - ⇧⌘/ in any app searches menus; type the command name and press Return.
+
+## Chrome: Vimium (`yadm/files/vimium/`)
+
+`f` click a link · `F` open in new tab · `H` / `L` prev/next tab · `J` / `K` page down/up ·
+`x` close tab · `X` reopen · `o` / `O` open URL or bookmark here/new tab · `T` search tabs ·
+`/` find · `gi` focus first input · `⌃o` / `⌃i` back/forward · `?` show all.
+Settings sync through Chrome Sync; the dotfiles copy is a backup, restore via Vimium Options → Backup and Restore.
 
 ## Retired
 
