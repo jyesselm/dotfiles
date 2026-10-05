@@ -266,6 +266,25 @@
                                         "shell_command": "open '/Users/jyesselman2/Applications/Chrome Apps.localized/Google Chat 1.app'"
                                     }
                                 ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "slash",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "osascript -e 'tell application id \"com.runningwithcrayons.Alfred\" to search \"hk \"'"
+                                    }
+                                ]
                             }
                         ]
                     },
