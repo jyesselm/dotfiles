@@ -74,6 +74,9 @@ Free: D L Q R X Y Z, 7 8 9 0.
 | ⌃↓ | All windows of this app |
 | ⇧⌘/ | Search any app's menus; type the command, Return runs it |
 | ⌘Space | Alfred |
+| ⇧⌘S | Alfred snippets |
+
+Alfred's live preferences (workflows, these hotkeys) sync via `~/Library/CloudStorage/Dropbox/Alfred.alfredpreferences`; the copy under Application Support is unused.
 
 ## Chrome: Vimium  (`yadm/files/vimium/`)
 
