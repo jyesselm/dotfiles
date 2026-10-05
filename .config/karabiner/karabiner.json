@@ -11,11 +11,17 @@
                         "description": "F3 to Clipboard Screenshot",
                         "manipulators": [
                             {
-                                "from": { "key_code": "f3" },
+                                "from": {
+                                    "key_code": "f3"
+                                },
                                 "to": [
                                     {
                                         "key_code": "4",
-                                        "modifiers": ["left_command", "left_control", "left_shift"]
+                                        "modifiers": [
+                                            "left_command",
+                                            "left_control",
+                                            "left_shift"
+                                        ]
                                     }
                                 ],
                                 "type": "basic"
@@ -28,73 +34,238 @@
                             {
                                 "from": {
                                     "key_code": "caps_lock",
-                                    "modifiers": { "optional": ["any"] }
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
                                 },
                                 "to": [
                                     {
                                         "key_code": "left_shift",
                                         "lazy": true,
-                                        "modifiers": ["left_control", "left_option", "left_command"]
+                                        "modifiers": [
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
                                     }
                                 ],
-                                "to_if_alone": [{ "key_code": "escape" }],
+                                "to_if_alone": [
+                                    {
+                                        "key_code": "escape"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "b",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'Google Chrome'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Google Chrome'"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "t",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'iTerm'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'iTerm'"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "o",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'Obsidian'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Obsidian'"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "c",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'Cursor'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Cursor'"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "s",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'Slack'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Slack'"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "m",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'Messages'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Messages'"
+                                    }
+                                ],
                                 "type": "basic"
                             },
                             {
                                 "from": {
                                     "key_code": "e",
-                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
                                 },
-                                "to": [{ "shell_command": "open -a 'Finder'" }],
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Finder'"
+                                    }
+                                ],
                                 "type": "basic"
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "a",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Claude'"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "g",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'ChatGPT'"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "w",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -a 'Microsoft Word'"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "h",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_shift",
+                                            "left_control",
+                                            "left_option",
+                                            "left_command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open '/Users/jyesselman2/Applications/Chrome Apps.localized/Google Chat 1.app'"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -102,37 +273,77 @@
             },
             "name": "Default profile",
             "selected": true,
-            "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
+            "virtual_hid_keyboard": {
+                "keyboard_type_v2": "ansi"
+            }
         },
         {
             "fn_function_keys": [
                 {
-                    "from": { "key_code": "f1" },
-                    "to": [{ "key_code": "f1" }]
+                    "from": {
+                        "key_code": "f1"
+                    },
+                    "to": [
+                        {
+                            "key_code": "f1"
+                        }
+                    ]
                 },
                 {
-                    "from": { "key_code": "f2" },
-                    "to": [{ "key_code": "f2" }]
+                    "from": {
+                        "key_code": "f2"
+                    },
+                    "to": [
+                        {
+                            "key_code": "f2"
+                        }
+                    ]
                 },
                 {
-                    "from": { "key_code": "f3" },
-                    "to": [{ "key_code": "f3" }]
+                    "from": {
+                        "key_code": "f3"
+                    },
+                    "to": [
+                        {
+                            "key_code": "f3"
+                        }
+                    ]
                 },
                 {
-                    "from": { "key_code": "f4" },
-                    "to": [{ "key_code": "f4" }]
+                    "from": {
+                        "key_code": "f4"
+                    },
+                    "to": [
+                        {
+                            "key_code": "f4"
+                        }
+                    ]
                 },
                 {
-                    "from": { "key_code": "f5" },
-                    "to": [{ "key_code": "f5" }]
+                    "from": {
+                        "key_code": "f5"
+                    },
+                    "to": [
+                        {
+                            "key_code": "f5"
+                        }
+                    ]
                 },
                 {
-                    "from": { "key_code": "f6" },
-                    "to": [{ "key_code": "f6" }]
+                    "from": {
+                        "key_code": "f6"
+                    },
+                    "to": [
+                        {
+                            "key_code": "f6"
+                        }
+                    ]
                 }
             ],
             "name": "gaming",
-            "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
+            "virtual_hid_keyboard": {
+                "keyboard_type_v2": "ansi"
+            }
         }
     ]
 }
