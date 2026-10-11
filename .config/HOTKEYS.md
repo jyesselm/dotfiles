@@ -7,9 +7,9 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 |---|---|---|---|
 | Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch apps, place windows, clipboard, search | below |
 | ⌃⌥ | Magnet | Backend for Hyper placement only; never used directly | — |
-| ⌘ | macOS + each app | Native in-app commands | untouched |
+| ⌘ | macOS + each app | Native in-app commands | untouched, except ⌘[ ] (below) |
 | ⌘Tab (Contexts) / ⌘` | Contexts, macOS | Switch apps / windows | below |
-| ⌃Space | tmux | Leader | `tmux/shortcuts.txt` |
+| ⌃Space (⌘Space in terminals) | tmux | Leader | `tmux/shortcuts.txt` |
 | ⌃h/j/k/l | tmux, Neovim, Zed | Move between panes, identical everywhere | `nvim/KEYBINDINGS.md`, `zed/keymap.json` |
 | Left ⌥ | tmux, zsh | Sessions; word motion; fzf cd | `tmux/shortcuts.txt`, `~/.zsh/keybindings.zsh` |
 | Space | Neovim | Leader | `nvim/KEYBINDINGS.md` |
@@ -21,11 +21,13 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Hyper+A | Claude |
 | Hyper+B | Chrome (browser) |
 | Hyper+C | Cursor |
+| Hyper+D | Tasks (do) |
 | Hyper+E | Finder (explorer) |
 | Hyper+G | ChatGPT |
 | Hyper+H | Google Chat |
 | Hyper+M | Messages |
 | Hyper+O | Obsidian |
+| Hyper+R | notes (read) |
 | Hyper+S | Slack |
 | Hyper+T | iTerm (terminal) |
 | Hyper+W | Word |
@@ -35,7 +37,7 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Caps Lock tap | Escape |
 | F3 | Screenshot to clipboard |
 
-Free: D Q R X Y Z, 7 8 9 0.
+Free: Q X Y Z, 7 8 9 0.
 
 ## Hyper: window placement  (forwarded to Magnet)
 
@@ -62,7 +64,9 @@ Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord t
 | ⇧⌘` | Previous window of this app |
 | ⌃↓ | All windows of this app |
 | ⇧⌘/ | Search any app's menus; type the command, Return runs it |
-| ⌘Space | Alfred |
+| ⌘[ / ⌘] | Previous / next tab, every app (Karabiner swap) |
+| ⇧⌘[ / ⇧⌘] | What ⌘[ ] did natively: back/forward, outdent/indent, iTerm panes |
+| ⌘Space | Alfred (in terminals Karabiner sends ⌃Space, the tmux leader) |
 | ⇧⌘S | Alfred snippets |
 | ⌘\ | 1Password: fill login into the focused field (works at a terminal Password: prompt) |
 | ⇧⌘Space | 1Password Quick Access; ⇧⌘C copies the password |
