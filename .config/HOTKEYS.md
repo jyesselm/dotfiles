@@ -34,6 +34,8 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Hyper+V | Alfred clipboard history |
 | Hyper+L | 1Password login search (Alfred `1p`): ↩ open site and fill · ⌃↩ copy password · ⌥↩ copy username · ⇧↩ copy one-time code |
 | Hyper+/ | Search hotkeys (this sheet, tmux, Neovim) |
+| Hyper+Space | Alfred |
+| Hyper+[ / ] | Previous / next window of this app |
 | Caps Lock tap | Escape |
 | F3 | Screenshot to clipboard |
 
@@ -60,13 +62,13 @@ Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord t
 | Key | Action |
 |---|---|
 | ⌘Tab | Contexts app switcher (sidebar list) |
-| ⌘` | Next window of this app |
-| ⇧⌘` | Previous window of this app |
+| Hyper+] / Hyper+[ | Next / previous window of this app (Karabiner sends ⌘` / ⇧⌘`) |
 | ⌃↓ | All windows of this app |
 | ⇧⌘/ | Search any app's menus; type the command, Return runs it |
 | ⌘[ / ⌘] | Previous / next tab, every app (Karabiner swap) |
 | ⇧⌘[ / ⇧⌘] | What ⌘[ ] did natively: back/forward, outdent/indent, iTerm panes |
-| ⌘Space | Alfred (in terminals Karabiner sends ⌃Space, the tmux leader) |
+| Hyper+Space | Alfred |
+| ⌘Space | tmux leader in terminals (Karabiner sends ⌃Space) |
 | ⇧⌘S | Alfred snippets |
 | ⌘\ | 1Password: fill login into the focused field (works at a terminal Password: prompt) |
 | ⇧⌘Space | 1Password Quick Access; ⇧⌘C copies the password |
