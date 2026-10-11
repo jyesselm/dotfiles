@@ -71,7 +71,6 @@ Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord t
 | ⌘Space | tmux leader in terminals (Karabiner sends ⌃Space) |
 | ⇧⌘S | Alfred snippets |
 | ⌘\ | 1Password: fill login into the focused field (works at a terminal Password: prompt) |
-| ⇧⌘Space | 1Password Quick Access; ⇧⌘C copies the password |
 
 Alfred's live preferences (workflows, these hotkeys) sync via `~/Library/CloudStorage/Dropbox/Alfred.alfredpreferences`; the copy under Application Support is unused.
 
