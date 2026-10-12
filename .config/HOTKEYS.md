@@ -67,6 +67,7 @@ Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord t
 | ⇧⌘/ | Search any app's menus; type the command, Return runs it |
 | ⌘[ / ⌘] | Previous / next tab, every app (Karabiner swap) |
 | ⇧⌘[ / ⇧⌘] | What ⌘[ ] did natively: back/forward, outdent/indent, iTerm panes |
+| ⌘K (Chrome) | Search open tabs (Karabiner sends ⇧⌘A) |
 | Hyper+Space | Alfred |
 | ⌘Space | tmux leader in terminals (Karabiner sends ⌃Space) |
 | ⇧⌘S | Alfred snippets |
@@ -84,7 +85,7 @@ Alfred's live preferences (workflows, these hotkeys) sync via `~/Library/CloudSt
 | J / K | Page down / up |
 | x / X | Close / reopen tab |
 | o / O | Open URL or bookmark here / in new tab |
-| T | Search open tabs |
+| ⇧T | Search open tabs (or ⌘K, which works on every page) |
 | / | Find in page |
 | gi | Focus first input |
 | ⌃o / ⌃i | Back / forward |
