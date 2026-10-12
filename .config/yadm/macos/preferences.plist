@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>created_utc</key>
-	<string>2026-09-25T00:25:18.133835+00:00</string>
+	<string>2026-10-12T00:12:35.070019+00:00</string>
 	<key>domains</key>
 	<dict>
 		<key>NSGlobalDomain</key>
@@ -15,6 +15,8 @@
 				<string>AppleHighlightColor</string>
 				<string>AppleAquaColorVariant</string>
 				<string>AppleShowScrollBars</string>
+				<string>AppleActionOnDoubleClick</string>
+				<string>ApplePressAndHoldEnabled</string>
 				<string>NSAutomaticQuoteSubstitutionEnabled</string>
 				<string>NSAutomaticDashSubstitutionEnabled</string>
 				<string>NSAutomaticSpellingCorrectionEnabled</string>
@@ -24,25 +26,23 @@
 				<string>PMPrintingExpandedStateForPrint</string>
 				<string>PMPrintingExpandedStateForPrint2</string>
 				<string>NSUserKeyEquivalents</string>
+				<string>com.apple.mouse.scaling</string>
+				<string>com.apple.scrollwheel.scaling</string>
 			</array>
 			<key>values</key>
 			<dict>
-				<key>AppleActionOnDoubleClick</key>
-				<string>Minimize</string>
 				<key>AppleInterfaceStyle</key>
 				<string>Dark</string>
 				<key>AppleKeyboardUIMode</key>
 				<integer>0</integer>
 				<key>AppleMiniaturizeOnDoubleClick</key>
 				<false/>
-				<key>ApplePressAndHoldEnabled</key>
-				<false/>
 				<key>AppleShowAllExtensions</key>
 				<true/>
 				<key>InitialKeyRepeat</key>
-				<integer>10</integer>
+				<real>15.0</real>
 				<key>KeyRepeat</key>
-				<integer>1</integer>
+				<real>2.0</real>
 				<key>NSAllowContinuousSpellChecking</key>
 				<false/>
 				<key>NSAutomaticCapitalizationEnabled</key>
@@ -51,10 +51,6 @@
 				<true/>
 				<key>com.apple.keyboard.fnState</key>
 				<false/>
-				<key>com.apple.mouse.scaling</key>
-				<real>3.0</real>
-				<key>com.apple.scrollwheel.scaling</key>
-				<string>8.0</string>
 				<key>com.apple.sound.beep.flash</key>
 				<integer>0</integer>
 				<key>com.apple.springing.delay</key>
@@ -66,7 +62,7 @@
 				<key>com.apple.trackpad.forceClick</key>
 				<true/>
 				<key>com.apple.trackpad.scaling</key>
-				<string>8.0</string>
+				<real>3.0</real>
 			</dict>
 		</dict>
 		<key>com.apple.AppleMultitouchMouse</key>
@@ -102,7 +98,7 @@
 				<key>ActuateDetents</key>
 				<integer>1</integer>
 				<key>Clicking</key>
-				<integer>0</integer>
+				<true/>
 				<key>DragLock</key>
 				<integer>0</integer>
 				<key>Dragging</key>
@@ -142,7 +138,7 @@
 				<key>TrackpadThreeFingerHorizSwipeGesture</key>
 				<integer>2</integer>
 				<key>TrackpadThreeFingerTapGesture</key>
-				<integer>2</integer>
+				<integer>0</integer>
 				<key>TrackpadThreeFingerVertSwipeGesture</key>
 				<integer>2</integer>
 				<key>TrackpadTwoFingerDoubleTapGesture</key>
@@ -162,6 +158,7 @@
 				<string>largesize</string>
 				<string>magnification</string>
 				<string>orientation</string>
+				<string>show-recents</string>
 				<string>show-process-indicators</string>
 				<string>launchanim</string>
 				<string>mru-spaces</string>
@@ -174,7 +171,6 @@
 				<string>wvous-tr-modifier</string>
 				<string>wvous-bl-corner</string>
 				<string>wvous-bl-modifier</string>
-				<string>wvous-br-modifier</string>
 			</array>
 			<key>values</key>
 			<dict>
@@ -184,12 +180,12 @@
 				<string>scale</string>
 				<key>minimize-to-application</key>
 				<true/>
-				<key>show-recents</key>
-				<false/>
 				<key>tilesize</key>
-				<real>69.0</real>
+				<real>62.0</real>
 				<key>wvous-br-corner</key>
-				<integer>14</integer>
+				<integer>1</integer>
+				<key>wvous-br-modifier</key>
+				<integer>0</integer>
 			</dict>
 		</dict>
 		<key>com.apple.driver.AppleBluetoothMultitouch.mouse</key>
@@ -228,11 +224,11 @@
 			<key>values</key>
 			<dict>
 				<key>Clicking</key>
-				<integer>0</integer>
+				<true/>
 				<key>DragLock</key>
-				<integer>0</integer>
+				<false/>
 				<key>Dragging</key>
-				<integer>0</integer>
+				<false/>
 				<key>TrackpadCornerSecondaryClick</key>
 				<integer>0</integer>
 				<key>TrackpadFiveFingerPinchGesture</key>
@@ -262,7 +258,7 @@
 				<key>TrackpadThreeFingerHorizSwipeGesture</key>
 				<integer>2</integer>
 				<key>TrackpadThreeFingerTapGesture</key>
-				<integer>2</integer>
+				<integer>0</integer>
 				<key>TrackpadThreeFingerVertSwipeGesture</key>
 				<integer>2</integer>
 				<key>TrackpadTwoFingerDoubleTapGesture</key>
@@ -293,15 +289,15 @@
 			<key>values</key>
 			<dict>
 				<key>FXPreferredViewStyle</key>
-				<string>clmv</string>
+				<string>Nlsv</string>
 				<key>NewWindowTarget</key>
 				<string>PfHm</string>
 				<key>ShowExternalHardDrivesOnDesktop</key>
-				<false/>
+				<true/>
 				<key>ShowHardDrivesOnDesktop</key>
 				<false/>
 				<key>ShowRemovableMediaOnDesktop</key>
-				<false/>
+				<true/>
 			</dict>
 		</dict>
 		<key>com.apple.screencapture</key>
@@ -335,38 +331,6 @@
 			<dict>
 				<key>AppleSymbolicHotKeys</key>
 				<dict>
-					<key>10</key>
-					<dict>
-						<key>enabled</key>
-						<false/>
-						<key>value</key>
-						<dict>
-							<key>parameters</key>
-							<array>
-								<integer>65535</integer>
-								<integer>96</integer>
-								<integer>8650752</integer>
-							</array>
-							<key>type</key>
-							<string>standard</string>
-						</dict>
-					</dict>
-					<key>11</key>
-					<dict>
-						<key>enabled</key>
-						<false/>
-						<key>value</key>
-						<dict>
-							<key>parameters</key>
-							<array>
-								<integer>65535</integer>
-								<integer>97</integer>
-								<integer>8650752</integer>
-							</array>
-							<key>type</key>
-							<string>standard</string>
-						</dict>
-					</dict>
 					<key>15</key>
 					<dict>
 						<key>enabled</key>
@@ -377,7 +341,7 @@
 						<key>enabled</key>
 						<false/>
 					</dict>
-					<key>162</key>
+					<key>164</key>
 					<dict>
 						<key>enabled</key>
 						<false/>
@@ -386,26 +350,11 @@
 							<key>parameters</key>
 							<array>
 								<integer>65535</integer>
-								<integer>96</integer>
-								<integer>9961472</integer>
+								<integer>65535</integer>
+								<integer>0</integer>
 							</array>
 							<key>type</key>
 							<string>standard</string>
-						</dict>
-					</dict>
-					<key>164</key>
-					<dict>
-						<key>enabled</key>
-						<true/>
-						<key>value</key>
-						<dict>
-							<key>parameters</key>
-							<array>
-								<integer>262144</integer>
-								<integer>4294705151</integer>
-							</array>
-							<key>type</key>
-							<string>modifier</string>
 						</dict>
 					</dict>
 					<key>17</key>
@@ -413,10 +362,42 @@
 						<key>enabled</key>
 						<false/>
 					</dict>
+					<key>175</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>65535</integer>
+								<integer>65535</integer>
+								<integer>0</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
 					<key>18</key>
 					<dict>
 						<key>enabled</key>
 						<false/>
+					</dict>
+					<key>184</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>53</integer>
+								<integer>23</integer>
+								<integer>1179648</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
 					</dict>
 					<key>19</key>
 					<dict>
@@ -438,6 +419,38 @@
 						<key>enabled</key>
 						<false/>
 					</dict>
+					<key>223</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>65535</integer>
+								<integer>65535</integer>
+								<integer>0</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>224</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>65535</integer>
+								<integer>65535</integer>
+								<integer>0</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
 					<key>23</key>
 					<dict>
 						<key>enabled</key>
@@ -457,6 +470,118 @@
 					<dict>
 						<key>enabled</key>
 						<false/>
+					</dict>
+					<key>28</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>51</integer>
+								<integer>20</integer>
+								<integer>1179648</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>29</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>51</integer>
+								<integer>20</integer>
+								<integer>1441792</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>30</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>52</integer>
+								<integer>21</integer>
+								<integer>1179648</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>31</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>52</integer>
+								<integer>21</integer>
+								<integer>1441792</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>32</key>
+					<dict>
+						<key>enabled</key>
+						<true/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>65535</integer>
+								<integer>126</integer>
+								<integer>8650752</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>34</key>
+					<dict>
+						<key>enabled</key>
+						<true/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>65535</integer>
+								<integer>126</integer>
+								<integer>8781824</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
+					</dict>
+					<key>36</key>
+					<dict>
+						<key>enabled</key>
+						<false/>
+						<key>value</key>
+						<dict>
+							<key>parameters</key>
+							<array>
+								<integer>65535</integer>
+								<integer>103</integer>
+								<integer>8388608</integer>
+							</array>
+							<key>type</key>
+							<string>standard</string>
+						</dict>
 					</dict>
 					<key>52</key>
 					<dict>
@@ -554,42 +679,10 @@
 							<string>standard</string>
 						</dict>
 					</dict>
-					<key>7</key>
-					<dict>
-						<key>enabled</key>
-						<false/>
-						<key>value</key>
-						<dict>
-							<key>parameters</key>
-							<array>
-								<integer>65535</integer>
-								<integer>120</integer>
-								<integer>8650752</integer>
-							</array>
-							<key>type</key>
-							<string>standard</string>
-						</dict>
-					</dict>
 					<key>79</key>
 					<dict>
 						<key>enabled</key>
 						<true/>
-					</dict>
-					<key>8</key>
-					<dict>
-						<key>enabled</key>
-						<false/>
-						<key>value</key>
-						<dict>
-							<key>parameters</key>
-							<array>
-								<integer>65535</integer>
-								<integer>99</integer>
-								<integer>8650752</integer>
-							</array>
-							<key>type</key>
-							<string>standard</string>
-						</dict>
 					</dict>
 					<key>80</key>
 					<dict>
@@ -606,22 +699,6 @@
 						<key>enabled</key>
 						<true/>
 					</dict>
-					<key>9</key>
-					<dict>
-						<key>enabled</key>
-						<false/>
-						<key>value</key>
-						<dict>
-							<key>parameters</key>
-							<array>
-								<integer>65535</integer>
-								<integer>118</integer>
-								<integer>8650752</integer>
-							</array>
-							<key>type</key>
-							<string>standard</string>
-						</dict>
-					</dict>
 				</dict>
 			</dict>
 		</dict>
@@ -629,6 +706,6 @@
 	<key>format</key>
 	<integer>1</integer>
 	<key>macos_version</key>
-	<string>26.6.2</string>
+	<string>26.7.1</string>
 </dict>
 </plist>
