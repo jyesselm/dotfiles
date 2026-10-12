@@ -59,11 +59,11 @@ MIN_WORDS_FOR_RATES = 150     # rate checks are noise below this
 SOFT_WORDS = {"furthermore", "notably", "novel", "indeed",
               # Genre-controlled against a student draft from the same lab on the
               # same subject (2026-08-13, per 1,000 words, his rate first):
-              # however 0.18 vs 1.14, observed 0.15 vs 2.47, while 0.54 vs 1.52.
-              # He uses all three, just far less often, so these advise; they do
-              # not gate. An earlier pass wrongly called "however" absent from
-              # his corpus; that came from a case-sensitive count.
-              "however", "observed",
+              # observed 0.15 vs 2.47, while 0.54 vs 1.52. He uses both, just
+              # far less often, so these advise; they do not gate. "however"
+              # was removed from this list 2026-08-18 on his stated preference
+              # ("I like 'however' it has to be used correctly"); see CORE.md.
+              "observed",
               # He uses "leverage" in the ordinary technical sense in his 2026
               # R01 ("Automated docking will leverage existing Rosetta
               # density-docking functionality"). Banned as vague filler ("we
