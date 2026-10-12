@@ -1,7 +1,7 @@
 TMUX SHORTCUTS — YOUR CURRENT SETUP
 
 Leader = Cmd+Space (Karabiner sends Ctrl+Space), release, then press the next key.
-In terminals Cmd+h/j/k/l and Cmd+\ also send Ctrl; Right Cmd held = Ctrl everywhere.
+In terminals Cmd+h/j/k/l send Ctrl+h/j/k/l; Right Cmd = Ctrl everywhere.
 Option = LEFT Option. Uppercase letters require Shift.
 Close this sheet: q     Scroll: arrows / Page Up / Page Down
 Search this sheet: / then text, Enter; n for next match.
@@ -20,7 +20,7 @@ START HERE
   Leader + f              Searchable popup for sessions and windows
   Option + s              Session picker
   Option + Tab            Toggle last session
-  Ctrl + h/j/k/l          Pane left / down / up / right
+  Cmd + h/j/k/l           Pane left / down / up / right
 
 SESSIONS — no leader needed
   Option + n / p          Next / previous session
@@ -32,16 +32,14 @@ WINDOWS
   Leader + w              Window picker (also shows other sessions)
   Leader + n              Next window
   Leader + b              Previous window (back)
-  Leader + 4–9            Jump to window 4–9
+  Leader + 1–9            Jump to window 1–9
   Leader + c              New window in current directory
   Leader + ,              Rename current window
   Leader + < / >          Move current window left / right
-  NOTE: Leader + 1–3 currently selects PANES, not windows.
 
 PANES
-  Ctrl + h/j/k/l          Left / down / up / right (Neovim-aware)
-  Ctrl + \                Cycle panes
-  Leader + 1 / 2 / 3      Select pane 1 / 2 / 3
+  Cmd + h/j/k/l           Left / down / up / right (Neovim-aware)
+  Right Cmd + \           Cycle panes (Ctrl+\)
   Leader + q              Show pane numbers; press a number to select
   Leader + z              Zoom / unzoom current pane
   Leader + \              Split side by side

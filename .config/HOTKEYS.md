@@ -1,7 +1,14 @@
 # Hotkey layers
 
-One modifier per layer. A new binding must fit a row here or it does not get added.
+One job per layer. A new binding must fit a row here or it does not get added.
 Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
+
+| Layer | Job | Rule |
+|---|---|---|
+| Hyper (Caps) | System: apps, windows, launchers | Letters open apps; arrows, numbers, Return, Delete place windows |
+| ⌘ | Inside an app | Native Mac keys, plus three overrides with one meaning everywhere: ⌘[ ] tabs, ⌘K search/switch, ⌘Space tmux (terminals) |
+| ⌃ (Right ⌘) | Terminal and Vim | Shell, tmux, Neovim only; in terminals ⌘h/j/k/l is the way to move panes |
+| Alfred keyword | Anything used rarely | No hotkey: type the word in Hyper+Space (`snip`, `1p`, `hk`) |
 
 | Modifier | Owner | Scope | Details |
 |---|---|---|---|
@@ -9,7 +16,7 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | ⌃⌥ | Magnet | Backend for Hyper placement only; never used directly | — |
 | ⌘ | macOS + each app | Native in-app commands | untouched, except ⌘[ ] (below) |
 | ⌘Tab (Contexts) / ⌘` | Contexts, macOS | Switch apps / windows | below |
-| Right ⌘ (held) | Karabiner | Acts as ⌃ everywhere, so Ctrl is a thumb key (⌃C, ⌃R, Vimium ⌃o/⌃i) | below |
+| Right ⌘ | Karabiner | Always ⌃, so Ctrl is a thumb key (⌃C, ⌃R, Vimium ⌃o/⌃i) | below |
 | ⌃Space (⌘Space in terminals) | tmux | Leader | `tmux/shortcuts.txt` |
 | ⌃h/j/k/l (⌘h/j/k/l in terminals) | tmux, Neovim, Zed | Move between panes, identical everywhere | `nvim/KEYBINDINGS.md`, `zed/keymap.json` |
 | Left ⌥ | tmux, zsh | Sessions; word motion; fzf cd | `tmux/shortcuts.txt`, `~/.zsh/keybindings.zsh` |
@@ -72,9 +79,9 @@ Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord t
 | ⌘K (Chrome) | Search open tabs (Karabiner sends ⇧⌘A) |
 | Hyper+Space | Alfred |
 | ⌘Space | tmux leader in terminals (Karabiner sends ⌃Space) |
-| ⌘h/j/k/l, ⌘\ | In terminals: pane moves / cycle (Karabiner sends ⌃); also over SSH |
-| ⇧⌘S | Alfred snippets |
-| ⌘\ | 1Password: fill login into the focused field (works at a terminal Password: prompt) |
+| ⌘h/j/k/l | In terminals: pane moves (Karabiner sends ⌃); also over SSH |
+| ⌘\ | 1Password: fill login into the focused field, every app including terminals |
+| `snip` in Alfred | Snippets (no hotkey, so ⇧⌘S stays Save As) |
 
 Alfred's live preferences (workflows, these hotkeys) sync via `~/Library/CloudStorage/Dropbox/Alfred.alfredpreferences`; the copy under Application Support is unused.
 
@@ -98,14 +105,11 @@ Alfred's live preferences (workflows, these hotkeys) sync via `~/Library/CloudSt
 |---|---|
 | f | Click a link (hints) |
 | F | Open link in new tab |
-| H / L | Previous / next tab |
 | J / K | Page down / up |
-| x / X | Close / reopen tab |
 | o / O | Open URL or bookmark here / in new tab |
 | ⇧T | Search open tabs (or ⌘K, which works on every page) |
 | / | Find in page |
 | gi | Focus first input |
-| ⌃o / ⌃i | Back / forward |
 | ? | Show all Vimium keys |
 
 Settings sync through Chrome Sync; the dotfiles copy is a backup, restore via Vimium Options → Backup and Restore.
