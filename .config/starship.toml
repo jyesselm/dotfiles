@@ -1,12 +1,11 @@
 # Two-line prompt with clean formatting
 format = """
-${custom.hostname}$directory$git_branch$git_status$conda$cmd_duration
+${env_var.HOSTNAME_ALIAS}$directory$git_branch$git_status$conda$cmd_duration
 $character"""
 
-[custom.hostname]
-command = "echo $HOSTNAME_ALIAS"
-when = "test -n \"$HOSTNAME_ALIAS\""
-format = "[$output]($style) "
+[env_var.HOSTNAME_ALIAS]
+variable = "HOSTNAME_ALIAS"
+format = "[$env_value]($style) "
 style = "bold blue"
 
 [character]

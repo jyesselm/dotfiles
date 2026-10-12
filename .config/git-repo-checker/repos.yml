@@ -155,3 +155,6 @@ repos:
 
 - path: local/code/python/developing/zotero-cli
   remote: https://github.com/jyesselm/zotero-cli.git
+
+- path: local/code/python/developing/search-cli
+  remote: https://github.com/jyesselm/search-cli.git
