@@ -1,6 +1,7 @@
 TMUX SHORTCUTS — YOUR CURRENT SETUP
 
-Leader = Ctrl+Space, release, then press the next key.
+Leader = Cmd+Space (Karabiner sends Ctrl+Space), release, then press the next key.
+In terminals Cmd+h/j/k/l and Cmd+\ also send Ctrl; Right Cmd held = Ctrl everywhere.
 Option = LEFT Option. Uppercase letters require Shift.
 Close this sheet: q     Scroll: arrows / Page Up / Page Down
 Search this sheet: / then text, Enter; n for next match.
@@ -30,7 +31,7 @@ SESSIONS — no leader needed
 WINDOWS
   Leader + w              Window picker (also shows other sessions)
   Leader + n              Next window
-  Leader + Ctrl+p         Previous window (hold Ctrl for this second key)
+  Leader + b              Previous window (back)
   Leader + 4–9            Jump to window 4–9
   Leader + c              New window in current directory
   Leader + ,              Rename current window
@@ -67,8 +68,8 @@ HELP / SETTINGS
   Then ?                  This cheat sheet (q closes)
   Leader + B              Full live list of tmux bindings; q exits
   Leader + r              Reload config
-  Leader + Ctrl+s         Save sessions (Resurrect)
-  Leader + Ctrl+r         Restore saved sessions (Resurrect)
+  Sessions autosave every 15 min and restore on start (Continuum);
+  Leader + Ctrl+s / Ctrl+r save / restore by hand if ever needed.
 
 The sessions label turns red and says PREFIX while waiting for a key.
 These are installed shortcuts, not proposed future changes.
