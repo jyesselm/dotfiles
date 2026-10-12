@@ -101,6 +101,7 @@ return {
     keys = {
         -- Picker keymaps (<leader>f prefix to avoid conflict with f-find)
         { "<leader>ff", function() Snacks.picker.files() end, desc = "Find files" },
+        { "<F12>", function() Snacks.picker.smart() end, desc = "Smart open (Cmd+P via Karabiner)" },
         { "<leader>ft", function() Snacks.picker.files({ win = { input = { keys = { ["<CR>"] = { "edit_tab", mode = { "i", "n" } } } } } }) end, desc = "Find files (tab)" },
         { "<leader>fg", function() Snacks.picker.grep() end, desc = "Live grep" },
         { "<leader>fb", function() Snacks.picker.buffers() end, desc = "Find buffers" },

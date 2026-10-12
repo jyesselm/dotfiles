@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fuzzy switch to any tmux session or window (run inside a tmux popup).
+# Bound to prefix+f and, outside Neovim, to Cmd+P (Karabiner sends F12).
+
+{
+  tmux list-sessions -F '[session] #S (#{session_windows} wins)'
+  tmux list-windows -a -F '[window] #S:#I #W'
+} | fzf --reverse --header='Switch Session/Window' \
+        --preview='tmux capture-pane -ep -t {2}' --preview-window=right:50% |
+  awk '{print $2}' |
+  xargs -I{} tmux switch-client -t {}

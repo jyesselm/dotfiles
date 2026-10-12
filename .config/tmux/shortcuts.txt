@@ -17,7 +17,8 @@ START HERE
   Leader + y              Open Yazi file browser in a new window
   Leader + ?              Interactive action menu (Esc closes)
   Leader + w              Your familiar window/session tree picker
-  Leader + f              Searchable popup for sessions and windows
+  Leader + f  or  Cmd+P   Searchable popup for sessions and windows
+                          (Cmd+P inside Neovim opens its file/buffer picker)
   Option + s              Session picker
   Option + Tab            Toggle last session
   Cmd + h/j/k/l           Pane left / down / up / right

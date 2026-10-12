@@ -6,7 +6,7 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Layer | Job | Rule |
 |---|---|---|
 | Hyper (Caps) | System: apps, windows, launchers | Letters open apps; arrows, numbers, Return, Delete place windows |
-| ⌘ | Inside an app | Native Mac keys, plus three overrides with one meaning everywhere: ⌘[ ] tabs, ⌘K search/switch, ⌘Space tmux (terminals) |
+| ⌘ | Inside an app | Native Mac keys, plus overrides with one meaning everywhere: ⌘[ ] tabs, ⌘Space tmux (terminals), and the switcher: **⌘P in code tools** (VS Code, Cursor, tmux, Neovim), **⌘K in browser and chat** |
 | ⌃ (Right ⌘) | Terminal and Vim | Shell, tmux, Neovim only; in terminals ⌘h/j/k/l is the way to move panes |
 | Alfred keyword | Anything used rarely | No hotkey: type the word in Hyper+Space (`snip`, `1p`, `hk`) |
 
@@ -77,6 +77,7 @@ Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord t
 | ⌘[ / ⌘] | Previous / next tab, every app (Karabiner swap) |
 | ⇧⌘[ / ⇧⌘] | What ⌘[ ] did natively: back/forward, outdent/indent, iTerm panes |
 | ⌘K (Chrome) | Search open tabs (Karabiner sends ⇧⌘A) |
+| ⌘P (terminals) | tmux: fuzzy switch session/window · Neovim: smart open (Karabiner sends F12) |
 | Hyper+Space | Alfred |
 | ⌘Space | tmux leader in terminals (Karabiner sends ⌃Space) |
 | ⌘h/j/k/l | In terminals: pane moves (Karabiner sends ⌃); also over SSH |
