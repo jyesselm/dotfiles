@@ -34,8 +34,8 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Hyper+G | ChatGPT |
 | Hyper+H | Google Chat |
 | Hyper+M | Messages |
+| Hyper+N | notes |
 | Hyper+O | Obsidian |
-| Hyper+R | notes (read) |
 | Hyper+S | Slack |
 | Hyper+T | iTerm (terminal) |
 | Hyper+W | Word |
@@ -48,7 +48,7 @@ Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
 | Caps Lock tap | Escape |
 | F3 | Screenshot to clipboard |
 
-Free: Q Y Z, 7 8 9 0.
+Free: P Q R Y Z, 7 8 9 0.
 
 ## Hyper: window placement  (forwarded to Magnet)
 
@@ -60,7 +60,7 @@ Free: Q Y Z, 7 8 9 0.
 | Hyper+1 2 3 | Left / center / right third |
 | Hyper+4 5 6 | Left / center / right two-thirds |
 | Hyper+numpad 1–6 | Sixths, left to right (full keyboard only) |
-| Hyper+N / P | Move to next / previous display |
+| Hyper+. / , | Move to next / previous display |
 | Hyper+Return | Maximize |
 | Hyper+Delete | Restore |
 
