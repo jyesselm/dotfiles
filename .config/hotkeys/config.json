@@ -1,0 +1,29 @@
+{
+  "apps": [
+    { "name": "Chrome", "bundle": "com.google.Chrome" },
+    { "name": "Claude", "bundle": "com.anthropic.claudefordesktop" },
+    { "name": "ChatGPT", "bundle": "com.openai.codex" },
+    { "name": "Slack", "bundle": "com.tinyspeck.slackmacgap" },
+    { "name": "Google Chat", "bundle": "com.google.Chrome.app.pommaclcbfghclhalboakcipcmmndhcj" },
+    { "name": "Cursor", "bundle": "com.todesktop.230313mzl4w4u92" },
+    { "name": "Tasks", "bundle": "com.jyesselman.tasks" },
+    { "name": "notes", "bundle": "com.jyesselman.notes" },
+    { "name": "Word", "bundle": "com.microsoft.Word" },
+    { "name": "Excel", "bundle": "com.microsoft.Excel" },
+    { "name": "PowerPoint", "bundle": "com.microsoft.Powerpoint" },
+    { "name": "Finder", "bundle": "com.apple.finder" },
+    { "name": "Zotero", "bundle": "org.zotero.zotero" },
+    { "name": "Messages", "bundle": "com.apple.MobileSMS" },
+    { "name": "Mail", "bundle": "com.apple.mail" },
+    { "name": "Fantastical", "bundle": "com.flexibits.fantastical2.mac" },
+    { "name": "iTerm", "bundle": "com.googlecode.iterm2" },
+    { "name": "1Password", "bundle": "com.1password.1password" }
+  ],
+  "terminals": ["com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty", "net.kovidgoyal.kitty", "org.alacritty", "com.github.wez.wezterm"],
+  "extras": [
+    { "keys": "⌘\\", "app": "global", "source": "1Password", "action": "Fill login into the focused field" },
+    { "keys": "⇧⌘L", "app": "global", "source": "1Password", "action": "Lock 1Password" },
+    { "keys": "⌘Tab", "app": "global", "source": "Contexts", "action": "App switcher" },
+    { "keys": "⌘.", "app": "global", "source": "Tasks", "action": "Quick add task (system-wide)" }
+  ]
+}
