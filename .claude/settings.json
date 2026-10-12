@@ -20,7 +20,16 @@
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "laravel-simplifier@laravel": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "cloudflare@cloudflare": true
+  },
+  "extraKnownMarketplaces": {
+    "cloudflare": {
+      "source": {
+        "source": "github",
+        "repo": "cloudflare/skills"
+      }
+    }
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "high",

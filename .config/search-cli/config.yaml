@@ -1,13 +1,16 @@
 live:
   vaults:
-    - ~/notes
+  - ~/notes
   roots:
-    - ~/Downloads
-    - ~/Documents
-    - ~/Desktop
-    - ~/notes
-    - ~/Dropbox
-    - ~/Library/CloudStorage/Dropbox
-    - ~/cloud/Dropbox
-    - ~/cloud/gdrive
-    - ~/local
+  - ~/Downloads
+  - ~/Documents
+  - ~/Desktop
+  - ~/notes
+  - ~/Dropbox
+  - ~/Library/CloudStorage/Dropbox
+  - ~/cloud/Dropbox
+  - ~/cloud/gdrive
+  - ~/local
+  mail_source: thunderbird
+  mail_roots: []
+  mail_database: ~/.cache/search-cli/thunderbird-v1.sqlite3

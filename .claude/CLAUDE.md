@@ -36,6 +36,20 @@ verdict line:
 
 `/feature-py-auto` and `/feature-cpp-auto` run plan → plan-critic → code →
 (completeness-verifier + test-adversary + reviewer) → fix loop, hands-off, with a
-**max of 3 rounds** per loop and a human checkpoint before anything irreversible.
+**max of 3 rounds** per fix loop and a human checkpoint before anything irreversible.
+**Planning gets ONE round only:** planner → plan-critic once; fold the critic's blocking
+points into the plan with one revision, then go straight to code — no re-critique loop.
 A verdict other than the pass value is blocking. Run in auto-accept-edits mode
 (shift+tab) for true hands-off operation.
+
+## Joe's tasks (Tasks app only)
+
+Task work goes ONLY to the Tasks app (API :8767); never touch Todoist (Joe, 2026-10-11). Multi-step work is a **chain** in
+Joe's approved format: many small steps, each a ≤6-word verb title plus a `note` with 2–4 lines of
+exact clicks/URLs (one action per line). Email tasks start with `📧 account · sender · "subject" · date`.
+Full rules: memory `task-step-format.md` and `task-sync-and-email-rules.md`.
+
+## Joe's notes app
+
+Notes live in his own app (http://127.0.0.1:8766, files under `~/local/code/web/notes/notes/`), not in Obsidian any more.
+Anything that reads or writes a note loads the `notes` skill (`~/.claude/skills/notes/SKILL.md`): page layout, vocabulary, API, rules.
