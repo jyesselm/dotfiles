@@ -1,120 +1,50 @@
-# Hotkey layers
+# Hotkey rules
 
-One job per layer. A new binding must fit a row here or it does not get added.
-Search all of this from anywhere with **Hyper+/** (Alfred, keyword `hk`).
+The full, live list of every shortcut is the **Hotkeys** app (`~/local/code/web/hotkeys`), also searchable
+from Alfred with **Hyper+/** (keyword `hk`). This file is only the rules; Hotkeys checks them
+(Clashes, Shared verbs). The machine-readable copy is `rules` in `~/.config/hotkeys/config.json`.
 
-| Layer | Job | Rule |
-|---|---|---|
-| Hyper (Caps) | System: apps, windows, launchers | Letters open apps; arrows, numbers, Return, Delete place windows |
-| ⌘ | Inside an app | Native Mac keys, plus overrides with one meaning everywhere: ⌘[ ] tabs, ⌘Space tmux (terminals), and the switcher: **⌘P in code tools** (VS Code, Cursor, tmux, Neovim), **⌘K in browser and chat** |
-| ⌃ (Right ⌘) | Terminal and Vim | Shell, tmux, Neovim only; in terminals ⌘h/j/k/l is the way to move panes |
-| Alfred keyword | Anything used rarely | No hotkey: type the word in Hyper+Space (`snip`, `1p`, `hk`) |
+## Layers: each modifier has one owner
 
-| Modifier | Owner | Scope | Details |
+| Layer | Owner | Holds | Never |
 |---|---|---|---|
-| Caps Lock (Hyper = ⇧⌃⌥⌘) | Karabiner | Launch apps, place windows, clipboard, search | below |
-| ⌃⌥ | Magnet | Backend for Hyper placement only; never used directly | — |
-| ⌘ | macOS + each app | Native in-app commands | untouched, except ⌘[ ] (below) |
-| ⌘Tab (Contexts) / ⌘` | Contexts, macOS | Switch apps / windows | below |
-| Right ⌘ | Karabiner | Always ⌃, so Ctrl is a thumb key (⌃C, ⌃R, Vimium ⌃o/⌃i) | below |
-| ⌃Space (⌘Space in terminals) | tmux | Leader | `tmux/shortcuts.txt` |
-| ⌃h/j/k/l (⌘h/j/k/l in terminals) | tmux, Neovim, Zed | Move between panes, identical everywhere | `nvim/KEYBINDINGS.md`, `zed/keymap.json` |
-| Left ⌥ | tmux, zsh | Sessions; word motion; fzf cd | `tmux/shortcuts.txt`, `~/.zsh/keybindings.zsh` |
-| Space | Neovim | Leader | `nvim/KEYBINDINGS.md` |
+| ⌘ ⇧⌘ ⌥⌘ | the app in front | everything inside an app | anything global |
+| Hyper (Caps; tap = Esc) | the system | letters open apps · arrows, UIJK, numbers, Return, Delete place windows · Space, /, L, V, Q, X, [ ] call tools | app-specific actions |
+| ⌃⌥ | Magnet (backend) | only what Karabiner forwards from Hyper | pressed by hand |
+| Leader (⌘Space in terminals → ⌃Space) | tmux | panes, windows, sessions | outside terminals |
+| ⌘h/j/k/l in terminals (→ ⌃) | tmux, Neovim | move between panes | — |
+| Right ⌘ | Karabiner | always ⌃ (a thumb Ctrl) | — |
+| Alfred keyword | rare things | anything used less than daily | a hotkey |
 
-## Hyper: apps  (`karabiner/karabiner.json`)
+## Shared verbs: same key, same meaning, every app
 
-| Key | Action |
-|---|---|
-| Hyper+A | Claude |
-| Hyper+B | Chrome (browser) |
-| Hyper+C | Cursor |
-| Hyper+D | Tasks (do) |
-| Hyper+E | Finder (explorer) |
-| Hyper+G | ChatGPT |
-| Hyper+H | Google Chat |
-| Hyper+M | Messages |
-| Hyper+N | notes |
-| Hyper+O | Obsidian |
-| Hyper+S | Slack |
-| Hyper+T | iTerm (terminal) |
-| Hyper+W | Word |
-| Hyper+V | Alfred clipboard history |
-| Hyper+L | 1Password login search (Alfred `1p`): ↩ open site and fill · ⌘↩ copy password · ⌥↩ copy username · ⌃↩ view in 1Password · ⇧↩ copy one-time code |
-| Hyper+/ | Search hotkeys (this sheet, tmux, Neovim) |
-| Hyper+Space | Alfred |
-| Hyper+[ / ] | Previous / next window of this app |
-| Hyper+X | All windows of this app (sends ⌃↓) |
-| Caps Lock tap | Escape |
-| F3 | Screenshot to clipboard |
+| Key | Verb | Notes |
+|---|---|---|
+| ⌘K | Jump to (tab, chat, page, channel, folder) | Karabiner fixes Chrome (tab search), Claude, Finder (Go to Folder) |
+| ⌘P | Open / switch in code tools and terminals | terminals: tmux switcher or Neovim smart open (Karabiner sends F12) |
+| ⌘] / ⌘[ | Next / previous tab | Karabiner swap, every app |
+| ⇧⌘] / ⇧⌘[ | Forward / back (iTerm: panes, editors: indent) | what ⌘[ ] did natively |
+| ⌘F | Find | |
+| ⌘T / ⇧⌘T | New tab / reopen closed tab | |
+| ⌘W | Close tab | |
+| ⌘N | New (chat, message, page, window) | |
+| ⌘\ | Fill password (1Password) | the one global key on ⌘, on purpose |
+| ⌘/ | Show keyboard shortcuts | |
 
-Free: P Q R Y Z, 7 8 9 0.
+## Deliberate exceptions
 
-## Hyper: window placement  (forwarded to Magnet)
+- Global keys allowed on ⌘ (`rules.globalOnCmd`): ⌘\ 1Password fill · ⌘Tab Contexts · ⌘` ⇧⌘` macOS next window · ⇧⌘/ search app menus.
+- Native meanings left alone: Word ⌘K inserts a link · Slack ⇧⌘T Threads · iTerm ⇧⌘[ ] switch panes.
 
-| Key | Action |
-|---|---|
-| Hyper+← → ↑ ↓ | Left / right / top / bottom half |
-| Hyper+U I J K | Top-left / top-right / bottom-left / bottom-right quarter |
-| Hyper+F | Center third (same as Hyper+2) |
-| Hyper+1 2 3 | Left / center / right third |
-| Hyper+4 5 6 | Left / center / right two-thirds |
-| Hyper+numpad 1–6 | Sixths, left to right (full keyboard only) |
-| Hyper+. / , | Move to next / previous display |
-| Hyper+Return | Maximize |
-| Hyper+Delete | Restore |
+## Adding a shortcut
 
-Magnet's own ⌃⌥ bindings stay enabled: Karabiner forwards each Hyper chord to one of them. Don't bind ⌃⌥ elsewhere.
+1. Used daily? If not, make it an Alfred keyword or find it with ⇧⌘/ (search the app's menus).
+2. Pick the row in the layer table; global things go on Hyper, never on ⌘.
+3. If it is a shared verb, use the key above (Karabiner can fix one app that disagrees).
+4. Rescan Hotkeys: Clashes must stay at 0.
 
-## Switching without the mouse
+## Where things live
 
-| Key | Action |
-|---|---|
-| ⌘Tab | Contexts app switcher (sidebar list). Quick tap = jump back to the last app; hold ⌘ and tap Tab to go further back; ⇧ reverses |
-| Hyper+] / Hyper+[ | Next / previous window of this app (Karabiner sends ⌘` / ⇧⌘`) |
-| Hyper+X | All windows of this app |
-| ⇧⌘/ | Search any app's menus; type the command, Return runs it |
-| ⌘[ / ⌘] | Previous / next tab, every app (Karabiner swap) |
-| ⇧⌘[ / ⇧⌘] | What ⌘[ ] did natively: back/forward, outdent/indent, iTerm panes |
-| ⌘K (Chrome) | Search open tabs (Karabiner sends ⇧⌘A) |
-| ⌘P (terminals) | tmux: fuzzy switch session/window · Neovim: smart open (Karabiner sends F12) |
-| Hyper+Space | Alfred |
-| ⌘Space | tmux leader in terminals (Karabiner sends ⌃Space) |
-| ⌘h/j/k/l | In terminals: pane moves (Karabiner sends ⌃); also over SSH |
-| ⌘\ | 1Password: fill login into the focused field, every app including terminals |
-| `snip` in Alfred | Snippets (no hotkey, so ⇧⌘S stays Save As) |
-
-Alfred's live preferences (workflows, these hotkeys) sync via `~/Library/CloudStorage/Dropbox/Alfred.alfredpreferences`; the copy under Application Support is unused.
-
-## Chat apps: Claude + ChatGPT (same keys in both)
-
-| Key | Action |
-|---|---|
-| ⌘K | Search chats (Karabiner swaps Claude's ⌘K/⇧⌘K so this matches ChatGPT) |
-| ⇧⌘K | Claude only: command palette |
-| ⌘N | New chat / session |
-| ⌘[ / ⌘] | Previous / next chat (global Karabiner swap) |
-| ⇧⌘[ / ⇧⌘] | Back / forward |
-| ⌘B | Toggle sidebar (ChatGPT's own is ⇧⌘S; Karabiner maps ⌘B to it) |
-| ⌘J | Bottom panel (Claude terminal / ChatGPT panel) |
-| ⌘W | Close chat |
-| ⌘/ | Show every shortcut |
-
-## Chrome: Vimium  (`yadm/files/vimium/`)
-
-| Key | Action |
-|---|---|
-| f | Click a link (hints) |
-| F | Open link in new tab |
-| J / K | Page down / up |
-| o / O | Open URL or bookmark here / in new tab |
-| ⇧T | Search open tabs (or ⌘K, which works on every page) |
-| / | Find in page |
-| gi | Focus first input |
-| ? | Show all Vimium keys |
-
-Settings sync through Chrome Sync; the dotfiles copy is a backup, restore via Vimium Options → Backup and Restore.
-
-## Retired
-
-Rectangle and BetterTouchTool (removed 2026-10-05): both bound ⌃⌥ and clashed with Magnet.
+Karabiner `~/.config/karabiner/karabiner.json` · Magnet's own settings · tmux `~/.config/tmux/shortcuts.txt` ·
+Neovim `~/.config/nvim/KEYBINDINGS.md` · Alfred `~/cloud/Dropbox/Alfred.alfredpreferences` ·
+Vimium `~/.config/yadm/files/vimium/` (restore via Vimium Options) · Hotkeys app list `~/.config/hotkeys/config.json`.

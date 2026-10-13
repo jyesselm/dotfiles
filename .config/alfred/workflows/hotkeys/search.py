@@ -1,46 +1,44 @@
 #!/usr/bin/env python3
-"""Emit every documented hotkey as Alfred script-filter JSON; Alfred does the fuzzy filtering.
+"""Emit every hotkey as Alfred script-filter JSON; Alfred does the fuzzy filtering.
 
-Sources: ~/.config/HOTKEYS.md (every two-column table, section heading = subtitle),
-~/.config/tmux/shortcuts.txt, ~/.config/nvim/KEYBINDINGS.md.
+Sources: ~/.cache/hotkeys/entries.json (the Hotkeys app's live list; refreshed by the app on every scan,
+or here via scripts/export.js when it is older than a day), plus the rule tables in ~/.config/HOTKEYS.md.
 """
-import json, re
+import json, os, re, shutil, subprocess, time
 from pathlib import Path
 
 H = Path.home()
+CACHE = H / ".cache/hotkeys/entries.json"
+EXPORT = H / "local/code/web/hotkeys/scripts/export.js"
 items = []
 
 def add(key, action, src):
     key, action = key.strip(), action.strip()
     if len(key) > 2 and key[0] == key[-1] == "`":   # markdown code span, not a backtick key
         key = key[1:-1]
+    key = key.replace("⌃⌥⇧⌘", "Hyper+")
     if key and action:
         items.append({"title": f"{key}   →   {action}", "subtitle": src,
                       "arg": key, "match": f"{key} {action} {src}"})
 
-def md_tables(path, label):
-    """Yield (key, action, section) from markdown tables; skips header and rule rows."""
-    section = label
-    for line in path.read_text().splitlines():
-        if line.startswith("#"):
-            heading = re.sub(r"\s*\(.*\)$", "", line.lstrip("# ").strip())
-            section = f"{label} · {heading}"
-        elif line.startswith("|") and not re.match(r"^\|\s*-", line):
-            cells = [c.strip() for c in line.strip("|").split("|")]
-            if len(cells) >= 2 and cells[0] not in ("Key", "Modifier"):
-                yield cells, section
+if (not CACHE.exists() or time.time() - CACHE.stat().st_mtime > 86400) and EXPORT.exists():
+    node = shutil.which("node", path=os.environ.get("PATH", "") + ":/opt/homebrew/bin:/usr/local/bin")
+    if node:
+        subprocess.run([node, str(EXPORT)], timeout=20, capture_output=True)
 
-for cells, section in md_tables(H / ".config/HOTKEYS.md", "Hotkeys"):
-    if section == "Hotkeys · Hotkey layers":          # the layer map: Modifier | Owner | Scope
-        add(cells[0], f"{cells[2]} ({cells[1]})", "Layer map")
-    else:
-        add(cells[0], cells[1], section.split(" · ", 1)[1])
+if CACHE.exists():
+    for e in json.loads(CACHE.read_text()):
+        add(e["keys"], e["action"], f'{e["app"]} · {e["source"]}' + (f' · {e["where"]}' if e["where"] else ""))
+else:
+    items.append({"title": "Open the Hotkeys app once to build the list", "valid": False})
 
-for line in (H / ".config/tmux/shortcuts.txt").read_text().splitlines():
-    m = re.match(r"^  (\S.*?\S)\s{2,}(\S.*)$", line)
-    if m: add(m.group(1), m.group(2), "tmux")
-
-for cells, section in md_tables(H / ".config/nvim/KEYBINDINGS.md", "nvim"):
-    add(cells[0], cells[1], section)
+section = "Rules"
+for line in (H / ".config/HOTKEYS.md").read_text().splitlines():
+    if line.startswith("#"):
+        section = "Rules · " + line.lstrip("# ").strip()
+    elif line.startswith("|") and not re.match(r"^\|\s*-", line):
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) >= 2 and cells[0] not in ("Key", "Layer"):
+            add(cells[0], cells[1], section)
 
 print(json.dumps({"items": items}))

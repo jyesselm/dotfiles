@@ -1,29 +1,258 @@
 {
   "apps": [
-    { "name": "Chrome", "bundle": "com.google.Chrome" },
-    { "name": "Claude", "bundle": "com.anthropic.claudefordesktop" },
-    { "name": "ChatGPT", "bundle": "com.openai.codex" },
-    { "name": "Slack", "bundle": "com.tinyspeck.slackmacgap" },
-    { "name": "Google Chat", "bundle": "com.google.Chrome.app.pommaclcbfghclhalboakcipcmmndhcj" },
-    { "name": "Cursor", "bundle": "com.todesktop.230313mzl4w4u92" },
-    { "name": "Tasks", "bundle": "com.jyesselman.tasks" },
-    { "name": "notes", "bundle": "com.jyesselman.notes" },
-    { "name": "Word", "bundle": "com.microsoft.Word" },
-    { "name": "Excel", "bundle": "com.microsoft.Excel" },
-    { "name": "PowerPoint", "bundle": "com.microsoft.Powerpoint" },
-    { "name": "Finder", "bundle": "com.apple.finder" },
-    { "name": "Zotero", "bundle": "org.zotero.zotero" },
-    { "name": "Messages", "bundle": "com.apple.MobileSMS" },
-    { "name": "Mail", "bundle": "com.apple.mail" },
-    { "name": "Fantastical", "bundle": "com.flexibits.fantastical2.mac" },
-    { "name": "iTerm", "bundle": "com.googlecode.iterm2" },
-    { "name": "1Password", "bundle": "com.1password.1password" }
+    {
+      "name": "Chrome",
+      "bundle": "com.google.Chrome"
+    },
+    {
+      "name": "Claude",
+      "bundle": "com.anthropic.claudefordesktop"
+    },
+    {
+      "name": "ChatGPT",
+      "bundle": "com.openai.codex"
+    },
+    {
+      "name": "Slack",
+      "bundle": "com.tinyspeck.slackmacgap"
+    },
+    {
+      "name": "Google Chat",
+      "bundle": "com.google.Chrome.app.pommaclcbfghclhalboakcipcmmndhcj"
+    },
+    {
+      "name": "Cursor",
+      "bundle": "com.todesktop.230313mzl4w4u92"
+    },
+    {
+      "name": "Tasks",
+      "bundle": "com.jyesselman.tasks"
+    },
+    {
+      "name": "notes",
+      "bundle": "com.jyesselman.notes"
+    },
+    {
+      "name": "Word",
+      "bundle": "com.microsoft.Word"
+    },
+    {
+      "name": "Excel",
+      "bundle": "com.microsoft.Excel"
+    },
+    {
+      "name": "PowerPoint",
+      "bundle": "com.microsoft.Powerpoint"
+    },
+    {
+      "name": "Finder",
+      "bundle": "com.apple.finder"
+    },
+    {
+      "name": "Zotero",
+      "bundle": "org.zotero.zotero"
+    },
+    {
+      "name": "Messages",
+      "bundle": "com.apple.MobileSMS"
+    },
+    {
+      "name": "Mail",
+      "bundle": "com.apple.mail"
+    },
+    {
+      "name": "Fantastical",
+      "bundle": "com.flexibits.fantastical2.mac"
+    },
+    {
+      "name": "iTerm",
+      "bundle": "com.googlecode.iterm2"
+    },
+    {
+      "name": "1Password",
+      "bundle": "com.1password.1password"
+    }
   ],
-  "terminals": ["com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty", "net.kovidgoyal.kitty", "org.alacritty", "com.github.wez.wezterm"],
+  "terminals": [
+    "com.googlecode.iterm2",
+    "com.apple.Terminal",
+    "com.mitchellh.ghostty",
+    "net.kovidgoyal.kitty",
+    "org.alacritty",
+    "com.github.wez.wezterm"
+  ],
   "extras": [
-    { "keys": "⌘\\", "app": "global", "source": "1Password", "action": "Fill login into the focused field" },
-    { "keys": "⇧⌘L", "app": "global", "source": "1Password", "action": "Lock 1Password" },
-    { "keys": "⌘Tab", "app": "global", "source": "Contexts", "action": "App switcher" },
-    { "keys": "⌘.", "app": "global", "source": "Tasks", "action": "Quick add task (system-wide)" }
-  ]
+    {
+      "keys": "⌘\\",
+      "app": "global",
+      "source": "1Password",
+      "action": "Fill login into the focused field"
+    },
+    {
+      "keys": "⌘Tab",
+      "app": "global",
+      "source": "Contexts",
+      "action": "App switcher"
+    },
+    {
+      "keys": "⌃⌥⇧⌘Q",
+      "app": "global",
+      "source": "Tasks",
+      "action": "Quick add task (system-wide)"
+    },
+    {
+      "keys": "⇧⌘]",
+      "app": "com.google.Chrome",
+      "source": "built in",
+      "action": "Next tab",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⇧⌘[",
+      "app": "com.google.Chrome",
+      "source": "built in",
+      "action": "Previous tab",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⇧⌘]",
+      "app": "com.apple.finder",
+      "source": "built in",
+      "action": "Next tab",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⇧⌘[",
+      "app": "com.apple.finder",
+      "source": "built in",
+      "action": "Previous tab",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⌘K",
+      "app": "com.openai.codex",
+      "source": "built in",
+      "action": "Search chats",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⌘K",
+      "app": "com.jyesselman.tasks",
+      "source": "built in",
+      "action": "Command palette",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⌘P",
+      "app": "com.todesktop.230313mzl4w4u92",
+      "source": "built in",
+      "action": "Quick open file",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⇧⌘]",
+      "app": "com.todesktop.230313mzl4w4u92",
+      "source": "built in",
+      "action": "Next editor tab",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⇧⌘[",
+      "app": "com.todesktop.230313mzl4w4u92",
+      "source": "built in",
+      "action": "Previous editor tab",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⌘F",
+      "app": "com.todesktop.230313mzl4w4u92",
+      "source": "built in",
+      "action": "Find",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⌘W",
+      "app": "com.todesktop.230313mzl4w4u92",
+      "source": "built in",
+      "action": "Close editor",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⇧⌘T",
+      "app": "com.todesktop.230313mzl4w4u92",
+      "source": "built in",
+      "action": "Reopen closed editor",
+      "where": "works but is not listed in the app's menus"
+    },
+    {
+      "keys": "⌘/",
+      "app": "com.tinyspeck.slackmacgap",
+      "source": "built in",
+      "action": "Keyboard shortcuts",
+      "where": "works but is not listed in the app's menus"
+    }
+  ],
+  "rules": {
+    "globalOnCmd": [
+      "⌘\\",
+      "⌘Tab",
+      "⌘`",
+      "⇧⌘`",
+      "⇧⌘/"
+    ],
+    "verbs": [
+      {
+        "keys": "⌘K",
+        "verb": "Jump to (tab, chat, page, channel)"
+      },
+      {
+        "keys": "⌘P",
+        "verb": "Open / switch (code tools and terminals)"
+      },
+      {
+        "keys": "⌘]",
+        "verb": "Next tab"
+      },
+      {
+        "keys": "⌘[",
+        "verb": "Previous tab"
+      },
+      {
+        "keys": "⇧⌘]",
+        "verb": "Forward"
+      },
+      {
+        "keys": "⇧⌘[",
+        "verb": "Back"
+      },
+      {
+        "keys": "⌘F",
+        "verb": "Find"
+      },
+      {
+        "keys": "⌘T",
+        "verb": "New tab"
+      },
+      {
+        "keys": "⇧⌘T",
+        "verb": "Reopen closed tab"
+      },
+      {
+        "keys": "⌘W",
+        "verb": "Close tab"
+      },
+      {
+        "keys": "⌘N",
+        "verb": "New (chat, message, page, window)"
+      },
+      {
+        "keys": "⌘\\",
+        "verb": "Fill password (1Password)"
+      },
+      {
+        "keys": "⌘/",
+        "verb": "Show keyboard shortcuts"
+      }
+    ]
+  }
 }
