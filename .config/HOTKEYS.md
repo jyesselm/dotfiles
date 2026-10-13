@@ -56,7 +56,7 @@ Free: P Q R Y Z, 7 8 9 0.
 |---|---|
 | Hyper+← → ↑ ↓ | Left / right / top / bottom half |
 | Hyper+U I J K | Top-left / top-right / bottom-left / bottom-right quarter |
-| Hyper+F | Center (keeps size) |
+| Hyper+F | Center third (same as Hyper+2) |
 | Hyper+1 2 3 | Left / center / right third |
 | Hyper+4 5 6 | Left / center / right two-thirds |
 | Hyper+numpad 1–6 | Sixths, left to right (full keyboard only) |
