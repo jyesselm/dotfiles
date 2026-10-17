@@ -181,6 +181,32 @@ class AppTests(Base):
         self.assertIn('build locally: npm run install-app', detail)
         self.assertEqual(state, 'warn')
 
+    def test_checkout_app_is_built_when_its_commit_changes(self):
+        setup = self.setup('--profile', 'mac')
+        app = dict(APP, name='Hotkeys', bundle='Hotkeys.app', assets={}, checkout='local/code/web/hotkeys',
+                   build='npm install && npm run install-app')
+        detail, state = sm.sync_app(setup, app, self.root, 'arm64')
+        self.assertEqual((state, detail), ('warn', 'Hotkeys absent: checkout ~/local/code/web/hotkeys absent (grc clones it); not built'))
+        checkout = self.root / 'local/code/web/hotkeys'
+        (checkout / '.git').mkdir(parents=True)
+        reads = {'git': done('abcdef0123\n'), 'pgrep': done('', 1)}
+        runs = []
+        with patch.object(setup, 'read', side_effect=lambda a: reads[a[0]]), patch.object(setup, 'run', side_effect=lambda a, **k: runs.append((a, k))):
+            detail, state = sm.sync_app(setup, app, self.root, 'arm64')
+            self.assertEqual((state, detail), ('changed', 'Hotkeys absent -> abcdef0 built'))
+            self.assertEqual(runs[0][0], ['sh', '-c', 'npm install && npm run install-app'])
+            self.assertEqual(runs[0][1]['cwd'], checkout)
+            make_app(self.root / 'Hotkeys.app', 'com.x.tasks', '0.1.0')
+            self.assertEqual(sm.sync_app(setup, app, self.root, 'arm64'), ('Hotkeys 0.1.0 up to date (built from abcdef0)', 'ok'))
+            reads['git'] = done('1234567aaa\n')
+            reads['pgrep'] = done('42\n')
+            self.assertEqual(sm.sync_app(setup, app, self.root, 'arm64'), ('Hotkeys 0.1.0 -> 1234567 available; quit Hotkeys and rerun sync', 'warn'))
+            self.assertEqual(len(runs), 1)
+        self.assertEqual((self.root / sm.STATE_DIR / 'Hotkeys.commit').read_text(), 'abcdef0123\n')
+        plan = self.setup('--plan', '--profile', 'mac')
+        with patch.object(plan, 'read', side_effect=lambda a: reads['git'] if a[0] == 'git' else done('', 1)), patch.object(m.subprocess, 'run', side_effect=AssertionError('ran')):
+            self.assertEqual(sm.sync_app(plan, app, self.root, 'arm64'), ('Hotkeys 0.1.0 -> 1234567 (would build)', 'ok'))
+
     def test_running_app_is_not_replaced(self):
         setup = self.setup('--profile', 'mac')
         make_app(self.root / 'Tasks.app', 'com.x.tasks', '0.2.0')

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from setup import version
-from sync import BREW_TIMEOUT, NET_TIMEOUT, PhaseResult
+from sync import BREW_TIMEOUT, NET_TIMEOUT, STATE_DIR, PhaseResult
 
 BREWFILES = {
     'laptop': ['Brewfile', 'Brewfile.previews', 'Brewfile.desktop', 'Brewfile.apps'],
@@ -309,20 +309,47 @@ def sync_app(setup, app: dict, applications: Path, arch: str) -> Tuple[str, str]
     name, path = app['name'], Path(applications) / app['bundle']
     installed = installed_version(path, app['bundle_id'])
     if not app['assets']:
-        hint = 'build locally: ' + app.get('build', '?')
-        return '%s %s: no releases; %s' % (name, installed or 'absent', hint), 'warn'
+        if app.get('checkout') and app.get('build'):
+            return build_app(setup, app, path, installed)
+        return '%s %s: no releases; build locally: %s' % (name, installed or 'absent', app.get('build', '?')), 'warn'
     if arch not in app['assets']:
         raise RuntimeError('%s has no %s release asset' % (name, arch))
     tag = _latest_tag(setup, app['repo'])
     if not needs_upgrade(installed, tag):
         return '%s %s up to date' % (name, installed), 'ok'
     label = '%s %s -> %s' % (name, installed or 'absent', tag.lstrip('v'))
-    if installed and setup.read(['pgrep', '-f', str(path / 'Contents/MacOS')]).returncode == 0:
+    if installed and _running(setup, path):
         return '%s available; quit %s and rerun sync' % (label, name), 'warn'
     install_release(setup, dict(app, asset=app['assets'][arch]), tag, path)
     if setup.args.plan:
         return label + ' (would install)', 'ok'
     return label + ' installed', 'changed'
+
+
+def _running(setup, path: Path) -> bool:
+    """Whether a process from this bundle is alive (replacing it under a running app breaks it)."""
+    return setup.read(['pgrep', '-f', str(path / 'Contents/MacOS')]).returncode == 0
+
+
+def build_app(setup, app: dict, path: Path, installed: Optional[str]) -> Tuple[str, str]:
+    """An app without releases: run app['build'] in its grc-managed checkout whenever the checkout's commit changed."""
+    name, checkout = app['name'], setup.root / app['checkout']
+    if not (checkout / '.git').exists():
+        return '%s %s: checkout ~/%s absent (grc clones it); not built' % (name, installed or 'absent', app['checkout']), 'warn'
+    head = setup.read(['git', '-C', checkout, 'rev-parse', 'HEAD']).stdout.strip()
+    marker = setup.root / STATE_DIR / (name + '.commit')  # commit of the last build on this machine
+    built = marker.read_text().strip() if marker.exists() else ''
+    if installed and built == head:
+        return '%s %s up to date (built from %s)' % (name, installed, head[:7]), 'ok'
+    label = '%s %s -> %s' % (name, installed or 'absent', head[:7])
+    if installed and _running(setup, path):
+        return '%s available; quit %s and rerun sync' % (label, name), 'warn'
+    setup.run(['sh', '-c', app['build']], cwd=checkout, timeout=NET_TIMEOUT)
+    if setup.args.plan:
+        return label + ' (would build)', 'ok'
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(head + '\n')
+    return label + ' built', 'changed'
 
 
 def search_app(setup, applications: Path) -> Tuple[str, str]:
