@@ -89,7 +89,7 @@ class BootstrapTests(unittest.TestCase):
 
     def test_failures_return_nonzero_and_are_reported(self):
         setup = self.setup('--profile', 'mac', '--skip-packages', '--skip-nvim')
-        with patch.object(setup, 'shell', side_effect=RuntimeError('network unavailable')), patch.object(setup, 'tmux'), patch.object(setup, 'doctor', return_value=['missing yazi']):
+        with patch.object(setup, 'shell', side_effect=RuntimeError('network unavailable')), patch.object(setup, 'tmux'), patch.object(setup, 'tool'), patch.object(setup, 'doctor', return_value=['missing yazi']):
             self.assertEqual(setup.execute(), 1)
         self.assertIn('Setup incomplete', self.output.getvalue())
         self.assertIn('network unavailable', self.output.getvalue())
@@ -198,19 +198,26 @@ class BootstrapTests(unittest.TestCase):
             setup.run(['sh', '-c', 'exit 3'], timeout=5)
         setup.run(['true'], timeout=5)
 
-    def test_search_installs_editable_from_developing_checkout(self):
+    def test_tool_installs_editable_from_developing_checkout(self):
         setup = self.setup('--profile', 'mac', '--search')
-        checkout = self.root / m.SEARCH_CLI
-        (checkout / '.git').mkdir(parents=True)
-        (checkout / 'pyproject.toml').write_text('[project]\n')
-        with patch.object(setup, 'run') as run:
-            setup.search()
-        run.assert_called_once_with(['uv', 'tool', 'install', '--python', '3.12', '--editable', checkout])
-        self.assertNotIn('repos/search-cli', str(run.call_args))
+        for command, repo in m.CHECKOUT_TOOLS.items():
+            checkout = self.root / m.DEVELOPING / repo
+            (checkout / '.git').mkdir(parents=True)
+            (checkout / 'pyproject.toml').write_text('[project]\n')
+            with patch.object(setup, 'run') as run:
+                setup.tool(command)
+            run.assert_called_once_with(['uv', 'tool', 'install', '--python', '3.12', '--editable', checkout])
+            self.assertNotIn('repos/' + repo, str(run.call_args))
 
-    def test_search_plan_clones_missing_checkout_into_developing(self):
-        self.setup('--plan', '--profile', 'linux', '--search').search()
-        self.assertIn('search-cli.git -> ' + str(self.root / m.SEARCH_CLI), self.output.getvalue())
+    def test_tool_plan_clones_missing_checkout_into_developing(self):
+        self.setup('--plan', '--profile', 'linux').tool('grc')
+        self.assertIn('git-repo-checker.git -> ' + str(self.root / m.DEVELOPING / 'git-repo-checker'), self.output.getvalue())
+
+    def test_bootstrap_installs_grc_without_a_flag(self):
+        setup = self.setup('--plan', '--profile', 'linux', '--skip-packages', '--skip-nvim')
+        with patch.object(setup, 'phase') as phase:
+            setup.execute()
+        self.assertIn('Repo checker (grc) from its developing checkout', [c.args[0] for c in phase.call_args_list])
 
     def test_read_ok_raises_with_stderr(self):
         setup = self.setup('--profile', 'linux')

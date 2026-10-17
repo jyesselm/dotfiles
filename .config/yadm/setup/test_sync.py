@@ -422,7 +422,7 @@ class PhaseTests(Base):
         self.assertEqual(self.runs[0][:4], ['grc', 'active', 'sync', '--apply'])
 
     def search_checkout(self, sync):
-        checkout = sync.setup.search_cli
+        checkout = sync.setup.checkout('s')
         checkout.mkdir(parents=True, exist_ok=True)
         (checkout / 'pyproject.toml').write_text('[project]\nname = "search-cli"\n')
         return checkout
@@ -432,41 +432,79 @@ class PhaseTests(Base):
         self.search_checkout(sync)
         present = {'grc', 'uv'}
         sync.setup.find = lambda n: n if n in present else None
-        with patch.object(sync.setup, 'search') as search:
+        with patch.object(sync.setup, 'tool') as tool:
             result = sync.repos()
             self.assertEqual(result.status, 'changed')
             self.assertIn('s reinstalled', result.summary)
-            search.assert_called_once()
-            marker = self.root / sy.STATE_DIR / sy.SEARCH_MARKER
-            self.assertEqual(marker.read_text().strip(), sy.search_digest(sync.setup.search_cli))
+            tool.assert_called_once_with('s')
+            marker = self.root / sy.STATE_DIR / 'search-cli.sha256'
+            self.assertEqual(marker.read_text().strip(), sy.checkout_digest(sync.setup.checkout('s')))
             present.add('s')
             self.assertEqual(sync.repos().status, 'skipped')
-            search.assert_called_once()
+            tool.assert_called_once()
 
     def test_repos_reinstalls_s_when_dependencies_change(self):
         sync = self.make()
         checkout = self.search_checkout(sync)
-        with patch.object(sync.setup, 'search') as search:
+        with patch.object(sync.setup, 'tool') as tool:
             sync.repos()
             (checkout / 'uv.lock').write_text('version = 1\n')
             sync.repos()
-            self.assertEqual(search.call_count, 2)
+            self.assertEqual(tool.call_count, 2)
             self.assertIn('s up to date', sync.repos().summary)
-            self.assertEqual(search.call_count, 2)
+            self.assertEqual(tool.call_count, 2)
 
     def test_repos_search_skips_without_checkout_or_uv_and_in_plan(self):
         sync = self.make()
-        with patch.object(sync.setup, 'search', side_effect=AssertionError('installed')):
+        with patch.object(sync.setup, 'tool', side_effect=AssertionError('installed')):
             self.assertIn('checkout absent', sync.repos().summary)
             self.search_checkout(sync)
             sync.setup.find = lambda n: None if n == 'uv' else n
             self.assertIn('uv missing', sync.repos().summary)
         plan = self.make('--plan', '--profile', 'linux')
         self.search_checkout(plan)
-        with patch.object(plan.setup, 'search') as search:
+        with patch.object(plan.setup, 'tool') as tool:
             self.assertIn('would be reinstalled', plan.repos().summary)
-        search.assert_called_once()
-        self.assertFalse((self.root / sy.STATE_DIR / sy.SEARCH_MARKER).exists())
+        tool.assert_called_once_with('s')
+        self.assertFalse((self.root / sy.STATE_DIR / 'search-cli.sha256').exists())
+
+    def grc_checkout(self, sync):
+        checkout = sync.setup.checkout('grc')
+        (checkout / '.git').mkdir(parents=True)
+        (checkout / 'pyproject.toml').write_text('[project]\nname = "git-repo-checker"\n')
+        return checkout
+
+    def test_repos_fast_forwards_and_reinstalls_grc_before_using_it(self):
+        sync = self.make()
+        grc = self.grc_checkout(sync)
+        config = self.root / '.config/git-repo-checker/active.yml'
+        config.parent.mkdir(parents=True)
+        config.write_text('')
+        present = {'uv'}
+        sync.setup.find = lambda n: n if n in present else None
+        with patch.object(sync.setup, 'tool', side_effect=present.add) as tool:
+            result = sync.repos()
+        self.assertEqual(self.runs[0], ['git', '-C', str(grc), 'pull', '--ff-only', '--quiet'])
+        tool.assert_called_once_with('grc')
+        self.assertEqual(self.runs[1][:4], ['grc', 'active', 'sync', '--apply'])
+        self.assertEqual(result.status, 'changed')
+        self.assertIn('grc reinstalled', result.summary)
+        self.assertTrue((self.root / sy.STATE_DIR / 'git-repo-checker.sha256').exists())
+
+    def test_repos_reports_a_failed_grc_fast_forward_and_carries_on(self):
+        sync = self.make()
+        self.grc_checkout(sync)
+        real = sync.setup.run
+
+        def run(argv, **kwargs):
+            if argv[0] == 'git':
+                raise subprocess.CalledProcessError(128, argv)
+            real(argv, **kwargs)
+        sync.setup.run = run
+        with patch.object(sync.setup, 'tool'):
+            result = sync.repos()
+        self.assertIn('not fast-forwarded', result.summary)
+        self.assertIn('grc reinstalled', result.summary)  # the failed pull did not stop the phase
 
     def test_packages_honours_skip_packages(self):
         sync = self.make('--profile', 'mac', '--skip-packages')

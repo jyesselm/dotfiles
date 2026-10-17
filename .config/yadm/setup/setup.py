@@ -26,7 +26,8 @@ MICROMAMBA = {
 TOOLS = ['git', 'tmux', 'nvim', 'yazi', 'ya', 'fzf', 'fd', 'rg', 'zoxide',
          'starship', 'atuin', 'bat', 'jq', 'uv', 'gh', 'lazygit', 'node', 'zsh']
 MINIMUM = {'tmux': (3, 6), 'nvim': (0, 11), 'yazi': (26, 9, 1), 'fzf': (0, 53)}
-SEARCH_CLI = 'local/code/python/developing/search-cli'  # the grc-managed checkout that `s` runs from
+DEVELOPING = 'local/code/python/developing'  # grc-managed checkouts
+CHECKOUT_TOOLS = {'grc': 'git-repo-checker', 's': 'search-cli'}  # command -> repo it runs from; a commit on main propagates via sync
 
 
 def detect_profile():
@@ -58,7 +59,6 @@ class Setup:
         self.base = self.root / '.local/share/dotfiles'
         self.shims = self.base / 'bin'
         self.envdir = self.base / 'tools'
-        self.search_cli = self.root / SEARCH_CLI
         self.env = dict(os.environ, GIT_TERMINAL_PROMPT='0')
         extra = [str(self.shims), str(self.root / '.local/bin'), '/opt/homebrew/bin', '/usr/local/bin']
         self.env['PATH'] = os.pathsep.join(extra + [self.env.get('PATH', '')])
@@ -307,10 +307,14 @@ class Setup:
                 command.append('--lazy')
             self.run(command)
 
-    def search(self):
-        """Install `s` editable from the developing checkout; sync fast-forwards it, so a commit on main reaches every machine."""
-        self.clone('https://github.com/jyesselm/search-cli.git', self.search_cli, sentinel='pyproject.toml')
-        self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', self.search_cli])
+    def checkout(self, command) -> Path:
+        return self.root / DEVELOPING / CHECKOUT_TOOLS[command]
+
+    def tool(self, command):
+        """Install `command` editable from its developing checkout (cloned if absent); sync fast-forwards it, so a commit on main reaches every machine."""
+        checkout = self.checkout(command)
+        self.clone('https://github.com/jyesselm/' + checkout.name + '.git', checkout, sentinel='pyproject.toml')
+        self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', checkout])
 
     def doctor(self):
         self.say('\nDoctor (read-only checks)')
@@ -343,6 +347,8 @@ class Setup:
             for relative in ['.local/bin/tmux-dojo', '.config/nvim/lua/plugins/nvim-dojo.lua']:
                 if not (self.root / relative).is_file():
                     failures.append('Missing optional game: ' + relative)
+        if not self.find('grc'):
+            failures.append('grc missing; dotfiles-setup --sync cannot sync repos')
         if self.args.search and not self.find('s'):
             failures.append('search-cli command s missing')
         if self.args.previews:
@@ -372,10 +378,11 @@ class Setup:
         self.phase('Editor settings for installed apps', self.editors)
         self.phase('Tmux plugins and menu', self.tmux)
         self.phase('Neovim plugins from lockfile', self.neovim)
+        self.phase('Repo checker (grc) from its developing checkout', lambda: self.tool('grc'))
         if self.args.games:
             self.phase('Private practice games (requires GitHub authentication)', self.games)
         if self.args.search:
-            self.phase('Search CLI', self.search)
+            self.phase('Search CLI', lambda: self.tool('s'))
         if not self.args.plan:
             self.errors += self.doctor()
         if self.errors:

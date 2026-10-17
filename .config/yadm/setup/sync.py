@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 STATE_DIR = '.local/state/dotfiles/sync'
-SEARCH_MARKER = 'search-cli.sha256'  # digest of the checkout's pyproject.toml + uv.lock at the last `s` install
 PHASES = [('layout', 'Directory layout'),
           ('dotfiles', 'Dotfiles (yadm)'),
           ('packages', 'Packages'),
@@ -82,8 +81,8 @@ def load_mac_settings(path: Path):
     return module
 
 
-def search_digest(checkout: Path) -> str:
-    """sha256 over pyproject.toml and uv.lock in the search-cli checkout (missing files contribute nothing)."""
+def checkout_digest(checkout: Path) -> str:
+    """sha256 over pyproject.toml and uv.lock in a tool's checkout; <repo>.sha256 under STATE_DIR records the last install."""
     digest = hashlib.sha256()
     for name in ('pyproject.toml', 'uv.lock'):
         if (checkout / name).exists():
@@ -417,7 +416,10 @@ class Sync:
         return sync_mac.apps(self.setup, self.setup.machine_class(), self.applications)
 
     def repos(self) -> PhaseResult:
-        """Clone and fast-forward the repos listed for git-repo-checker, then keep `s` on its checkout."""
+        """Keep `grc` current from its checkout, clone and fast-forward the listed repos, then keep `s` on its checkout."""
+        details = [self._pull_grc_checkout()]
+        grc_reinstalled, detail = self._refresh_tool('grc')
+        details.append(detail)
         grc = self.setup.find('grc')
         fallback = self.root / GRC_FALLBACK
         grc = grc or (str(fallback) if fallback.exists() else None)
@@ -427,27 +429,39 @@ class Sync:
         else:
             self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
             status, summary = 'ok', 'grc active sync --apply'
-        reinstalled, detail = self._refresh_search()
-        return PhaseResult('changed' if reinstalled else status, summary + '; ' + detail, [detail])
+        s_reinstalled, detail = self._refresh_tool('s')
+        details = [d for d in details + [detail] if d]
+        return PhaseResult('changed' if grc_reinstalled or s_reinstalled else status, '; '.join([summary] + details), details)
 
-    def _refresh_search(self) -> Tuple[bool, str]:
-        """Reinstall `s` when it is missing or the checkout's dependencies changed; (reinstalled, detail)."""
-        checkout = self.setup.search_cli
+    def _pull_grc_checkout(self) -> str:
+        """Fast-forward git-repo-checker itself before it syncs the other repos; a failure is reported, not fatal."""
+        checkout = self.setup.checkout('grc')
+        if not (checkout / '.git').exists():
+            return ''
+        try:
+            self.setup.run(['git', '-C', checkout, 'pull', '--ff-only', '--quiet'], timeout=GIT_TIMEOUT)
+        except (OSError, subprocess.SubprocessError) as exc:
+            return 'git-repo-checker not fast-forwarded: ' + str(exc)
+        return ''
+
+    def _refresh_tool(self, command: str) -> Tuple[bool, str]:
+        """Reinstall `command` when it is missing or its checkout's dependencies changed; (reinstalled, detail)."""
+        checkout = self.setup.checkout(command)
         if not (checkout / 'pyproject.toml').exists():
-            return False, 'search-cli checkout absent; s left alone (dotfiles-setup --search installs it)'
+            return False, '%s checkout absent; %s left alone' % (checkout.name, command)
         if not self.setup.find('uv'):
-            return False, 'uv missing; s not refreshed'
-        marker = self.root / STATE_DIR / SEARCH_MARKER
-        digest = search_digest(checkout)
+            return False, 'uv missing; %s not refreshed' % command
+        marker = self.root / STATE_DIR / (checkout.name + '.sha256')
+        digest = checkout_digest(checkout)
         installed = marker.read_text().strip() if marker.exists() else ''
-        if self.setup.find('s') and installed == digest:
-            return False, 's up to date with ' + str(checkout)
-        self.setup.search()
+        if self.setup.find(command) and installed == digest:
+            return False, '%s up to date with %s' % (command, checkout)
+        self.setup.tool(command)
         if self.setup.args.plan:
-            return False, 's would be reinstalled from ' + str(checkout)
+            return False, '%s would be reinstalled from %s' % (command, checkout)
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(digest + '\n')
-        return True, 's reinstalled from ' + str(checkout)
+        return True, '%s reinstalled from %s' % (command, checkout)
 
     def defaults(self) -> PhaseResult:
         """Apply the saved allowlisted macOS preferences (restore semantics, backup first)."""
