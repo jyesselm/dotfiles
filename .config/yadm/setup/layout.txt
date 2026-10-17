@@ -1,0 +1,24 @@
+# Directories every computer should have, relative to $HOME.
+# Optional filters: profile:mac|linux|cluster  class:laptop|studio|linux|cluster
+# "check" = report if missing, never create (another program owns it).
+.config
+.local/bin
+.local/state/dotfiles
+local/code/python
+local/code/python/developing
+local/code/python/released
+local/code/cpp
+local/code/web
+local/code/javascript
+local/code/other
+local/code/rust
+local/code/nextflow
+local/installs
+local/papers
+local/research
+local/pymol-sessions
+local/zotero-library
+notes
+projects
+cloud
+cloud/Dropbox  profile:mac check

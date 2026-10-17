@@ -1,0 +1,29 @@
+# Desktop applications for the laptop and studio classes.
+# Work-managed apps (Cortex XDR, GlobalProtect, Company Portal, Self Service, Aruba,
+# Windows App, OneDrive) are never listed here.
+# Casks already installed outside Homebrew are skipped at sync time. Pkg casks have no
+# .app artifact, so "# present:" tells sync which path proves they are installed.
+# Core
+cask "1password"
+cask "alfred"
+cask "bartender"
+cask "karabiner-elements"  # present: /Applications/Karabiner-Elements.app
+cask "contexts"
+cask "iterm2"
+cask "cursor"
+cask "google-chrome"
+cask "claude"
+cask "chatgpt"
+cask "slack"
+cask "zotero"
+cask "fantastical"
+cask "tailscale-app"       # present: /Applications/Tailscale.app
+cask "dropbox"
+# App Store (needs the App Store signed in). Add more with: mas list
+brew "mas"
+mas "Magnet", id: 441258766
+# Standard
+cask "microsoft-office"    # present: /Applications/Microsoft Word.app
+cask "zoom"                # present: /Applications/zoom.us.app
+cask "spotify"
+cask "caffeine"

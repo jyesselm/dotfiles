@@ -25,7 +25,7 @@ Clone your yadm repository and run the regular bootstrap first. Desktop apps rem
 ~/.local/bin/mac-settings restore
 ```
 
-Restore is deliberately separate from `yadm bootstrap` and `--desktop`. It changes only the allowlisted keys recorded in the snapshot. Other preferences remain untouched. No applications are killed or restarted. Log out and back in when convenient to refresh cached settings; a running app can otherwise overwrite preferences.
+Restore is deliberately separate from `yadm bootstrap` and `--desktop`. `dotfiles-setup --sync` runs the same restore daily. It changes only the allowlisted keys recorded in the snapshot. Other preferences remain untouched. No applications are killed or restarted. Log out and back in when convenient to refresh cached settings; a running app can otherwise overwrite preferences.
 
 Before any restore changes, the tool saves the current supported settings under `~/.local/state/dotfiles/mac-settings/`. The displayed backup is itself restorable:
 
@@ -48,7 +48,7 @@ Only explicit values present on the source Mac are saved as values. Unset keys a
 
 ## App configurations and remaining exports
 
-Yadm already tracks iTerm2 (`.config/iterm2/com.googlecode.iterm2.plist`), Karabiner (`.config/karabiner/karabiner.json`), and VS Code/Cursor settings. The current Karabiner gaming profile is preserved with this change. A tracked file alone does not prove that an application is currently loading it; verify the app uses that configuration on a new Mac. Terminal fonts, privacy/accessibility permissions, and app sign-ins may need setup on the destination.
+Yadm already tracks iTerm2 (`.config/iterm2/com.googlecode.iterm2.plist`), Karabiner (`.config/karabiner/karabiner.json`), and Cursor settings. The current Karabiner gaming profile is preserved with this change. A tracked file alone does not prove that an application is currently loading it; verify the app uses that configuration on a new Mac. Terminal fonts, privacy/accessibility permissions, and app sign-ins may need setup on the destination.
 
 **Alfred and Bartender** are captured by the separate encrypted `mac-state save` command. It preserves their settings, workflows/shortcuts and available activation/license data plus an app inventory; see `~/.config/yadm/macos/app-state.md`. The system snapshot alone still does not include those app settings. Other installed customization apps are outside your requested scope.
 
@@ -56,7 +56,7 @@ The encrypted backup is local by default. Save its separate recovery key in your
 
 Intentionally excluded: app licenses, credentials, browser profiles, recent-file lists, Dock pinned-app/folder bookmarks, Finder favorites and folder-specific layouts, wallpaper files, text replacements, display layouts, login items, and account/cloud state. Keep full-machine backups (such as Time Machine) as well. Some app preference domains contain license keys; do not publish entire `~/Library/Preferences` or `Application Support` folders into the public dotfiles repo.
 
-The optional desktop Brewfile currently covers iTerm2, VS Code, Cursor, and Obsidian. It does not yet install every customization app above.
+The optional desktop Brewfile currently covers iTerm2 and Cursor. It does not yet install every customization app above.
 
 ## Maintenance
 

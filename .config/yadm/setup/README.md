@@ -44,11 +44,14 @@ After cloning, use either `~/.config/yadm/bootstrap` or `~/.local/bin/dotfiles-s
 dotfiles-setup --plan                       # no changes, installs or downloads
 dotfiles-setup --doctor                     # read-only health check
 dotfiles-setup --previews                   # PDF / SVG / archive / video previews
-dotfiles-setup --desktop                    # Mac: iTerm2, VS Code, Cursor, Obsidian
+dotfiles-setup --desktop                    # Mac: iTerm2, Cursor
 gh auth login
 dotfiles-setup --games                      # private tmux-dojo and nvim-dojo
 dotfiles-setup --search                     # search-cli, default GitHub branch
 dotfiles-setup --skip-packages --skip-nvim   # shell/menu/config setup only
+dotfiles-setup --sync [--plan]              # converge this computer (see Daily sync)
+dotfiles-setup --status                     # result of the last sync
+dotfiles-setup --install-schedule           # daily launchd job (Mac) or crontab line (Linux)
 ```
 
 Flags combine, for example `dotfiles-setup --plan --desktop --previews --games --search`. To check optional components, include them with doctor: `dotfiles-setup --doctor --games --search --previews`.
@@ -61,7 +64,7 @@ Flags combine, for example `dotfiles-setup --plan --desktop --previews --games -
 - Installs pinned Oh My Zsh and its two configured community plugins without running an installer that rewrites `.zshrc` or changes your login shell.
 - Uses the existing pinned tmux setup and generated menu.
 - Runs Neovim's `Lazy! restore` against the committed lockfile, not a bulk plugin upgrade. Plugin builds can download parsers or language servers and need a working compiler/toolchain.
-- Links VS Code/Cursor settings only for installed apps or an explicitly requested desktop setup. Existing settings receive unique backup names; earlier backups are never overwritten.
+- Links Cursor settings and keybindings only for an installed app or an explicitly requested desktop setup. Existing settings receive unique backup names; earlier backups are never overwritten.
 - Reports missing tools, incompatible versions and failed stages with a nonzero exit code. The final message says “incomplete” if a required step fails.
 
 Existing shell/plugin/private-repository checkouts are retained, including local changes. Bootstrap does not pull or reset those checkouts. To update a game, use `git pull --ff-only` then its `install.sh` in `~/.local/share/dotfiles/repos/<name>` (Neovim uses `--lazy`). Private game source stays outside the public yadm repository.
@@ -78,14 +81,34 @@ Search CLI is installed into a uv-managed tool environment from its default bran
 
 The pending search-cli ↔ Yazi integration is a separate feature; this bootstrap installs their current configurations and tools.
 
+## Daily sync
+
+`dotfiles-setup --sync` runs these phases in order: layout, dotfiles, packages, repos, apps, defaults, hotkeys, doctor. Preview with `--plan` (read-only). One failed phase never stops the others; any failure makes the exit code 1.
+
+- **Dotfiles** auto-commit modified *tracked* files only, `pull --rebase`, then push, and only on branch `main`. A rebase conflict is aborted and reported (fix with `yadm pull --rebase origin main`); offline, it commits locally and skips pull/push.
+- **Packages:** Brewfiles per class (Linux: the tool environment). Packages not in the manifests are reported as extras, never removed.
+- **Defaults:** the saved snapshot is applied every day, so run `mac-settings save` to keep a preference change (Magnet also syncs itself through iCloud).
+- Run the first sync on a new Mac in a terminal; cask installs may exceed the timeout under launchd.
+- State and log: `~/.local/state/dotfiles/sync/last.json` and `sync.log`. The `com.git-repo-checker.active` LaunchAgent stays; sync also runs `grc active sync --apply`.
+
+**Layout.** `setup/layout.txt` lists the `~`-relative directories every computer gets. Bootstrap and sync create missing ones and report unplanned top-level entries without touching them. Doctor flags literal home paths in tracked files: use `~` or `$HOME`.
+
+**Classes.** `yadm config local.class laptop|studio|linux|cluster` selects `##class.<x>` alternates and the Brewfiles.
+
+**Per-computer first run:**
+
+```sh
+yadm config local.class <class> && dotfiles-setup --sync --plan && dotfiles-setup --sync && dotfiles-setup --install-schedule
+```
+
 ## Validation
 
-Run `python3 ~/.config/yadm/setup/test_setup.py` for isolated filesystem/mocked-process tests. Package managers and desktop applications are never run by the test suite. Mac/Linux plans and the current Mac doctor can be checked without installing anything. A full fresh Linux dependency solve still depends on conda-forge availability and that machine's runtime.
+Run `python3 -m unittest discover -s ~/.config/yadm/setup -v` for isolated filesystem/mocked-process tests. Package managers and desktop applications are never run by the test suite. Mac/Linux plans and the current Mac doctor can be checked without installing anything. A full fresh Linux dependency solve still depends on conda-forge availability and that machine's runtime.
 
 ## Your Mac preferences
 
-The separate `~/.local/bin/mac-settings save` command captures selected current Mac preferences into yadm. On a new Mac, preview with `mac-settings plan` and explicitly apply with `mac-settings restore`; every restore first saves a rollback snapshot. Regular bootstrap never applies these system preferences automatically. See `~/.config/yadm/macos/README.md` for coverage, app exports, and limitations.
+The separate `~/.local/bin/mac-settings save` command captures selected current Mac preferences into yadm. On a new Mac, preview with `mac-settings plan` and explicitly apply with `mac-settings restore`; every restore first saves a rollback snapshot. Regular bootstrap never applies these system preferences; `dotfiles-setup --sync` re-applies the saved snapshot daily. See `~/.config/yadm/macos/README.md` for coverage, app exports, and limitations.
 
 ### Hourly search indexing on the MacBook
 
-The hostname-specific `Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist##hostname.Joseph’s-MacBook-Pro` runs `s warm` every 3,600 seconds at low priority while logged in. It is specific to this computer’s executable path; other computers need their own matching job. After restoring this Mac’s dotfiles, load it with `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist`. It does not run immediately on load. Logs are in `~/Library/Logs/search-cli/`; create that directory before loading the job on a fresh installation.
+The laptop-only `Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist##class.laptop` runs `s warm` every 3,600 seconds at low priority while logged in. It is specific to this computer’s executable path; other computers need their own matching job. After restoring this Mac’s dotfiles, load it with `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist`. It does not run immediately on load. Logs are in `~/Library/Logs/search-cli/`; create that directory before loading the job on a fresh installation.

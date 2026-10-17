@@ -158,3 +158,18 @@ repos:
 
 - path: local/code/python/developing/search-cli
   remote: https://github.com/jyesselm/search-cli.git
+
+- path: local/code/web/hotkeys
+  remote: https://github.com/jyesselm/hotkeys.git
+
+- path: local/code/web/typing-trainer
+  remote: https://github.com/jyesselm/typing-trainer.git
+
+- path: local/code/cpp/dungeon_crawler
+  remote: https://github.com/jyesselm/dungeon_crawler.git
+
+- path: local/code/web/notes
+  remote: https://github.com/jyesselm/notes.git
+
+- path: local/code/web/tasks
+  remote: https://github.com/jyesselm/tasks.git

@@ -1,0 +1,8 @@
+{"format": 1, "apps": [
+  {"name": "notes", "bundle_id": "com.jyesselman.notes", "repo": "jyesselm/notes", "bundle": "notes.app",
+   "assets": {"arm64": "notes-arm64.zip", "x86_64": "notes-x64.zip"}},
+  {"name": "Tasks", "bundle_id": "com.jyesselman.tasks", "repo": "jyesselm/tasks", "bundle": "Tasks.app",
+   "assets": {"arm64": "Tasks-arm64.zip", "x86_64": "Tasks-x64.zip"}},
+  {"name": "Hotkeys", "bundle_id": "com.jyesselman.hotkeys", "repo": "jyesselm/hotkeys", "bundle": "Hotkeys.app",
+   "assets": {}, "build": "cd ~/local/code/web/hotkeys && npm install && npm run install-app"}
+]}

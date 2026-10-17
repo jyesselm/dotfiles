@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('bootstrap_setup', Path(__file__).with_name('setup.py'))
@@ -33,7 +34,8 @@ class BootstrapTests(unittest.TestCase):
             args = ['--plan', '--profile', profile, '--games', '--search', '--previews']
             if profile == 'mac':
                 args.append('--desktop')
-            with patch.object(m.subprocess, 'run', side_effect=AssertionError('plan ran a process')), patch.object(m.urllib.request, 'urlopen', side_effect=AssertionError('plan downloaded')):
+            empty = subprocess.CompletedProcess([], 0, '', '')
+            with patch.object(m.subprocess, 'run', side_effect=AssertionError('plan ran a process')), patch.object(m.urllib.request, 'urlopen', side_effect=AssertionError('plan downloaded')), patch.object(m.Setup, 'read', return_value=empty):
                 self.assertEqual(self.setup(*args).execute(), 0)
             self.assertEqual(list(self.root.iterdir()), [])
         self.assertIn('No files changed', self.output.getvalue())
@@ -109,6 +111,98 @@ class BootstrapTests(unittest.TestCase):
         with patch.object(setup, 'find', return_value=None), patch.object(setup, 'run', side_effect=AssertionError('doctor ran installer')):
             self.assertEqual(setup.execute(), 1)
         self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_read_runs_in_plan_mode_and_maps_missing_binary_to_127(self):
+        setup = self.setup('--plan', '--profile', 'linux')
+        self.assertEqual(setup.read(['sh', '-c', 'printf hi']).stdout, 'hi')
+        missing = setup.read(['definitely-not-a-binary-xyz'])
+        self.assertEqual(missing.returncode, 127)
+        self.assertEqual(setup.read(['sleep', '5'], timeout_s=0.1).returncode, 124)
+
+    def test_phase_returns_value_and_records_value_error(self):
+        setup = self.setup('--profile', 'linux')
+        self.assertEqual(setup.phase('ok', lambda: 7), 7)
+        def bad():
+            raise ValueError('bad json')
+        self.assertIsNone(setup.phase('Parse', bad))
+        self.assertEqual(setup.errors, ['Parse: bad json'])
+
+    def test_doctor_with_sync_is_rejected(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            m.main(['--doctor', '--sync'])
+
+    def test_main_dispatches_actions_to_sync_modules(self):
+        import sync, sync_schedule
+        with patch.object(sync, 'Sync') as engine, patch.object(sync_schedule, 'install', return_value=4):
+            engine.return_value.execute.return_value = 3
+            self.assertEqual(m.main(['--sync', '--plan', '--profile', 'linux']), 3)
+            self.assertEqual(m.main(['--install-schedule', '--profile', 'linux']), 4)
+
+    def test_run_env_override(self):
+        setup = self.setup('--profile', 'linux')
+        with patch.object(m.subprocess, 'run') as run:
+            setup.run(['echo', 'x'], env={'A': '1'}, stdin=subprocess.DEVNULL)
+        self.assertEqual(run.call_args.kwargs['env'], {'A': '1'})
+        self.assertEqual(run.call_args.kwargs['stdin'], subprocess.DEVNULL)
+
+    def test_doctor_reports_absolute_home_path_as_needs_attention(self):
+        setup = self.setup('--doctor', '--profile', 'linux')
+        (self.root / 'rc').write_text('a\nb\nexport X=/home/' + 'jyesselm/data\n')
+        listing = subprocess.CompletedProcess([], 0, 'rc\0', '')
+        with patch.object(setup, 'find', side_effect=lambda n: 'yadm' if n == 'yadm' else None), patch.object(setup, 'read', return_value=listing):
+            failures = setup.doctor()
+        self.assertIn('Absolute home path: rc:3', failures)
+
+    def test_editors_link_cursor_settings_and_keybindings_only(self):
+        setup = self.setup('--profile', 'linux')
+        files = self.root / '.config/yadm/files'; files.mkdir(parents=True)
+        for target in ['settings.json', 'keybindings.json']:
+            (files / ('cursor-' + target)).write_text('cursor')
+            (files / ('vscode-' + target)).write_text('stale')
+        for app in ['Code', 'Cursor']:
+            (self.root / '.config' / app / 'User').mkdir(parents=True)
+        setup.editors()
+        links = [p for p in (self.root / '.config').glob('*/User/*.json') if p.is_symlink()]
+        self.assertEqual(sorted(p.parent.parent.name for p in links), ['Cursor', 'Cursor'])
+
+    def test_protect_live_keeps_differing_files_and_links_missing_or_identical(self):
+        setup = self.setup('--profile', 'linux')
+        files = self.root / '.config/yadm/files'; files.mkdir(parents=True)
+        for target in ['settings.json', 'keybindings.json']:
+            (files / ('cursor-' + target)).write_text('tracked')
+        user = self.root / '.config/Cursor/User'; user.mkdir(parents=True)
+        (user / 'settings.json').write_text('my live edits')
+        held = setup.editors(protect_live=True)
+        self.assertEqual(held, [str(user / 'settings.json')])
+        self.assertEqual((user / 'settings.json').read_text(), 'my live edits')
+        self.assertFalse((user / 'settings.json').is_symlink())
+        self.assertTrue((user / 'keybindings.json').is_symlink())
+        (user / 'settings.json').write_text('tracked')
+        self.assertEqual(setup.editors(protect_live=True), [])
+        self.assertTrue((user / 'settings.json').is_symlink())
+
+    def test_run_with_timeout_uses_own_session_and_kills_group(self):
+        setup = self.setup('--profile', 'linux')
+        proc = unittest.mock.MagicMock(pid=4242)
+        proc.__enter__.return_value = proc
+        proc.wait.side_effect = [subprocess.TimeoutExpired('x', 1), 0]
+        with patch.object(m.subprocess, 'Popen', return_value=proc) as popen, patch.object(m.os, 'killpg') as killpg:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                setup.run(['sleep', '9'], timeout=1)
+        self.assertTrue(popen.call_args.kwargs['start_new_session'])
+        killpg.assert_called_once_with(4242, m.signal.SIGKILL)
+
+    def test_run_with_timeout_reports_failure_exit(self):
+        setup = self.setup('--profile', 'linux')
+        with self.assertRaises(subprocess.CalledProcessError):
+            setup.run(['sh', '-c', 'exit 3'], timeout=5)
+        setup.run(['true'], timeout=5)
+
+    def test_read_ok_raises_with_stderr(self):
+        setup = self.setup('--profile', 'linux')
+        self.assertEqual(setup.read_ok(['sh', '-c', 'printf hi'], 'x'), 'hi')
+        with self.assertRaisesRegex(RuntimeError, 'boom failed: oops'):
+            setup.read_ok(['sh', '-c', 'echo oops >&2; exit 3'], 'boom failed')
 
 
 if __name__ == '__main__':

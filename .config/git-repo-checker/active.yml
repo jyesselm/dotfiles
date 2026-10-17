@@ -176,6 +176,26 @@ repos:
   remote: https://github.com/jyesselm/search-cli.git
   branch: main
   enabled: true
+- path: local/code/web/hotkeys
+  remote: https://github.com/jyesselm/hotkeys.git
+  branch: main
+  enabled: true
+- path: local/code/web/typing-trainer
+  remote: https://github.com/jyesselm/typing-trainer.git
+  branch: main
+  enabled: true
+- path: local/code/cpp/dungeon_crawler
+  remote: https://github.com/jyesselm/dungeon_crawler.git
+  branch: main
+  enabled: true
+- path: local/code/web/notes
+  remote: https://github.com/jyesselm/notes.git
+  branch: main
+  enabled: true
+- path: local/code/web/tasks
+  remote: https://github.com/jyesselm/tasks.git
+  branch: main
+  enabled: true
 ignored_repos: []
 approved_accounts:
 - jyesselm

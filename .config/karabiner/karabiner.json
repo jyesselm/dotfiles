@@ -8,6 +8,30 @@
                 },
                 "rules": [
                     {
+                        "description": "Cmd+, -> search-cli desktop launcher (s gui)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "comma",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "command"
+                                        ],
+                                        "optional": [
+                                            "caps_lock"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "TMPDIR=\"$(getconf DARWIN_USER_TEMP_DIR)\" $HOME/micromamba/envs/py3/bin/s gui >>\"$HOME/Library/Logs/search-cli/gui.log\" 2>&1 &"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
                         "description": "F3 to Clipboard Screenshot",
                         "manipulators": [
                             {
@@ -265,7 +289,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "open '/Users/jyesselman2/Applications/Chrome Apps.localized/Google Chat 1.app'"
+                                        "shell_command": "open \"$HOME/Applications/Chrome Apps.localized/Google Chat 1.app\""
                                     }
                                 ]
                             },

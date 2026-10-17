@@ -8,12 +8,15 @@ from pathlib import Path
 import platform
 import re
 import shlex
+import signal
 import shutil
 import subprocess
 import sys
 import tempfile
 import urllib.request
 import uuid
+
+import layout as lay
 
 HERE = Path(__file__).resolve().parent
 MICROMAMBA = {
@@ -40,6 +43,11 @@ def version(text):
     return tuple(int(v or 0) for v in match.groups())
 
 
+def live_differs(config, destination) -> bool:
+    """True for a regular (non-symlink) live file whose content differs from the tracked one."""
+    return destination.exists() and not destination.is_symlink() and destination.read_bytes() != config.read_bytes()
+
+
 class Setup:
     def __init__(self, args, root=None, assets=HERE):
         self.args = args
@@ -53,6 +61,7 @@ class Setup:
         extra = [str(self.shims), str(self.root / '.local/bin'), '/opt/homebrew/bin', '/usr/local/bin']
         self.env['PATH'] = os.pathsep.join(extra + [self.env.get('PATH', '')])
         self.errors = []
+        self._class = None
 
     def say(self, text):
         print(text, flush=True)
@@ -62,16 +71,93 @@ class Setup:
 
     def run(self, argv, **kwargs):
         self.say('  $ ' + shlex.join(list(map(str, argv))))
-        if not self.args.plan:
-            subprocess.run(list(map(str, argv)), check=True, env=self.env, **kwargs)
+        if self.args.plan:
+            return
+        options = {'env': self.env, **kwargs}
+        if 'timeout' in options:
+            self.run_timed(list(map(str, argv)), options)
+        else:
+            subprocess.run(list(map(str, argv)), check=True, **options)
+
+    def run_timed(self, argv, options):
+        """Run in its own session; on timeout kill the whole process group (yadm->git, brew->ruby)."""
+        timeout = options.pop('timeout')
+        with subprocess.Popen(argv, start_new_session=True, **options) as proc:
+            try:
+                code = proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                proc.wait()
+                raise
+        if code:
+            raise subprocess.CalledProcessError(code, argv)
+
+    def read(self, argv, cwd=None, timeout_s=60):
+        """Run a read-only command (even in plan mode); never raises for missing binary or timeout."""
+        argv = list(map(str, argv))
+        try:
+            return subprocess.run(argv, capture_output=True, text=True, check=False, env=self.env, cwd=cwd, timeout=timeout_s)
+        except FileNotFoundError as exc:
+            return subprocess.CompletedProcess(argv, 127, '', str(exc))
+        except subprocess.TimeoutExpired:
+            return subprocess.CompletedProcess(argv, 124, '', 'timed out after %ss' % timeout_s)
+
+    def read_ok(self, argv, what, **kwargs) -> str:
+        """stdout of a read-only command; RuntimeError(what + ': ' + stderr) when it fails."""
+        result = self.read(argv, **kwargs)
+        if result.returncode:
+            raise RuntimeError(what + ': ' + result.stderr.strip()[:200])
+        return result.stdout
 
     def phase(self, name, action):
         self.say('\n' + name)
         try:
-            action()
-        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            return action()
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
             self.errors.append(name + ': ' + str(exc))
             self.say('  FAILED: ' + str(exc))
+            return None
+
+    def machine_class(self) -> str:
+        """yadm's local.class (laptop|studio|linux|cluster), falling back to the profile."""
+        if self._class is None:
+            yadm = self.find('yadm')
+            out = self.read([yadm, 'config', 'local.class']).stdout.strip() if yadm else ''
+            self._class = out.splitlines()[0].strip() if out else self.profile
+        return self._class
+
+    def layout(self) -> lay.LayoutReport:
+        """Create missing manifest directories; report expected-but-absent and unplanned entries."""
+        text = (self.assets / 'layout.txt').read_text()
+        report = lay.LayoutReport()
+        for entry in lay.missing_dirs(self.root, lay.parse_layout(text, self.profile, self.machine_class())):
+            if not entry.create:
+                report.expected.append(entry.path)
+                self.say('  Expected, not created: ~/' + entry.path + ' (created by another program)')
+                continue
+            self.say('  Create ~/' + entry.path)
+            if not self.args.plan:
+                (self.root / entry.path).mkdir(parents=True, exist_ok=True)
+                report.created.append(entry.path)
+        report.unplanned = lay.unplanned_entries(self.root, lay.parse_layout(text, None, None))
+        for name in report.unplanned:
+            self.say('  Unplanned: ' + name)
+        return report
+
+    def portability(self) -> list:
+        """Failures for literal home paths in yadm-tracked files."""
+        yadm = self.find('yadm')
+        listing = self.read([yadm, 'ls-files', '-z'], cwd=self.root) if yadm else None
+        if listing is None or listing.returncode:
+            self.say('  Portability check skipped: yadm file list unavailable.')
+            return []
+        hits, known = lay.find_home_paths(self.root, listing.stdout)
+        if known:
+            self.say('  Known per-machine absolute paths: ' + str(len({k.rsplit(':', 1)[0] for k in known})) + ' files (iTerm prefs, launchd plist)')
+        return ['Absolute home path: ' + hit for hit in hits]
 
     def clone(self, url, destination, revision=None, sentinel=None, private=False):
         destination = Path(destination)
@@ -181,14 +267,22 @@ class Setup:
             self.say('  Preserved previous settings: ' + str(backup))
         destination.symlink_to(source)
 
-    def editors(self):
+    def editors(self, protect_live=False) -> list:
+        """Link tracked Cursor settings; with protect_live, keep differing live files and return them."""
         parent = self.root / ('Library/Application Support' if self.profile == 'mac' else '.config')
-        for name, app, source in [('Code', 'Visual Studio Code', 'vscode-settings.json'), ('Cursor', 'Cursor', 'cursor-settings.json')]:
-            destination = parent / name / 'User/settings.json'
-            installed = destination.parent.exists() or Path('/Applications', app + '.app').exists() or (self.root / 'Applications' / (app + '.app')).exists()
-            config = self.root / '.config/yadm/files' / source
-            if config.exists() and (installed or self.args.desktop):
-                self.link(config, destination)
+        held = []
+        user = parent / 'Cursor/User'
+        installed = user.exists() or Path('/Applications/Cursor.app').exists() or (self.root / 'Applications/Cursor.app').exists()
+        for target in ('settings.json', 'keybindings.json'):
+            config = self.root / '.config/yadm/files' / ('cursor-' + target)
+            if not config.exists() or not (installed or self.args.desktop):
+                continue
+            if protect_live and live_differs(config, user / target):
+                held.append(str(user / target))
+                self.say('  Kept live file (differs from tracked): ' + str(user / target))
+                continue
+            self.link(config, user / target)
+        return held
 
     def tmux(self):
         self.run(['sh', self.root / '.config/tmux/setup.sh'])
@@ -242,6 +336,7 @@ class Setup:
                          '.oh-my-zsh/oh-my-zsh.sh', '.tmux/plugins/tpm/tpm', '.config/nvim/init.lua']:
             if not (self.root / relative).is_file():
                 failures.append('Missing ' + relative)
+        failures += self.portability()
         if self.args.games:
             for relative in ['.local/bin/tmux-dojo', '.config/nvim/lua/plugins/nvim-dojo.lua']:
                 if not (self.root / relative).is_file():
@@ -269,6 +364,7 @@ class Setup:
             raise RuntimeError('--desktop currently supports macOS only; Linux desktop apps are left to your distribution.')
         if self.args.doctor:
             return int(bool(self.doctor()))
+        self.phase('Directory layout', self.layout)
         self.phase('Terminal packages', self.packages)
         self.phase('Shell and shell plugins', self.shell)
         self.phase('Editor settings for installed apps', self.editors)
@@ -294,8 +390,12 @@ def parser():
     mode = p.add_mutually_exclusive_group()
     mode.add_argument('--plan', action='store_true', help='Show actions without writing files, downloads or installs')
     mode.add_argument('--doctor', action='store_true', help='Read-only tool/version/config checks')
+    action = p.add_mutually_exclusive_group()
+    action.add_argument('--sync', action='store_true', help='Converge this machine; combine with --plan')
+    action.add_argument('--status', action='store_true', help='Show the last sync result')
+    action.add_argument('--install-schedule', action='store_true', help='Install the daily launchd job / crontab line')
     p.add_argument('--profile', choices=['auto', 'mac', 'linux', 'cluster'], default='auto')
-    for name, help_text in [('desktop','Also install iTerm2, VS Code, Cursor and Obsidian (Mac)'),
+    for name, help_text in [('desktop','Also install iTerm2 and Cursor (Mac)'),
                             ('previews','Install PDF, SVG, archive and video preview tools'),
                             ('games','Install the two private Dojo repositories'),
                             ('search','Install search-cli from its default GitHub branch'),
@@ -305,10 +405,34 @@ def parser():
     return p
 
 
-if __name__ == '__main__':
-    if sys.version_info < (3,9):
+def dispatch(args) -> int:
+    """Run the requested action; sync modules are imported lazily."""
+    setup = Setup(args)
+    if args.status:
+        from sync import print_status
+        from sync_schedule import is_installed
+        return print_status(setup.root, is_installed(setup))
+    if args.install_schedule:
+        from sync_schedule import install
+        return install(setup)
+    if args.sync:
+        from sync import Sync
+        return Sync(setup).execute()
+    return setup.execute()
+
+
+def main(argv=None) -> int:
+    if sys.version_info < (3, 9):
         sys.exit('dotfiles-setup requires Python 3.9 or newer.')
+    p = parser()
+    args = p.parse_args(argv)
+    if args.doctor and (args.sync or args.status or args.install_schedule):
+        p.error('--doctor cannot be combined with --sync, --status or --install-schedule')
     try:
-        sys.exit(Setup(parser().parse_args()).execute())
+        return dispatch(args)
     except (OSError, RuntimeError) as exc:
         sys.exit(str(exc))
+
+
+if __name__ == '__main__':
+    sys.exit(main())

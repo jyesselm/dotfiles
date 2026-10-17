@@ -62,5 +62,23 @@ class Tests(unittest.TestCase):
     def test_noop_never_backs_up_or_writes(self):
         with patch.object(m,'read_domain',return_value={'autohide':True,'unrelated':123}), patch.object(m,'backup',side_effect=AssertionError('backup')):
             m.apply(self.snapshot(),False)
+    def test_magnet_blob_written_as_plist_data(self):
+        blob = b'{"shortcut": 1}'
+        snap = {'format':1,'domains':{'com.crowdcafe.windowmagnet':{'values':{'horizontalCommands':blob},'unset':[]}}}
+        calls = []
+        def run(argv,**kwargs):
+            calls.append(argv); return subprocess.CompletedProcess(argv,0,b'',b'')
+        pending = [('com.crowdcafe.windowmagnet','horizontalCommands',blob,False)]
+        with patch.object(m,'changes',side_effect=[pending,[]]), patch.object(m,'capture',return_value={}), patch.object(m,'backup',return_value=Path('/tmp/b')), patch.object(m.subprocess,'run',side_effect=run):
+            m.apply(snap,plan=False)
+        self.assertEqual(plistlib.loads(calls[0][-1].encode()),blob)
+    def test_apply_returns_pending_count(self):
+        pending=[('com.apple.dock','autohide',True,False)]
+        with patch.object(m,'changes',return_value=pending):
+            self.assertEqual(m.apply(self.snapshot(),plan=True),1)
+        with patch.object(m,'changes',side_effect=[pending,[]]), patch.object(m,'capture',return_value={}), patch.object(m,'backup',return_value=Path('/tmp/b')), patch.object(m.subprocess,'run',return_value=subprocess.CompletedProcess([],0,b'',b'')):
+            self.assertEqual(m.apply(self.snapshot(),plan=False),1)
+        with patch.object(m,'changes',return_value=[]):
+            self.assertEqual(m.apply(self.snapshot(),plan=False),0)
 
 if __name__=='__main__': unittest.main()

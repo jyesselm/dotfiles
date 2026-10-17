@@ -39,7 +39,6 @@ export LESS="-R -X -F"  # -R: color, -X: no clear, -F: quit if one screen
 # Directory Paths
 export DROPBOX="$HOME/Dropbox"
 export NOTES="${DROPBOX}/0_notes/"
-export OBSIDIAN="$HOME/Dropbox/notes"
 export ICLOUD="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
 
 # Development Directories

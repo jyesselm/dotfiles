@@ -53,6 +53,8 @@ ShowMountedServersOnDesktop NewWindowTarget QuitMenuItem CreateDesktop'''.split(
     'com.apple.driver.AppleBluetoothMultitouch.mouse': MOUSE,
     'com.apple.symbolichotkeys': ['AppleSymbolicHotKeys'],
     'com.apple.spaces': ['spans-displays'],
+    # Magnet shortcuts are JSON blobs (bytes) inside horizontalCommands/verticalCommands.
+    'com.crowdcafe.windowmagnet': ['horizontalCommands', 'verticalCommands', 'restoreToOriginalSize', 'snapWindows'],
 }
 DEFAULT_FILE = Path.home() / '.config/yadm/macos/preferences.plist'
 BACKUPS = Path.home() / '.local/state/dotfiles/mac-settings'
@@ -138,7 +140,7 @@ def apply(snapshot, plan=True):
         print(('RESET ' if remove else 'SET   ') + domain + ' / ' + key)
     print(str(len(pending)) + ' preference changes; unrelated keys are preserved.')
     if plan or not pending:
-        return
+        return len(pending)
     previous = backup(capture())
     print('Before-restore backup: ' + str(previous), flush=True)
     for domain, key, value, remove in pending:
@@ -154,6 +156,7 @@ def apply(snapshot, plan=True):
     if changes(snapshot):
         raise RuntimeError('Preferences did not persist as expected. Backup: ' + str(previous))
     print('Saved preferences restored. Log out and back in when convenient to refresh cached settings.')
+    return len(pending)
 
 
 def main(argv=None):
