@@ -259,7 +259,35 @@ class AppTests(Base):
         with patch.object(setup, 'read', return_value=done('', 1, 'no auth')), patch.object(sm.platform, 'machine', return_value='arm64'):
             result = sm.apps(setup, 'laptop', self.root)
         self.assertEqual(result.status, 'failed')
-        self.assertEqual(len(result.details), 3)
+        self.assertEqual(len(result.details), 4)  # three apps.json entries plus the Search CLI launcher
+
+    def search_icon(self, setup, data=b'icns'):
+        icon = setup.checkout('s') / 'src/search_cli/assets/search-lens.icns'
+        icon.parent.mkdir(parents=True, exist_ok=True)
+        icon.write_bytes(data)
+
+    def test_search_app_writes_launcher_bundle_once_and_tracks_the_icon(self):
+        setup = self.setup('--profile', 'mac')
+        self.assertEqual(sm.search_app(setup, self.root)[1], 'warn')  # no checkout yet
+        self.search_icon(setup)
+        self.assertEqual(sm.search_app(setup, self.root), ('Search CLI launcher installed', 'changed'))
+        bundle = self.root / sm.SEARCH_APP
+        self.assertEqual(plistlib.loads((bundle / 'Contents/Info.plist').read_bytes())['CFBundleIdentifier'], sm.SEARCH_APP_ID)
+        launcher = bundle / 'Contents/MacOS/search-cli'
+        self.assertIn('"$HOME/.local/bin/s" gui', launcher.read_text())
+        self.assertTrue(launcher.stat().st_mode & 0o100)
+        self.assertEqual(sm.search_app(setup, self.root)[1], 'ok')
+        self.search_icon(setup, b'new')
+        self.assertEqual(sm.search_app(setup, self.root), ('Search CLI launcher updated', 'changed'))
+        self.assertEqual((bundle / 'Contents/Resources/search-lens.icns').read_bytes(), b'new')
+
+    def test_search_app_plan_writes_nothing(self):
+        setup = self.setup('--plan', '--profile', 'mac')
+        self.search_icon(setup)
+        detail, state = sm.search_app(setup, self.root)
+        self.assertEqual(state, 'ok')
+        self.assertIn('would write', detail)
+        self.assertFalse((self.root / sm.SEARCH_APP).exists())
 
     def test_load_apps_validates(self):
         self.assertEqual(len(sm.load_apps(Path(__file__).with_name('apps.json'))), 3)

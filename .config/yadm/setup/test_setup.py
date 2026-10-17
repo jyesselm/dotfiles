@@ -200,14 +200,15 @@ class BootstrapTests(unittest.TestCase):
 
     def test_tool_installs_editable_from_developing_checkout(self):
         setup = self.setup('--profile', 'mac', '--search')
-        for command, repo in m.CHECKOUT_TOOLS.items():
+        for command, (repo, extras) in m.CHECKOUT_TOOLS.items():
             checkout = self.root / m.DEVELOPING / repo
             (checkout / '.git').mkdir(parents=True)
             (checkout / 'pyproject.toml').write_text('[project]\n')
             with patch.object(setup, 'run') as run:
                 setup.tool(command)
-            run.assert_called_once_with(['uv', 'tool', 'install', '--python', '3.12', '--editable', checkout])
+            run.assert_called_once_with(['uv', 'tool', 'install', '--python', '3.12', '--editable', str(checkout) + extras])
             self.assertNotIn('repos/' + repo, str(run.call_args))
+        self.assertEqual(m.CHECKOUT_TOOLS['s'][1], '[gui,docs]')  # `s gui` and document previews on every machine
 
     def test_tool_plan_clones_missing_checkout_into_developing(self):
         self.setup('--plan', '--profile', 'linux').tool('grc')

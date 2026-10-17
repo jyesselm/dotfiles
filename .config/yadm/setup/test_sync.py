@@ -438,7 +438,8 @@ class PhaseTests(Base):
             self.assertIn('s reinstalled', result.summary)
             tool.assert_called_once_with('s')
             marker = self.root / sy.STATE_DIR / 'search-cli.sha256'
-            self.assertEqual(marker.read_text().strip(), sy.checkout_digest(sync.setup.checkout('s')))
+            self.assertEqual(marker.read_text().strip(), sy.checkout_digest(sync.setup.checkout('s'), sync.setup.extras('s')))
+            self.assertNotEqual(sy.checkout_digest(sync.setup.checkout('s')), marker.read_text().strip())  # extras are part of the digest
             present.add('s')
             self.assertEqual(sync.repos().status, 'skipped')
             tool.assert_called_once()

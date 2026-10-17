@@ -27,7 +27,8 @@ TOOLS = ['git', 'tmux', 'nvim', 'yazi', 'ya', 'fzf', 'fd', 'rg', 'zoxide',
          'starship', 'atuin', 'bat', 'jq', 'uv', 'gh', 'lazygit', 'node', 'zsh']
 MINIMUM = {'tmux': (3, 6), 'nvim': (0, 11), 'yazi': (26, 9, 1), 'fzf': (0, 53)}
 DEVELOPING = 'local/code/python/developing'  # grc-managed checkouts
-CHECKOUT_TOOLS = {'grc': 'git-repo-checker', 's': 'search-cli'}  # command -> repo it runs from; a commit on main propagates via sync
+# command -> (repo it runs from, pip extras); a commit on main propagates via sync. `s` needs gui for `s gui` and docs for previews.
+CHECKOUT_TOOLS = {'grc': ('git-repo-checker', ''), 's': ('search-cli', '[gui,docs]')}
 
 
 def detect_profile():
@@ -308,13 +309,16 @@ class Setup:
             self.run(command)
 
     def checkout(self, command) -> Path:
-        return self.root / DEVELOPING / CHECKOUT_TOOLS[command]
+        return self.root / DEVELOPING / CHECKOUT_TOOLS[command][0]
+
+    def extras(self, command) -> str:
+        return CHECKOUT_TOOLS[command][1]
 
     def tool(self, command):
         """Install `command` editable from its developing checkout (cloned if absent); sync fast-forwards it, so a commit on main reaches every machine."""
         checkout = self.checkout(command)
         self.clone('https://github.com/jyesselm/' + checkout.name + '.git', checkout, sentinel='pyproject.toml')
-        self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', checkout])
+        self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', str(checkout) + self.extras(command)])
 
     def doctor(self):
         self.say('\nDoctor (read-only checks)')

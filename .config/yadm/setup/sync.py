@@ -81,9 +81,9 @@ def load_mac_settings(path: Path):
     return module
 
 
-def checkout_digest(checkout: Path) -> str:
-    """sha256 over pyproject.toml and uv.lock in a tool's checkout; <repo>.sha256 under STATE_DIR records the last install."""
-    digest = hashlib.sha256()
+def checkout_digest(checkout: Path, extras: str = '') -> str:
+    """sha256 over pyproject.toml, uv.lock and the installed extras; <repo>.sha256 under STATE_DIR records the last install."""
+    digest = hashlib.sha256(extras.encode())
     for name in ('pyproject.toml', 'uv.lock'):
         if (checkout / name).exists():
             digest.update(name.encode() + b'\0' + (checkout / name).read_bytes())
@@ -457,7 +457,7 @@ class Sync:
         if not self.setup.find('uv'):
             return False, 'uv missing; %s not refreshed' % command
         marker = self.root / STATE_DIR / (checkout.name + '.sha256')
-        digest = checkout_digest(checkout)
+        digest = checkout_digest(checkout, self.setup.extras(command))
         installed = marker.read_text().strip() if marker.exists() else ''
         if self.setup.find(command) and installed == digest:
             return False, '%s up to date with %s' % (command, checkout)

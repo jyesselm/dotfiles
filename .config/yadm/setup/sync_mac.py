@@ -23,6 +23,14 @@ BREWFILES = {
 TERMINAL_ONLY = ['Brewfile']  # mac with an unknown/unset class
 APP_CLASSES = ('laptop', 'studio')
 APP_KEYS = ('name', 'bundle_id', 'repo', 'bundle', 'assets')
+SEARCH_APP, SEARCH_APP_ID = 'Search CLI.app', 'com.yesselman.search-cli.gui'
+SEARCH_LAUNCHER = '''#!/bin/zsh
+# Written by dotfiles-setup --sync: opens the search-cli desktop launcher through the uv-installed `s`.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+cd "$HOME"
+mkdir -p "$HOME/Library/Logs"
+exec "$HOME/.local/bin/s" gui >> "$HOME/Library/Logs/search-cli-gui.log" 2>&1
+'''
 
 
 @dataclass
@@ -271,18 +279,43 @@ def sync_app(setup, app: dict, applications: Path, arch: str) -> Tuple[str, str]
     return label + ' installed', 'changed'
 
 
+def search_app(setup, applications: Path) -> Tuple[str, str]:
+    """Write the Search CLI bundle (a launcher for `s gui`, icon from the search-cli checkout); (detail, ok|changed|warn)."""
+    icon = setup.checkout('s') / 'src/search_cli/assets/search-lens.icns'
+    if not icon.exists():
+        return 'Search CLI: search-cli checkout or its icon missing; launcher left alone', 'warn'
+    bundle = Path(applications) / SEARCH_APP
+    info = {'CFBundleExecutable': 'search-cli', 'CFBundleIconFile': 'search-lens.icns', 'CFBundleIdentifier': SEARCH_APP_ID,
+            'CFBundleName': 'Search CLI', 'CFBundlePackageType': 'APPL', 'CFBundleVersion': '3', 'NSHighResolutionCapable': True}
+    files = {'Contents/Info.plist': plistlib.dumps(info, sort_keys=True), 'Contents/MacOS/search-cli': SEARCH_LAUNCHER.encode(),
+             'Contents/Resources/search-lens.icns': icon.read_bytes()}
+    stale = [rel for rel, data in files.items() if not (bundle / rel).exists() or (bundle / rel).read_bytes() != data]
+    if not stale:
+        return 'Search CLI launcher up to date', 'ok'
+    label = 'Search CLI launcher %s' % ('updated' if bundle.exists() else 'installed')
+    if setup.args.plan:
+        return '%s (would write %s)' % (label, ', '.join(stale)), 'ok'
+    for rel in stale:
+        (bundle / rel).parent.mkdir(parents=True, exist_ok=True)
+        (bundle / rel).write_bytes(files[rel])
+    (bundle / 'Contents/MacOS/search-cli').chmod(0o755)
+    return label, 'changed'
+
+
 def apps(setup, machine_class: str, applications: Path) -> PhaseResult:
-    """Install or upgrade the home-made apps listed in apps.json."""
+    """Install or upgrade the home-made apps listed in apps.json, then the Search CLI launcher."""
     if setup.profile != 'mac':
         return PhaseResult('skipped', 'apps are installed on macOS only')
     if machine_class not in APP_CLASSES:
         return PhaseResult('skipped', 'class %s has no apps; set: yadm config local.class laptop' % machine_class)
     details, states = [], []
-    for app in load_apps(setup.assets / 'apps.json'):
+    jobs = [(app['name'], lambda app=app: sync_app(setup, app, applications, platform.machine())) for app in load_apps(setup.assets / 'apps.json')]
+    jobs.append(('Search CLI', lambda: search_app(setup, applications)))
+    for name, job in jobs:
         try:
-            detail, state = sync_app(setup, app, applications, platform.machine())
+            detail, state = job()
         except (RuntimeError, OSError, subprocess.SubprocessError, ValueError) as exc:
-            detail, state = '%s: %s' % (app['name'], exc), 'failed'
+            detail, state = '%s: %s' % (name, exc), 'failed'
         details.append(detail)
         states.append(state)
     status = next((s for s in ('failed', 'changed', 'warn') if s in states), 'ok')
