@@ -491,6 +491,26 @@ class PhaseTests(Base):
         self.assertIn('grc reinstalled', result.summary)
         self.assertTrue((self.root / sy.STATE_DIR / 'git-repo-checker.sha256').exists())
 
+    def test_repos_failed_grc_sync_still_refreshes_s_and_fails_the_phase(self):
+        sync = self.make()
+        self.search_checkout(sync)
+        config = self.root / '.config/git-repo-checker/active.yml'
+        config.parent.mkdir(parents=True)
+        config.write_text('')
+        real = sync.setup.run
+
+        def run(argv, **kwargs):
+            if argv[1] == 'active':
+                raise subprocess.CalledProcessError(2, argv)
+            real(argv, **kwargs)
+        sync.setup.run = run
+        with patch.object(sync.setup, 'tool') as tool:
+            result = sync.repos()
+        tool.assert_called_once_with('s')
+        self.assertEqual(result.status, 'failed')
+        self.assertIn('grc active sync failed', result.summary)
+        self.assertIn('s reinstalled', result.summary)
+
     def test_repos_reports_a_failed_grc_fast_forward_and_carries_on(self):
         sync = self.make()
         self.grc_checkout(sync)

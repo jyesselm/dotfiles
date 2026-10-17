@@ -427,11 +427,16 @@ class Sync:
         if not grc or not config.exists():
             status, summary = 'skipped', 'grc or active.yml missing; repos not synced'
         else:
-            self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
-            status, summary = 'ok', 'grc active sync --apply'
+            try:  # a broken repo sync must not stop `s` from being refreshed below
+                self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
+                status, summary = 'ok', 'grc active sync --apply'
+            except (OSError, subprocess.SubprocessError) as exc:
+                status, summary = 'failed', 'grc active sync failed: %s' % exc
         s_reinstalled, detail = self._refresh_tool('s')
         details = [d for d in details + [detail] if d]
-        return PhaseResult('changed' if grc_reinstalled or s_reinstalled else status, '; '.join([summary] + details), details)
+        if status != 'failed' and (grc_reinstalled or s_reinstalled):
+            status = 'changed'
+        return PhaseResult(status, '; '.join([summary] + details), details)
 
     def _pull_grc_checkout(self) -> str:
         """Fast-forward git-repo-checker itself before it syncs the other repos; a failure is reported, not fatal."""
