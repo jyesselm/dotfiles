@@ -1,11 +1,10 @@
 live:
   vaults:
-  - ~/notes
+  - ~/local/code/web/notes/notes
   roots:
   - ~/Downloads
   - ~/Documents
   - ~/Desktop
-  - ~/notes
   - ~/Dropbox
   - ~/Library/CloudStorage/Dropbox
   - ~/cloud/Dropbox
