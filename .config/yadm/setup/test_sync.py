@@ -441,8 +441,28 @@ class PhaseTests(Base):
         config.parent.mkdir(parents=True)
         config.write_text('')
         sync.setup.find = lambda n: 'grc'
-        self.assertEqual(sync.repos().status, 'ok')
-        self.assertEqual(self.runs[0][:4], ['grc', 'active', 'sync', '--apply'])
+        calls = []
+        sync.setup.read = lambda argv, cwd=None, timeout_s=60, input=None: calls.append(argv) or done('repo  main  ok\n')
+        result = sync.repos()
+        self.assertEqual(result.status, 'ok')
+        self.assertIn('repo  main  ok', result.details)
+        self.assertEqual(calls[0][:5], ['grc', 'active', 'sync', '--apply', '--config'])
+        plan = self.make('--plan', '--profile', 'linux')
+        plan.setup.find = lambda n: 'grc'
+        plan.setup.read = lambda argv, cwd=None, timeout_s=60, input=None: calls.append(argv) or done('')
+        plan.repos()
+        self.assertEqual(calls[1][:4], ['grc', 'active', 'sync', '--config'])
+
+    def test_repos_failure_keeps_grc_output_in_the_summary(self):
+        sync = self.make()
+        (self.root / '.config/git-repo-checker').mkdir(parents=True)
+        (self.root / '.config/git-repo-checker/active.yml').write_text('')
+        sync.setup.find = lambda n: 'grc'
+        sync.setup.read = lambda argv, cwd=None, timeout_s=60, input=None: done('a  main  ok\n', 2, 'yplot: local changes; not fast-forwarded\n')
+        result = sync.repos()
+        self.assertEqual(result.status, 'failed')
+        self.assertEqual(result.summary, 'grc active sync failed: exit 2: yplot: local changes; not fast-forwarded')
+        self.assertIn('a  main  ok', result.details)
 
     def search_checkout(self, sync):
         checkout = sync.setup.checkout('s')
@@ -506,11 +526,12 @@ class PhaseTests(Base):
         config.write_text('')
         present = {'uv'}
         sync.setup.find = lambda n: n if n in present else None
+        self.git['active sync --apply --config %s' % config] = ''
         with patch.object(sync.setup, 'tool', side_effect=present.add) as tool:
             result = sync.repos()
         self.assertEqual(self.runs[0], ['git', '-C', str(grc), 'pull', '--ff-only', '--quiet'])
         tool.assert_called_once_with('grc')
-        self.assertEqual(self.runs[1][:4], ['grc', 'active', 'sync', '--apply'])
+        self.assertIn('grc active sync --apply', result.summary)
         self.assertEqual(result.status, 'changed')
         self.assertIn('grc reinstalled', ' '.join(result.details))
         self.assertTrue((self.root / sy.STATE_DIR / 'git-repo-checker.sha256').exists())
@@ -521,13 +542,7 @@ class PhaseTests(Base):
         config = self.root / '.config/git-repo-checker/active.yml'
         config.parent.mkdir(parents=True)
         config.write_text('')
-        real = sync.setup.run
-
-        def run(argv, **kwargs):
-            if argv[1] == 'active':
-                raise subprocess.CalledProcessError(2, argv)
-            real(argv, **kwargs)
-        sync.setup.run = run
+        self.git['active sync --apply --config %s' % config] = done('', 2, 'boom')
         with patch.object(sync.setup, 'tool') as tool:
             result = sync.repos()
         tool.assert_called_once_with('s')

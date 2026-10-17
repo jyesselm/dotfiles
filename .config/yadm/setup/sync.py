@@ -490,13 +490,16 @@ class Sync:
         config = self.root / '.config/git-repo-checker/active.yml'
         if not grc or not config.exists():
             status, summary = 'skipped', 'grc or active.yml missing; repos not synced'
-        else:
-            try:  # a broken repo sync must not stop `s` from being refreshed below
-                self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
-                status, summary = 'ok', 'grc active sync --apply'
-            except (OSError, subprocess.SubprocessError) as exc:
-                reason = 'exit %d' % exc.returncode if isinstance(exc, subprocess.CalledProcessError) else str(exc)
-                status, summary = 'failed', 'grc active sync failed: ' + reason
+        else:  # plan mode inspects only (no --apply); grc's output is kept so a check-in says what went wrong
+            apply = [] if self.setup.args.plan else ['--apply']
+            done = self.setup.read([grc, 'active', 'sync', *apply, '--config', config], timeout_s=NET_TIMEOUT)
+            output = (done.stdout + done.stderr).strip().splitlines()
+            details += output[-30:]
+            if done.returncode:  # a broken repo sync must not stop `s` from being refreshed below
+                last = (output or ['no output'])[-1][:120]
+                status, summary = 'failed', 'grc active sync failed: exit %d: %s' % (done.returncode, last)
+            else:
+                status, summary = 'ok', 'grc active sync ' + ' '.join(apply or ['(inspect)'])
         s_reinstalled, detail = self._refresh_tool('s')
         details = [d for d in details + [detail] if d]
         if status != 'failed' and (grc_reinstalled or s_reinstalled):

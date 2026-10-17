@@ -155,7 +155,8 @@ def _inventory(setup, brew: str, manifest: Manifest, applications: Path) -> Tupl
     casks = _lines(setup, [brew, 'list', '--cask', '-1'])
     leaves = _lines(setup, [brew, 'leaves', '--installed-on-request'])
     app_names = _cask_apps(setup, brew, [c for c in manifest.casks if c not in casks])
-    allowed = parse_extras((setup.assets / EXTRAS_FILE).read_text())
+    extras_file = setup.assets / EXTRAS_FILE
+    allowed = parse_extras(extras_file.read_text() if extras_file.exists() else '')  # absent until first committed
     return (present_outside_brew(manifest, casks, app_names, applications),
             brew_extras(leaves, casks, manifest, allowed))
 
