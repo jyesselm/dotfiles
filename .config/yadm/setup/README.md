@@ -99,11 +99,20 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 
 **Classes.** `yadm config local.class laptop|studio|linux|cluster` selects `##class.<x>` alternates and the Brewfiles.
 
-**Per-computer first run:**
+**Onboard a computer.** Run this at the machine's own terminal (ssh or sitting at it); nothing reaches in from elsewhere. Prerequisites are the ones above: Mac needs Homebrew, `brew install yadm python`; Linux needs Python 3.9+, Git and yadm; on Swan load the Git/Anaconda modules first.
 
 ```sh
-yadm config local.class <class> && dotfiles-setup --sync --plan && dotfiles-setup --sync && dotfiles-setup --install-schedule
+yadm clone --no-bootstrap https://github.com/jyesselm/dotfiles.git   # already cloned: yadm pull
+yadm config local.class studio          # laptop | studio | linux | cluster
+~/.config/yadm/bootstrap --plan         # read-only preview; fix any reported conflict first
+yadm bootstrap                          # terminal environment; Mac Studio: add --desktop afterwards
+dotfiles-setup --sync --plan            # read-only preview of the daily sync
+dotfiles-setup --sync                   # first real sync, in a terminal; checks this machine in
+dotfiles-setup --install-schedule       # daily 10:00 launchd job or crontab line
+dotfiles-setup --fleet                  # this machine now appears on every computer
 ```
+
+Then the manual steps under "Finish once per computer": Nerd Font on the terminal client, `gh auth login` and Atuin, and any permission prompts macOS raises during the first sync. On Swan, `--install-schedule` prints "schedule skipped" when crontab is unavailable; run `dotfiles-setup --sync` by hand there, and it still checks in. The sync and `--fleet` only need GitHub, so a machine behind a firewall or off Tailscale works the same.
 
 ## Validation
 
