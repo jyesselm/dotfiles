@@ -1,0 +1,140 @@
+{
+  "started": "2026-10-17T15:00:05.757517+00:00",
+  "finished": "2026-10-17T15:01:10.863517+00:00",
+  "machine": "laptop@Joseph\u2019s-MacBook-Pro",
+  "profile": "mac",
+  "exit": 0,
+  "format": 1,
+  "phases": {
+    "layout": {
+      "status": "warn",
+      "summary": "created 0, missing-check 0, unplanned 13",
+      "details": [
+        "unplanned:Google Drive",
+        "unplanned:PrinterLogic",
+        "unplanned:dropbox_backup",
+        "unplanned:dropbox_backup_DUPES_review_20260618",
+        "unplanned:dropbox_backup_REGENERABLE_review_20260619",
+        "unplanned:gdrive",
+        "unplanned:mcp.json",
+        "unplanned:ml-notes-backup-2026-09-21",
+        "unplanned:obsidian-css-backup-2026-09-21",
+        "unplanned:old_downloads",
+        "unplanned:organization",
+        "unplanned:rppr_update.md",
+        "unplanned:test.py"
+      ]
+    },
+    "dotfiles": {
+      "status": "ok",
+      "summary": "committed 0, pulled False, pushed False",
+      "details": []
+    },
+    "packages": {
+      "status": "warn",
+      "summary": "4 Brewfiles; 16 casks present outside Homebrew; 53 extras (not removed)",
+      "details": [
+        "cask:basictex",
+        "cask:godot",
+        "cask:microsoft-auto-update",
+        "cask:runelite",
+        "cask:zed",
+        "formula:act",
+        "formula:ccache",
+        "formula:chafa",
+        "formula:clang-format",
+        "formula:cmake",
+        "formula:colima",
+        "formula:coreutils",
+        "formula:cppcheck",
+        "formula:docker",
+        "formula:entr",
+        "formula:eza",
+        "formula:fastp",
+        "formula:fftw",
+        "formula:freerdp",
+        "formula:fx",
+        "formula:ghostscript",
+        "formula:git-filter-repo",
+        "formula:glow",
+        "formula:gnu-sed",
+        "formula:go",
+        "formula:include-what-you-use",
+        "formula:libtensorflow",
+        "formula:micromamba",
+        "formula:ninja",
+        "formula:ollama",
+        "formula:open-babel",
+        "formula:openjdk",
+        "formula:pandoc",
+        "formula:parallel",
+        "formula:php",
+        "formula:pngquant",
+        "formula:pv",
+        "formula:pymol",
+        "formula:python-tk",
+        "formula:rclone",
+        "formula:ripgrep-all",
+        "formula:rsync",
+        "formula:rust",
+        "formula:seqtk",
+        "formula:tldr",
+        "formula:tmuxinator",
+        "formula:tree",
+        "formula:virtualenv",
+        "formula:wget",
+        "formula:xsv",
+        "formula:zsh-autocomplete",
+        "formula:zsh-autosuggestions",
+        "formula:zsh-syntax-highlighting",
+        "present:iterm2",
+        "present:cursor",
+        "present:1password",
+        "present:alfred",
+        "present:karabiner-elements",
+        "present:contexts",
+        "present:google-chrome",
+        "present:claude",
+        "present:chatgpt",
+        "present:slack",
+        "present:zotero",
+        "present:fantastical",
+        "present:tailscale-app",
+        "present:dropbox",
+        "present:zoom",
+        "present:spotify"
+      ]
+    },
+    "repos": {
+      "status": "ok",
+      "summary": "grc active sync --apply",
+      "details": []
+    },
+    "apps": {
+      "status": "warn",
+      "summary": "3 apps checked",
+      "details": [
+        "notes 0.2.0 up to date",
+        "Tasks 0.2.1 up to date",
+        "Hotkeys 0.1.0: no releases; build locally: cd ~/local/code/web/hotkeys && npm install && npm run install-app"
+      ]
+    },
+    "defaults": {
+      "status": "ok",
+      "summary": "0 preferences applied",
+      "details": []
+    },
+    "hotkeys": {
+      "status": "ok",
+      "summary": "0 clashes, 1 layer overlaps",
+      "details": [
+        "Global       \u2318,         layer      Alfred: Workflow: Search CLI Launcher"
+      ]
+    },
+    "doctor": {
+      "status": "ok",
+      "summary": "all checks passed",
+      "details": []
+    }
+  }
+}
