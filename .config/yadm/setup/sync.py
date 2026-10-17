@@ -197,7 +197,7 @@ def print_status(root: Path, schedule_installed: bool, show_all: bool = False) -
         print('\n  %s  %s' % (paint(key, GLYPHS[result.status][1], color), tilde(result.summary, root)))
         lines, cut_here = format_details([tilde(d, root) for d in result.details], None if show_all else DETAIL_LIMIT)
         cut |= cut_here
-        print('\n'.join(lines + textwrap.wrap(HINTS[key], 110, initial_indent='    fix: ', subsequent_indent=' ' * 9) if key in HINTS else lines))
+        print('\n'.join(lines + textwrap.wrap(HINTS[key], 110, initial_indent='    fix: ', subsequent_indent=' ' * 9, break_on_hyphens=False) if key in HINTS else lines))
     if cut:
         print('\n  Full lists: converge status --all')
     return int(data['exit'])

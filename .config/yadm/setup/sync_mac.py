@@ -364,5 +364,5 @@ def apps(setup, machine_class: str, applications: Path) -> PhaseResult:
         details.append(detail)
         states.append(state)
     status = next((s for s in ('failed', 'changed', 'warn') if s in states), 'ok')
-    issues = [d for d, state in zip(details, states) if state != 'ok']
+    issues = [d.split(':')[0] for d, state in zip(details, states) if state != 'ok']  # the detail keeps the full text
     return PhaseResult(status, '%d apps checked' % len(details) + ('; ' + '; '.join(issues) if issues else ''), details)

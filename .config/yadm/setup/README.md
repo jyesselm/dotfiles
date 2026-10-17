@@ -96,7 +96,7 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 
 **Layout.** `setup/layout.txt` lists the `~`-relative directories every computer gets. Bootstrap and sync create missing ones and report unplanned top-level entries without touching them; `<glob>  ignore` lines name entries other programs create (cloud sync folders), which are never created or reported. Doctor flags literal home paths in tracked files: use `~` or `$HOME`.
 
-**Seeing what is off.** `converge status` prints the last sync and, under every phase that is not `ok`, the full detail (unplanned entries, extras, failing repo) and the edit or command that clears it. `converge sync --plan` previews what the next sync would change.
+**Seeing what is off.** `converge status` prints the last sync with calm phases first, then a "Needs attention" section: for every warn or failed phase, the details grouped (first 12 per group; `--all` for everything) and the edit or command that clears it. `converge sync --plan` previews what the next sync would change.
 
 **Fleet.** Every real sync ends by checking in: it force-pushes its `last.json` as a one-commit branch `status/<class>-<host>` on the yadm remote, then warns in its summary about any machine that has not checked in for two days. No machine needs to reach another; each only needs GitHub. `converge fleet` fetches those branches on any machine and prints one line per machine, newest check-in first: host, class, age, exit code and the phases that were not `ok`, plus `never` for a class in `setup/fleet.txt` that has not checked in yet. `--checkin` pushes this machine's last result first, for example after a manual sync. The exit code is 0 only when every machine's last sync succeeded and none is stale.
 
