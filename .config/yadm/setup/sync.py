@@ -496,7 +496,8 @@ class Sync:
             output = (done.stdout + done.stderr).strip().splitlines()
             details += output[-30:]
             if done.returncode:  # a broken repo sync must not stop `s` from being refreshed below
-                last = (output or ['no output'])[-1][:120]
+                words = [line for line in output if re.search(r'[A-Za-z]', line)]  # skip table borders
+                last = (words or ['no output'])[-1].strip('│ ')[:120]
                 status, summary = 'failed', 'grc active sync failed: exit %d: %s' % (done.returncode, last)
             else:
                 status, summary = 'ok', 'grc active sync ' + ' '.join(apply or ['(inspect)'])

@@ -458,7 +458,7 @@ class PhaseTests(Base):
         (self.root / '.config/git-repo-checker').mkdir(parents=True)
         (self.root / '.config/git-repo-checker/active.yml').write_text('')
         sync.setup.find = lambda n: 'grc'
-        sync.setup.read = lambda argv, cwd=None, timeout_s=60, input=None: done('a  main  ok\n', 2, 'yplot: local changes; not fast-forwarded\n')
+        sync.setup.read = lambda argv, cwd=None, timeout_s=60, input=None: done('a  main  ok\n', 2, '│ yplot: local changes; not fast-forwarded │\n└────┘\n')
         result = sync.repos()
         self.assertEqual(result.status, 'failed')
         self.assertEqual(result.summary, 'grc active sync failed: exit 2: yplot: local changes; not fast-forwarded')
