@@ -1,0 +1,2 @@
+# Server class (Plex server): the terminal Brewfile plus the one desktop cask that makes the keyboard behave the same.
+cask "karabiner-elements"

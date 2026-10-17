@@ -3,3 +3,4 @@ laptop
 studio
 linux
 cluster
+server

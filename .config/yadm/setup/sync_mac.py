@@ -20,6 +20,7 @@ from sync import BREW_TIMEOUT, NET_TIMEOUT, STATE_DIR, PhaseResult
 BREWFILES = {
     'laptop': ['Brewfile', 'Brewfile.previews', 'Brewfile.desktop', 'Brewfile.apps'],
     'studio': ['Brewfile', 'Brewfile.previews', 'Brewfile.desktop', 'Brewfile.apps'],
+    'server': ['Brewfile', 'Brewfile.server'],  # Plex server: terminal tools and Karabiner, no desktop apps or preferences
 }
 TERMINAL_ONLY = ['Brewfile']  # mac with an unknown/unset class
 APP_CLASSES = ('laptop', 'studio')

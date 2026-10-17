@@ -60,7 +60,16 @@ def _module(setup):
 def common(setup) -> Dict[str, Callable[[], Value]]:
     """Gatherers for every profile."""
     root, module = setup.root, _module(setup)
+    def dotfiles() -> Dict[str, str]:
+        yadm = setup.find('yadm')
+        if not yadm:
+            return {'head': 'yadm missing'}
+        head = setup.read([yadm, 'rev-parse', '--short', 'HEAD']).stdout.strip() or 'unknown'
+        dirty = setup.read([yadm, 'status', '--porcelain']).stdout.strip()
+        return {'head': head, 'dirty': str(len(dirty.splitlines())) + ' files' if dirty else 'clean'}
+
     gatherers: Dict[str, Callable[[], Value]] = {
+        'dotfiles': dotfiles,  # the tracked layer itself: every machine should sit at the same commit, clean
         'os': lambda: '%s %s %s' % (platform.system(), platform.mac_ver()[0] or platform.release(), platform.machine()),
         'git.email': lambda: setup.read(['git', 'config', 'user.email']).stdout.strip() or 'unset',
         'ssh.keys': lambda: sorted(p.name for p in (root / '.ssh').glob('*.pub')),
@@ -208,14 +217,16 @@ def selected(key: str, rules: Dict[str, List[str]]) -> bool:
 
 
 def differences(statuses: List[dict], rules: Dict[str, List[str]], everything: bool = False) -> List[Tuple[str, Dict[str, Value]]]:
-    """(key, {host: value}) for each selected key whose value differs among machines of the profiles that have it."""
+    """(key, {host: value}) for each selected key whose value differs among machines of the same profile that have that group."""
     machines = [(d['machine'].split('@', 1)[1], d.get('profile', '?'), d.get('state') or {}) for d in statuses]
     rows = []
     for key in sorted({k for _, _, state in machines for k in state}):
         if not everything and not selected(key, rules):
             continue
+        group = key.split('.')[0]
         profiles = {profile for _, profile, state in machines if key in state}
-        values = {host: state.get(key, '-') for host, profile, state in machines if profile in profiles}
+        values = {host: state.get(key, '-') for host, profile, state in machines
+                  if profile in profiles and any(k == group or k.startswith(group + '.') for k in state)}  # no apps at all: not compared on apps
         if len({json.dumps(v, sort_keys=True) for v in values.values()}) > 1:
             rows.append((key, values))
     return rows

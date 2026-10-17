@@ -39,6 +39,7 @@ HINTS = {  # printed by --status under a warn/failed phase: how to clear it
 }
 GLYPHS = {'ok': ('✓', '32'), 'changed': ('✓', '36'), 'skipped': ('-', '2'), 'warn': ('!', '33'), 'failed': ('✗', '31')}  # calm first
 DETAIL_LIMIT = 12  # detail lines per group in converge status; --all lifts it
+NO_DEFAULTS = ('server',)  # classes whose Dock/Finder preferences are left alone
 STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
 
 
@@ -580,7 +581,7 @@ class Sync:
     def defaults(self) -> PhaseResult:
         """Apply the saved allowlisted macOS preferences (restore semantics, backup first)."""
         snapshot = self.root / '.config/yadm/macos/preferences.plist'
-        if self.setup.profile != 'mac' or not snapshot.exists():
+        if self.setup.profile != 'mac' or not snapshot.exists() or self.setup.machine_class() in NO_DEFAULTS:
             return PhaseResult('skipped', 'macOS preference snapshot not applicable')
         module = load_mac_settings(self.setup.assets / 'mac-settings.py')
         count = module.apply(plistlib.loads(snapshot.read_bytes()), plan=self.setup.args.plan)

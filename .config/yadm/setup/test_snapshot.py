@@ -93,15 +93,17 @@ class CompareTests(Base):
 
     def test_differences_compare_within_profiles_and_table_aligns(self):
         statuses = [{'machine': 'laptop@book', 'profile': 'mac', 'state': {'os': 'mac 26', 'apps.CleanShot X': '4.7', 'tools.git': '2.5', 'fonts': ['a', 'b']}},
-                    {'machine': 'studio@desk', 'profile': 'mac', 'state': {'os': 'mac 26', 'tools.git': '2.5', 'fonts': ['a']}},
+                    {'machine': 'studio@desk', 'profile': 'mac', 'state': {'os': 'mac 26', 'tools.git': '2.5', 'fonts': ['a'], 'apps.Tasks': '1'}},
+                    {'machine': 'server@plex', 'profile': 'mac', 'state': {'os': 'mac 26', 'tools.git': '2.5'}},  # no apps group: left out of apps rows
                     {'machine': 'linux@gpu', 'profile': 'linux', 'state': {'os': 'linux 6', 'tools.git': '2.4'}},
                     {'machine': 'cluster@swan', 'profile': 'cluster', 'state': {}}]
         rules = {'compare': ['*'], 'ignore': ['fonts']}
         rows = sn.differences(statuses, rules)
-        self.assertEqual(rows, [('apps.CleanShot X', {'book': '4.7', 'desk': '-'}),  # Macs only: linux never has apps
-                                ('os', {'book': 'mac 26', 'desk': 'mac 26', 'gpu': 'linux 6'}),
-                                ('tools.git', {'book': '2.5', 'desk': '2.5', 'gpu': '2.4'})])
-        self.assertEqual([k for k, _ in sn.differences(statuses, rules, everything=True)], ['apps.CleanShot X', 'fonts', 'os', 'tools.git'])
+        self.assertEqual(rows, [('apps.CleanShot X', {'book': '4.7', 'desk': '-'}),  # Macs with apps only: linux and the server have none
+                                ('apps.Tasks', {'book': '-', 'desk': '1'}),
+                                ('os', {'book': 'mac 26', 'desk': 'mac 26', 'plex': 'mac 26', 'gpu': 'linux 6'}),
+                                ('tools.git', {'book': '2.5', 'desk': '2.5', 'plex': '2.5', 'gpu': '2.4'})])
+        self.assertEqual([k for k, _ in sn.differences(statuses, rules, everything=True)], ['apps.CleanShot X', 'apps.Tasks', 'fonts', 'os', 'tools.git'])
         lines = sn.table(rows, ['book', 'desk', 'gpu'])
         self.assertEqual(lines[0], 'key               book    desk    gpu')
         self.assertEqual(lines[1], 'apps.CleanShot X  4.7     -')

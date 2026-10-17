@@ -2,6 +2,7 @@
 # effective state (everything `converge fleet --keys` lists) and pushes it with the check-in;
 # the diff prints only the selected keys whose values differ. Patterns are globs on the key.
 compare:
+  - dotfiles.*      # yadm commit and clean/dirty: the tracked layer itself
   - os
   - git.email
   - gh.auth
