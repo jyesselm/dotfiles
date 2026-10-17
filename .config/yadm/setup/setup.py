@@ -446,7 +446,9 @@ def parser():
     p = argparse.ArgumentParser(prog='converge', description=__doc__)
     commands = p.add_subparsers(dest='command', metavar='command', required=True)
     for name, (help_text, _) in COMMANDS.items():
-        commands.add_parser(name, help=help_text, description=help_text, parents=[common])
+        sub = commands.add_parser(name, help=help_text, description=help_text, parents=[common])
+        if name == 'status':
+            sub.add_argument('--all', action='store_true', help='Every detail line, not just the first 12 per group')
     return p
 
 
@@ -471,7 +473,7 @@ def dispatch(args) -> int:
     if args.command == 'status':
         from sync import print_status
         from sync_schedule import is_installed
-        return print_status(setup.root, is_installed(setup))
+        return print_status(setup.root, is_installed(setup), show_all=args.all)
     if args.command in ('fleet', 'checkin'):
         from sync import fleet
         return fleet(setup, setup.assets / 'fleet.txt', checkin=args.command == 'checkin')

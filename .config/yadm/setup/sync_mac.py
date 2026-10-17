@@ -190,8 +190,8 @@ def packages(setup, machine_class: str, applications: Path) -> PhaseResult:
     names, text = _manifest(setup, machine_class)
     skip, extras = _inventory(setup, brew or 'brew', parse_brewfile(text), applications)
     _bundle_install(setup, brew or 'brew', text, skip)
-    summary = '%d Brewfiles; %d casks present outside Homebrew; %d extras in no Brewfile or %s (not removed)' % (
-        len(names), len(skip), len(extras), EXTRAS_FILE)
+    summary = '%d extras in no Brewfile or %s (not removed), %d casks present outside Homebrew, %d Brewfiles' % (
+        len(extras), EXTRAS_FILE, len(skip), len(names))
     if not known:
         summary += '; class unknown, set: yadm config local.class laptop|studio'
     status = 'warn' if extras or not known else 'ok'
@@ -364,4 +364,5 @@ def apps(setup, machine_class: str, applications: Path) -> PhaseResult:
         details.append(detail)
         states.append(state)
     status = next((s for s in ('failed', 'changed', 'warn') if s in states), 'ok')
-    return PhaseResult(status, '%d apps checked' % len(details), details)
+    issues = [d for d, state in zip(details, states) if state != 'ok']
+    return PhaseResult(status, '%d apps checked' % len(details) + ('; ' + '; '.join(issues) if issues else ''), details)

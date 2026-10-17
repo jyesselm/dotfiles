@@ -5,10 +5,12 @@ import fcntl
 import hashlib
 import importlib.util
 import json
+import os
 import platform
 import plistlib
 import re
 import subprocess
+import sys
 import tempfile
 import textwrap
 from dataclasses import asdict, dataclass, field
@@ -35,6 +37,8 @@ HINTS = {  # printed by --status under a warn/failed phase: how to clear it
     'repos': 'fix the repo named above, then converge sync',
     'doctor': 'converge doctor reruns the checks',
 }
+GLYPHS = {'ok': ('✓', '32'), 'changed': ('✓', '36'), 'skipped': ('-', '2'), 'warn': ('!', '33'), 'failed': ('✗', '31')}  # calm first
+DETAIL_LIMIT = 12  # detail lines per group in converge status; --all lifts it
 STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
 
 
@@ -134,8 +138,17 @@ def write_state(root: Path, phases: Dict[str, PhaseResult], meta: dict) -> Path:
     return target
 
 
-def format_details(details: List[str], width: int = 110) -> List[str]:
-    """Indented detail lines; 'key:value' details are grouped as 'key (n): a, b, c' and wrapped."""
+def paint(text: str, code: str, color: bool) -> str:
+    return '\033[%sm%s\033[0m' % (code, text) if color else text
+
+
+def tilde(text: str, root) -> str:
+    """Shorten this home directory to ~ in printed text."""
+    return text.replace(str(root), '~')
+
+
+def format_details(details: List[str], limit=None, width: int = 100, indent: str = '    ') -> Tuple[List[str], bool]:
+    """(Indented detail lines, whether any were cut): 'key:value' details are grouped as 'key (n): a, b, c', wrapped, capped at `limit` each."""
     groups: Dict[str, List[str]] = {}
     plain = []
     for detail in details:
@@ -144,31 +157,49 @@ def format_details(details: List[str], width: int = 110) -> List[str]:
             groups.setdefault(match.group(1), []).append(match.group(2))
         else:
             plain.append(detail)
-    lines = []
+    lines, cut = [], False
     for key, values in groups.items():
-        head = '      %s (%d): ' % (key, len(values))
-        lines += textwrap.wrap(', '.join(values), width, initial_indent=head, subsequent_indent=' ' * len(head),
-                               break_long_words=False, break_on_hyphens=False)
-    return lines + ['      ' + d for d in plain]
+        shown = values if limit is None else values[:limit]
+        cut |= len(shown) < len(values)
+        head = '%s%s (%s): ' % (indent, key, len(values) if len(shown) == len(values) else '%d of %d' % (len(shown), len(values)))
+        lines += textwrap.wrap(', '.join(shown) + (', …' if len(shown) < len(values) else ''), width, initial_indent=head,
+                               subsequent_indent=' ' * len(head), break_long_words=False, break_on_hyphens=False)
+    shown = plain if limit is None else plain[:limit]
+    lines += [indent + d for d in shown]
+    if len(shown) < len(plain):
+        cut = True
+        lines.append('%s… %d more' % (indent, len(plain) - len(shown)))
+    return lines, cut
 
 
-def print_status(root: Path, schedule_installed: bool) -> int:
-    """Print the last sync result with every warning's details and how to clear it; returns its exit code (1 if none yet)."""
+def print_status(root: Path, schedule_installed: bool, show_all: bool = False) -> int:
+    """Print the last sync: phases with problems last, then each problem's details and how to clear it. Returns its exit code."""
     path = Path(root) / STATE_DIR / 'last.json'
     if not path.exists():
         print('No sync has run yet; try converge sync --plan')
         return 1
     data = json.loads(path.read_text())
-    print('Last sync: %s (%s) on %s, exit %d' % (data['finished'], age(data['finished']), data['machine'], data['exit']))
-    for key, value in data['phases'].items():
-        result = PhaseResult(**value)
-        print(format_results({key: result})[0])
-        if result.status in ('warn', 'failed'):
-            for line in format_details(result.details):
-                print(line)
-            if key in HINTS:
-                print('      fix: ' + HINTS[key])
-    print('Schedule: ' + ('installed' if schedule_installed else 'not installed'))
+    color = sys.stdout.isatty() and not os.environ.get('NO_COLOR')
+    phases = {k: PhaseResult(**v) for k, v in data['phases'].items()}
+    when = datetime.fromisoformat(data['finished']).astimezone().strftime('%a %H:%M')
+    print('Last sync %s (%s) · %s · exit %d · schedule %s\n' % (
+        age(data['finished']), when, data['machine'], data['exit'], 'installed' if schedule_installed else 'not installed'))
+    for key, result in sorted(phases.items(), key=lambda kv: list(GLYPHS).index(kv[1].status)):
+        glyph, code = GLYPHS[result.status]
+        lines = textwrap.wrap(tilde(result.summary, root), 110, initial_indent='  %s %-9s ' % (glyph, key), subsequent_indent=' ' * 14)
+        lines[0] = lines[0].replace(glyph, paint(glyph, code, color), 1)
+        print('\n'.join(lines))
+    problems = sorted(((k, r) for k, r in phases.items() if r.status in ('warn', 'failed')), key=lambda kv: kv[1].status != 'failed')
+    if problems:
+        print('\n' + paint('Needs attention', '1', color))
+    cut = False
+    for key, result in problems:
+        print('\n  %s  %s' % (paint(key, GLYPHS[result.status][1], color), tilde(result.summary, root)))
+        lines, cut_here = format_details([tilde(d, root) for d in result.details], None if show_all else DETAIL_LIMIT)
+        cut |= cut_here
+        print('\n'.join(lines + textwrap.wrap(HINTS[key], 110, initial_indent='    fix: ', subsequent_indent=' ' * 9) if key in HINTS else lines))
+    if cut:
+        print('\n  Full lists: converge status --all')
     return int(data['exit'])
 
 
@@ -326,8 +357,8 @@ class Sync:
             status = 'warn'
         else:
             status = 'ok'
-        summary = 'created %d, missing-check %d, unplanned %d' % (
-            len(report.created), len(report.expected), len(report.unplanned))
+        counts = [('%d created', report.created), ('%d expected dirs missing', report.expected), ('%d unplanned entries in ~', report.unplanned)]
+        summary = ', '.join(label % len(items) for label, items in counts if items) or 'every directory present'
         return PhaseResult(status, summary, details)
 
     def _yadm(self, yadm: str, *args: str, timeout_s: int = 60) -> str:
@@ -430,7 +461,8 @@ class Sync:
         status = 'changed' if (files or pulled or pushed) else 'ok'
         if held:
             status = 'warn'
-        return PhaseResult(status, 'committed %d, pulled %s, pushed %s' % (len(files), pulled, pushed), details)
+        done = (['committed %d' % len(files)] if files else []) + (['pulled'] if pulled else []) + (['pushed'] if pushed else [])
+        return PhaseResult(status, ', '.join(done) or 'nothing to commit, up to date with origin', details)
 
     def packages(self) -> PhaseResult:
         """Brewfiles on Mac; the dedicated tool environment elsewhere."""
@@ -463,12 +495,13 @@ class Sync:
                 self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
                 status, summary = 'ok', 'grc active sync --apply'
             except (OSError, subprocess.SubprocessError) as exc:
-                status, summary = 'failed', 'grc active sync failed: %s' % exc
+                reason = 'exit %d' % exc.returncode if isinstance(exc, subprocess.CalledProcessError) else str(exc)
+                status, summary = 'failed', 'grc active sync failed: ' + reason
         s_reinstalled, detail = self._refresh_tool('s')
         details = [d for d in details + [detail] if d]
         if status != 'failed' and (grc_reinstalled or s_reinstalled):
             status = 'changed'
-        return PhaseResult(status, '; '.join([summary] + details), details)
+        return PhaseResult(status, summary, details)
 
     def _pull_grc_checkout(self) -> str:
         """Fast-forward git-repo-checker itself before it syncs the other repos; a failure is reported, not fatal."""

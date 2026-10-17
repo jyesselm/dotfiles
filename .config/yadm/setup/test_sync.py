@@ -270,23 +270,32 @@ class StateTests(Base):
             self.make().execute()
         self.assertEqual(sy.print_status(self.root, True), 0)
         text = self.output.getvalue()
-        self.assertIn('Last sync:', text)
+        self.assertIn('Last sync', text)
         self.assertIn('layout fine', text)
-        self.assertIn('Schedule: installed', text)
+        self.assertIn('schedule installed', text)
 
     def test_status_lists_details_and_fix_hints_under_warn_phases(self):
-        phases = {'layout': sy.PhaseResult('warn', 'unplanned 2', ['unplanned:Google Drive', 'unplanned:stray']),
+        phases = {'layout': sy.PhaseResult('warn', 'unplanned 2', ['unplanned:Google Drive', 'unplanned:stray'] + ['created:%d' % i for i in range(13)]),
                   'apps': sy.PhaseResult('warn', '1 app', ['Hotkeys absent: build locally']),
                   'doctor': sy.PhaseResult('ok', 'all checks passed', ['hidden'])}
         meta = {'started': 'x', 'finished': datetime.now(timezone.utc).isoformat(), 'machine': 'laptop@h', 'profile': 'linux', 'exit': 1}
         sy.write_state(self.root, phases, meta)
         self.assertEqual(sy.print_status(self.root, True), 1)
         lines = self.output.getvalue().splitlines()
-        self.assertIn('      unplanned (2): Google Drive, stray', lines)
-        self.assertIn('      fix: ' + sy.HINTS['layout'], lines)
-        self.assertIn('      Hotkeys absent: build locally', lines)
-        self.assertNotIn('      hidden', lines)
-        self.assertEqual(len(sy.format_details(['cask:' + 'x' * 20] * 12)), 3)
+        self.assertIn('    unplanned (2): Google Drive, stray', lines)
+        self.assertTrue(any(l.startswith('    fix: ' + sy.HINTS['layout'][:40]) for l in lines))
+        self.assertIn('    Hotkeys absent: build locally', lines)
+        self.assertNotIn('    hidden', lines)
+        self.assertEqual(len(sy.format_details(['cask:' + 'x' * 20] * 12)[0]), 4)
+        capped, cut = sy.format_details(['unplanned:%d' % i for i in range(15)] + ['plain %d' % i for i in range(14)], limit=12)
+        self.assertTrue(cut)
+        self.assertTrue(capped[0].startswith('    unplanned (12 of 15): '))
+        self.assertEqual(capped[-1], '    … 2 more')
+        self.assertEqual(sy.format_details(['plain'] * 3, limit=None), (['    plain'] * 3, False))
+        self.assertIn('  Full lists: converge status --all', lines)
+        self.assertTrue(any(l.startswith('    created (12 of 13): ') for l in lines))
+        sy.print_status(self.root, True, show_all=True)
+        self.assertNotIn('Full lists', self.output.getvalue().split('Full lists: converge status --all', 1)[1])
 
     def fake_remote(self, statuses):
         """Stub fetch/for-each-ref/show so the remote holds these last.json dicts."""
@@ -449,7 +458,7 @@ class PhaseTests(Base):
         with patch.object(sync.setup, 'tool') as tool:
             result = sync.repos()
             self.assertEqual(result.status, 'changed')
-            self.assertIn('s reinstalled', result.summary)
+            self.assertIn('s reinstalled', ' '.join(result.details))
             tool.assert_called_once_with('s')
             marker = self.root / sy.STATE_DIR / 'search-cli.sha256'
             self.assertEqual(marker.read_text().strip(), sy.checkout_digest(sync.setup.checkout('s'), sync.setup.extras('s')))
@@ -466,20 +475,20 @@ class PhaseTests(Base):
             (checkout / 'uv.lock').write_text('version = 1\n')
             sync.repos()
             self.assertEqual(tool.call_count, 2)
-            self.assertIn('s up to date', sync.repos().summary)
+            self.assertIn('s up to date', ' '.join(sync.repos().details))
             self.assertEqual(tool.call_count, 2)
 
     def test_repos_search_skips_without_checkout_or_uv_and_in_plan(self):
         sync = self.make()
         with patch.object(sync.setup, 'tool', side_effect=AssertionError('installed')):
-            self.assertIn('checkout absent', sync.repos().summary)
+            self.assertIn('checkout absent', ' '.join(sync.repos().details))
             self.search_checkout(sync)
             sync.setup.find = lambda n: None if n == 'uv' else n
-            self.assertIn('uv missing', sync.repos().summary)
+            self.assertIn('uv missing', ' '.join(sync.repos().details))
         plan = self.make('--plan', '--profile', 'linux')
         self.search_checkout(plan)
         with patch.object(plan.setup, 'tool') as tool:
-            self.assertIn('would be reinstalled', plan.repos().summary)
+            self.assertIn('would be reinstalled', ' '.join(plan.repos().details))
         tool.assert_called_once_with('s')
         self.assertFalse((self.root / sy.STATE_DIR / 'search-cli.sha256').exists())
 
@@ -503,7 +512,7 @@ class PhaseTests(Base):
         tool.assert_called_once_with('grc')
         self.assertEqual(self.runs[1][:4], ['grc', 'active', 'sync', '--apply'])
         self.assertEqual(result.status, 'changed')
-        self.assertIn('grc reinstalled', result.summary)
+        self.assertIn('grc reinstalled', ' '.join(result.details))
         self.assertTrue((self.root / sy.STATE_DIR / 'git-repo-checker.sha256').exists())
 
     def test_repos_failed_grc_sync_still_refreshes_s_and_fails_the_phase(self):
@@ -524,7 +533,7 @@ class PhaseTests(Base):
         tool.assert_called_once_with('s')
         self.assertEqual(result.status, 'failed')
         self.assertIn('grc active sync failed', result.summary)
-        self.assertIn('s reinstalled', result.summary)
+        self.assertIn('s reinstalled', ' '.join(result.details))
 
     def test_repos_reports_a_failed_grc_fast_forward_and_carries_on(self):
         sync = self.make()
@@ -538,8 +547,8 @@ class PhaseTests(Base):
         sync.setup.run = run
         with patch.object(sync.setup, 'tool'):
             result = sync.repos()
-        self.assertIn('not fast-forwarded', result.summary)
-        self.assertIn('grc reinstalled', result.summary)  # the failed pull did not stop the phase
+        self.assertIn('not fast-forwarded', ' '.join(result.details))
+        self.assertIn('grc reinstalled', ' '.join(result.details))  # the failed pull did not stop the phase
 
     def test_packages_honours_skip_packages(self):
         sync = self.make('--profile', 'mac', '--skip-packages')
