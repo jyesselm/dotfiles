@@ -549,15 +549,20 @@ class Sync:
         return PhaseResult('changed' if count else 'ok', '%d preferences applied' % count)
 
     def hotkeys(self) -> PhaseResult:
-        """Run the hotkeys repo's clash checker and count findings."""
+        """Run the hotkeys repo's clash checker and check that Karabiner is actually applying karabiner.json."""
         repo = self.root / 'local/code/web/hotkeys'
         node = self.setup.find('node')
         if self.setup.profile != 'mac' or not (repo / 'scripts/check.js').exists() or not node:
             return PhaseResult('skipped', 'hotkeys checker not available')
         stdout = self.setup.read_ok([node, 'scripts/check.js'], 'check.js failed', cwd=repo)
         counts = count_findings(stdout)
+        import sync_mac
+        problems, notes = sync_mac.karabiner_health(self.setup)  # a tracked karabiner.json is useless unless Karabiner applies it
         summary = '%d clashes, %d layer overlaps' % (counts['clash'], counts['layer'])
-        return PhaseResult('warn' if counts['clash'] else 'ok', summary, stdout.splitlines()[:20])
+        if problems:
+            summary += ', %d Karabiner problems' % len(problems)
+        details = problems + notes + stdout.splitlines()[:20]
+        return PhaseResult('warn' if counts['clash'] or problems else 'ok', summary, details)
 
     def doctor(self) -> PhaseResult:
         """Doctor checks, including literal home paths in tracked files."""

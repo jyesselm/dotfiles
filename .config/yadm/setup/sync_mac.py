@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -350,6 +350,54 @@ def build_app(setup, app: dict, path: Path, installed: Optional[str]) -> Tuple[s
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(head + '\n')
     return label + ' built', 'changed'
+
+
+KARABINER = {'app': '/Applications/Karabiner-Elements.app', 'config': '.config/karabiner/karabiner.json',
+             'loads': '.local/share/karabiner/log/console_user_server.log', 'daemon': '/var/log/karabiner/core_service.log'}
+
+
+def _log_lines(path: Path) -> List[str]:
+    return path.read_text(errors='replace').splitlines() if path.exists() else []
+
+
+def _stamp(line: str) -> Optional[datetime]:
+    try:
+        return datetime.strptime(line[1:20], '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return None
+
+
+def karabiner_health(setup, paths: dict = KARABINER) -> Tuple[List[str], List[str]]:
+    """(problems, notes): is the tracked karabiner.json actually live? The app is installed, its daemon runs,
+    the file was reloaded since its last edit without errors, and at least one keyboard is grabbed."""
+    config = setup.root / paths['config']
+    if not config.exists():
+        return [], []
+    if not Path(paths['app']).exists():
+        return ['Karabiner-Elements not installed, so karabiner.json does nothing (brew bundle installs it)'], []
+    problems, notes = [], []
+    if setup.read(['pgrep', '-f', 'Karabiner-Core-Service']).returncode:
+        problems.append('Karabiner daemon not running: open Karabiner-Elements once and allow its system extension')
+    loads = _log_lines(setup.root / paths['loads'])
+    loaded = [i for i, line in enumerate(loads) if ' Load ' in line and line.rstrip('.').endswith('karabiner.json')]
+    if not loaded:
+        problems.append('Karabiner has never loaded karabiner.json')
+    else:
+        stamp = _stamp(loads[loaded[-1]])
+        if stamp and stamp + timedelta(seconds=1) < datetime.fromtimestamp(config.stat().st_mtime):  # log stamps are whole seconds
+            problems.append('karabiner.json was edited after Karabiner last loaded it (%s)' % stamp)
+        for line in [line for line in loads[loaded[-1]:] if '[error]' in line][-3:]:
+            problems.append('Karabiner error: ' + line.split('] ', 3)[-1].strip()[:120])
+    grabbed: List[str] = []
+    for line in _log_lines(Path(paths['daemon'])):
+        found = re.search(r'\] ([^\[\]]+) \(device_id:\d+\) .*\(grabbed\)', line)
+        if found and not re.search(r'Mouse|Virtual', found.group(1)) and found.group(1) not in grabbed:
+            grabbed.append(found.group(1))
+    if grabbed:
+        notes.append('Karabiner grabs: ' + ', '.join(grabbed))
+    else:
+        problems.append('Karabiner grabs no keyboard: allow Input Monitoring for karabiner_grabber in System Settings > Privacy & Security')
+    return problems, notes
 
 
 def search_app(setup, applications: Path) -> Tuple[str, str]:

@@ -32,11 +32,27 @@
                         ]
                     },
                     {
-                        "description": "F3 to Clipboard Screenshot",
+                        "description": "F3 (or its Mission Control media key) to Clipboard Screenshot",
                         "manipulators": [
                             {
                                 "from": {
                                     "key_code": "f3"
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "4",
+                                        "modifiers": [
+                                            "left_command",
+                                            "left_control",
+                                            "left_shift"
+                                        ]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "apple_vendor_keyboard_key_code": "mission_control"
                                 },
                                 "to": [
                                     {
@@ -1348,7 +1364,7 @@
                         ]
                     },
                     {
-                        "description": "Chat apps: same keys in Claude + ChatGPT (\u2318B sidebar in ChatGPT; \u2318K search / \u21e7\u2318K palette in Claude)",
+                        "description": "Chat apps: same keys in Claude + ChatGPT (⌘B sidebar in ChatGPT; ⌘K search / ⇧⌘K palette in Claude)",
                         "manipulators": [
                             {
                                 "type": "basic",

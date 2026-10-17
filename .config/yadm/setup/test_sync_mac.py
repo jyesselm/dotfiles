@@ -3,6 +3,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import plistlib
 import subprocess
 import tempfile
@@ -365,3 +366,50 @@ class AppTests(Base):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class KarabinerHealthTests(Base):
+    LOAD = '[2026-10-17 13:51:18.399] [info] [console_user_server] Load /h/.config/karabiner/karabiner.json...\n'
+    GRAB = '[2026-10-17 12:23:43.239] [info] [core_service (daemon)] K1-Keyboard (device_id:4363372044) hid device events monitor is started (grabbed).\n' \
+           '[2026-10-17 12:23:43.267] [info] [core_service (daemon)] G403 HERO Gaming Mouse (device_id:4294973522) hid device events monitor is started (grabbed).\n'
+
+    def paths(self, app=True):
+        paths = {k: str(self.root / v.lstrip('/')) if k in ('app', 'daemon') else v for k, v in sm.KARABINER.items()}
+        config = self.root / paths['config']
+        config.parent.mkdir(parents=True)
+        config.write_text('{}')
+        os.utime(config, (0, 0))  # edited long before any log line
+        if app:
+            Path(paths['app']).mkdir(parents=True)
+        (self.root / paths['loads']).parent.mkdir(parents=True)
+        return paths
+
+    def test_healthy_config_lists_grabbed_keyboards_only(self):
+        paths = self.paths()
+        (self.root / paths['loads']).write_text(self.LOAD)
+        Path(paths['daemon']).parent.mkdir(parents=True)
+        Path(paths['daemon']).write_text(self.GRAB)
+        setup = self.setup('sync')
+        setup.read = lambda argv, **kw: done()
+        self.assertEqual(sm.karabiner_health(setup, paths), ([], ['Karabiner grabs: K1-Keyboard']))
+
+    def test_stale_load_errors_and_no_keyboard_are_problems(self):
+        paths = self.paths()
+        (self.root / paths['loads']).write_text(
+            '[2020-01-01 00:00:00.000] [info] [console_user_server] Load /h/.config/karabiner/karabiner.json...\n'
+            '[2020-01-01 00:00:01.000] [error] [console_user_server] shell_command stderr:/bin/sh: x: No such file\n')
+        os.utime(self.root / paths['config'], None)  # edited now, after the 2020 load
+        setup = self.setup('sync')
+        setup.read = lambda argv, **kw: done(code=1)
+        problems, notes = sm.karabiner_health(setup, paths)
+        self.assertEqual(notes, [])
+        self.assertEqual([p.split(':')[0] for p in problems],
+                         ['Karabiner daemon not running', 'karabiner.json was edited after Karabiner last loaded it (2020-01-01 00',
+                          'Karabiner error', 'Karabiner grabs no keyboard'])
+
+    def test_missing_app_or_config_short_circuits(self):
+        paths = self.paths(app=False)
+        setup = self.setup('sync')
+        self.assertEqual(sm.karabiner_health(setup, paths)[0], ['Karabiner-Elements not installed, so karabiner.json does nothing (brew bundle installs it)'])
+        (self.root / paths['config']).unlink()
+        self.assertEqual(sm.karabiner_health(setup, paths), ([], []))
