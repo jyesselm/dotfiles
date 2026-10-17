@@ -348,7 +348,7 @@ class StateTests(Base):
         failed = {'dotfiles': {'status': 'failed', 'summary': 'x', 'details': []},
                   'doctor': {'status': 'warn', 'summary': 'y', 'details': []},
                   'apps': {'status': 'ok', 'summary': '', 'details': []}}
-        self.fake_remote([self.status('studio@studio', 60, 1, failed), self.status('laptop@book', 2)])
+        self.fake_remote([self.status('studio@studio', 60, 1, failed), self.status('laptop@book', 2), self.status('mac@studio', 90, 1)])  # mac@studio: older stalled run
         sync = self.make()
         self.assertEqual(sy.fleet(sync.setup, fleet), 1)
         lines = self.output.getvalue().splitlines()

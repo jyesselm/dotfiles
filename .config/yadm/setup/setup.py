@@ -128,7 +128,10 @@ class Setup:
         """yadm's local.class (laptop|studio|linux|cluster), falling back to the profile."""
         if self._class is None:
             yadm = self.find('yadm')
-            out = self.read([yadm, 'config', 'local.class']).stdout.strip() if yadm else ''
+            done = self.read([yadm, 'config', 'local.class']) if yadm else None
+            if done is not None and done.returncode not in (0, 1):  # 1 = unset; anything else (timeout, broken repo) must not pick a class
+                raise RuntimeError('yadm config local.class failed (exit %d): %s' % (done.returncode, done.stderr.strip()[:120]))
+            out = done.stdout.strip() if done is not None else ''
             self._class = out.splitlines()[0].strip() if out else self.profile
         return self._class
 

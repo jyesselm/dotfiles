@@ -284,6 +284,10 @@ def fleet(setup, expected: Path, checkin: bool = False, diff: bool = False, keys
     elif checkin:
         publish_status(setup, yadm)
     statuses = fetch_statuses(setup, yadm)
+    newest = {}  # one row per host: a stalled run once checked in under the fallback class
+    for data in statuses:
+        newest.setdefault(data['machine'].split('@', 1)[1], data)
+    statuses = list(newest.values())
     code = 0
     for data in statuses:
         cls, host = data['machine'].split('@', 1)

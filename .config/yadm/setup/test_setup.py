@@ -256,3 +256,20 @@ class BootstrapTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MachineClassTests(BootstrapTests):
+    def test_class_falls_back_when_unset_but_fails_when_yadm_breaks(self):
+        setup = self.setup('sync', '--profile', 'mac')
+        setup.find = lambda name: '/bin/yadm' if name == 'yadm' else None
+        setup.read = lambda argv, **kw: subprocess.CompletedProcess(argv, 1, '', '')  # unset
+        self.assertEqual(setup.machine_class(), 'mac')
+        setup = self.setup('sync', '--profile', 'mac')
+        setup.find = lambda name: '/bin/yadm' if name == 'yadm' else None
+        setup.read = lambda argv, **kw: subprocess.CompletedProcess(argv, 124, '', 'timed out after 60s')
+        with self.assertRaisesRegex(RuntimeError, 'local.class failed'):
+            setup.machine_class()
+        setup = self.setup('sync', '--profile', 'mac')
+        setup.find = lambda name: '/bin/yadm' if name == 'yadm' else None
+        setup.read = lambda argv, **kw: subprocess.CompletedProcess(argv, 0, 'studio\n', '')
+        self.assertEqual(setup.machine_class(), 'studio')
