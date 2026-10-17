@@ -47,7 +47,7 @@ dotfiles-setup --previews                   # PDF / SVG / archive / video previe
 dotfiles-setup --desktop                    # Mac: iTerm2, Cursor
 gh auth login
 dotfiles-setup --games                      # private tmux-dojo and nvim-dojo
-dotfiles-setup --search                     # search-cli, default GitHub branch
+dotfiles-setup --search                     # search-cli (s) from the developing checkout
 dotfiles-setup --skip-packages --skip-nvim   # shell/menu/config setup only
 dotfiles-setup --sync [--plan]              # converge this computer (see Daily sync)
 dotfiles-setup --status                     # result of the last sync
@@ -71,7 +71,7 @@ Flags combine, for example `dotfiles-setup --plan --desktop --previews --games -
 
 Existing shell/plugin/private-repository checkouts are retained, including local changes. Bootstrap does not pull or reset those checkouts. To update a game, use `git pull --ff-only` then its `install.sh` in `~/.local/share/dotfiles/repos/<name>` (Neovim uses `--lazy`). Private game source stays outside the public yadm repository.
 
-Search CLI is installed into a uv-managed tool environment from its default branch. It does not copy a developer's uncommitted checkout, database, vaults or papers. The portable shell helper is loaded only when that optional checkout exists. The tracked `~/.config/search-cli/config.yaml` configures `~/notes` as the Obsidian vault on each computer; sync the notes themselves separately. If a computer uses a different layout, edit `live.vaults` in that file. Search indexes are built locally and are not synced.
+Search CLI (`s`) is installed with `uv tool install --editable` from the grc-managed developing checkout `~/local/code/python/developing/search-cli` (cloned there if absent), so the command tracks that checkout. A commit on `main` is what propagates: the daily sync fast-forwards every machine's checkout and reinstalls `s` when it is missing or `pyproject.toml`/`uv.lock` changed. Uncommitted work, the database, vaults and papers stay local. The portable shell helper is loaded only when that optional checkout exists. The tracked `~/.config/search-cli/config.yaml` configures `~/notes` as the Obsidian vault on each computer; sync the notes themselves separately. If a computer uses a different layout, edit `live.vaults` in that file. Search indexes are built locally and are not synced.
 
 ## Finish once per computer
 
@@ -91,7 +91,7 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 - **Packages:** Brewfiles per class (Linux: the tool environment). Packages not in the manifests are reported as extras, never removed.
 - **Defaults:** the saved snapshot is applied every day, so run `mac-settings save` to keep a preference change (Magnet also syncs itself through iCloud).
 - Run the first sync on a new Mac in a terminal; cask installs may exceed the timeout under launchd.
-- State and log: `~/.local/state/dotfiles/sync/last.json` and `sync.log`. The `com.git-repo-checker.active` LaunchAgent stays; sync also runs `grc active sync --apply`.
+- State and log: `~/.local/state/dotfiles/sync/last.json` and `sync.log`. The `com.git-repo-checker.active` LaunchAgent stays; sync also runs `grc active sync --apply`, then refreshes `s` from its checkout (skipped where uv is absent).
 
 **Layout.** `setup/layout.txt` lists the `~`-relative directories every computer gets. Bootstrap and sync create missing ones and report unplanned top-level entries without touching them. Doctor flags literal home paths in tracked files: use `~` or `$HOME`.
 

@@ -421,6 +421,53 @@ class PhaseTests(Base):
         self.assertEqual(sync.repos().status, 'ok')
         self.assertEqual(self.runs[0][:4], ['grc', 'active', 'sync', '--apply'])
 
+    def search_checkout(self, sync):
+        checkout = sync.setup.search_cli
+        checkout.mkdir(parents=True, exist_ok=True)
+        (checkout / 'pyproject.toml').write_text('[project]\nname = "search-cli"\n')
+        return checkout
+
+    def test_repos_reinstalls_s_when_missing_then_leaves_it_alone(self):
+        sync = self.make()
+        self.search_checkout(sync)
+        present = {'grc', 'uv'}
+        sync.setup.find = lambda n: n if n in present else None
+        with patch.object(sync.setup, 'search') as search:
+            result = sync.repos()
+            self.assertEqual(result.status, 'changed')
+            self.assertIn('s reinstalled', result.summary)
+            search.assert_called_once()
+            marker = self.root / sy.STATE_DIR / sy.SEARCH_MARKER
+            self.assertEqual(marker.read_text().strip(), sy.search_digest(sync.setup.search_cli))
+            present.add('s')
+            self.assertEqual(sync.repos().status, 'skipped')
+            search.assert_called_once()
+
+    def test_repos_reinstalls_s_when_dependencies_change(self):
+        sync = self.make()
+        checkout = self.search_checkout(sync)
+        with patch.object(sync.setup, 'search') as search:
+            sync.repos()
+            (checkout / 'uv.lock').write_text('version = 1\n')
+            sync.repos()
+            self.assertEqual(search.call_count, 2)
+            self.assertIn('s up to date', sync.repos().summary)
+            self.assertEqual(search.call_count, 2)
+
+    def test_repos_search_skips_without_checkout_or_uv_and_in_plan(self):
+        sync = self.make()
+        with patch.object(sync.setup, 'search', side_effect=AssertionError('installed')):
+            self.assertIn('checkout absent', sync.repos().summary)
+            self.search_checkout(sync)
+            sync.setup.find = lambda n: None if n == 'uv' else n
+            self.assertIn('uv missing', sync.repos().summary)
+        plan = self.make('--plan', '--profile', 'linux')
+        self.search_checkout(plan)
+        with patch.object(plan.setup, 'search') as search:
+            self.assertIn('would be reinstalled', plan.repos().summary)
+        search.assert_called_once()
+        self.assertFalse((self.root / sy.STATE_DIR / sy.SEARCH_MARKER).exists())
+
     def test_packages_honours_skip_packages(self):
         sync = self.make('--profile', 'mac', '--skip-packages')
         with patch.object(sync.setup, 'linux_tools', side_effect=AssertionError('installed')):

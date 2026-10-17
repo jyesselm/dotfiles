@@ -26,6 +26,7 @@ MICROMAMBA = {
 TOOLS = ['git', 'tmux', 'nvim', 'yazi', 'ya', 'fzf', 'fd', 'rg', 'zoxide',
          'starship', 'atuin', 'bat', 'jq', 'uv', 'gh', 'lazygit', 'node', 'zsh']
 MINIMUM = {'tmux': (3, 6), 'nvim': (0, 11), 'yazi': (26, 9, 1), 'fzf': (0, 53)}
+SEARCH_CLI = 'local/code/python/developing/search-cli'  # the grc-managed checkout that `s` runs from
 
 
 def detect_profile():
@@ -57,6 +58,7 @@ class Setup:
         self.base = self.root / '.local/share/dotfiles'
         self.shims = self.base / 'bin'
         self.envdir = self.base / 'tools'
+        self.search_cli = self.root / SEARCH_CLI
         self.env = dict(os.environ, GIT_TERMINAL_PROMPT='0')
         extra = [str(self.shims), str(self.root / '.local/bin'), '/opt/homebrew/bin', '/usr/local/bin']
         self.env['PATH'] = os.pathsep.join(extra + [self.env.get('PATH', '')])
@@ -306,9 +308,9 @@ class Setup:
             self.run(command)
 
     def search(self):
-        destination = self.base / 'repos/search-cli'
-        self.clone('https://github.com/jyesselm/search-cli.git', destination, sentinel='pyproject.toml')
-        self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', destination])
+        """Install `s` editable from the developing checkout; sync fast-forwards it, so a commit on main reaches every machine."""
+        self.clone('https://github.com/jyesselm/search-cli.git', self.search_cli, sentinel='pyproject.toml')
+        self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', self.search_cli])
 
     def doctor(self):
         self.say('\nDoctor (read-only checks)')
@@ -400,7 +402,7 @@ def parser():
     for name, help_text in [('desktop','Also install iTerm2 and Cursor (Mac)'),
                             ('previews','Install PDF, SVG, archive and video preview tools'),
                             ('games','Install the two private Dojo repositories'),
-                            ('search','Install search-cli from its default GitHub branch'),
+                            ('search','Install search-cli (command s) from its developing checkout'),
                             ('skip-packages','Configure only; do not install terminal packages'),
                             ('skip-nvim','Skip Neovim plugin restore')]:
         p.add_argument('--' + name, action='store_true', help=help_text)

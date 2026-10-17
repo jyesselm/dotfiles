@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import importlib.util
 import json
 import platform
@@ -15,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 STATE_DIR = '.local/state/dotfiles/sync'
+SEARCH_MARKER = 'search-cli.sha256'  # digest of the checkout's pyproject.toml + uv.lock at the last `s` install
 PHASES = [('layout', 'Directory layout'),
           ('dotfiles', 'Dotfiles (yadm)'),
           ('packages', 'Packages'),
@@ -78,6 +80,15 @@ def load_mac_settings(path: Path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def search_digest(checkout: Path) -> str:
+    """sha256 over pyproject.toml and uv.lock in the search-cli checkout (missing files contribute nothing)."""
+    digest = hashlib.sha256()
+    for name in ('pyproject.toml', 'uv.lock'):
+        if (checkout / name).exists():
+            digest.update(name.encode() + b'\0' + (checkout / name).read_bytes())
+    return digest.hexdigest()
 
 
 def acquire_lock(path: Path):
@@ -406,15 +417,37 @@ class Sync:
         return sync_mac.apps(self.setup, self.setup.machine_class(), self.applications)
 
     def repos(self) -> PhaseResult:
-        """Clone and fast-forward the repos listed for git-repo-checker."""
+        """Clone and fast-forward the repos listed for git-repo-checker, then keep `s` on its checkout."""
         grc = self.setup.find('grc')
         fallback = self.root / GRC_FALLBACK
         grc = grc or (str(fallback) if fallback.exists() else None)
         config = self.root / '.config/git-repo-checker/active.yml'
         if not grc or not config.exists():
-            return PhaseResult('skipped', 'grc or active.yml missing; repos not synced')
-        self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
-        return PhaseResult('ok', 'grc active sync --apply')
+            status, summary = 'skipped', 'grc or active.yml missing; repos not synced'
+        else:
+            self.setup.run([grc, 'active', 'sync', '--apply', '--quiet', '--config', config], timeout=NET_TIMEOUT)
+            status, summary = 'ok', 'grc active sync --apply'
+        reinstalled, detail = self._refresh_search()
+        return PhaseResult('changed' if reinstalled else status, summary + '; ' + detail, [detail])
+
+    def _refresh_search(self) -> Tuple[bool, str]:
+        """Reinstall `s` when it is missing or the checkout's dependencies changed; (reinstalled, detail)."""
+        checkout = self.setup.search_cli
+        if not (checkout / 'pyproject.toml').exists():
+            return False, 'search-cli checkout absent; s left alone (dotfiles-setup --search installs it)'
+        if not self.setup.find('uv'):
+            return False, 'uv missing; s not refreshed'
+        marker = self.root / STATE_DIR / SEARCH_MARKER
+        digest = search_digest(checkout)
+        installed = marker.read_text().strip() if marker.exists() else ''
+        if self.setup.find('s') and installed == digest:
+            return False, 's up to date with ' + str(checkout)
+        self.setup.search()
+        if self.setup.args.plan:
+            return False, 's would be reinstalled from ' + str(checkout)
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(digest + '\n')
+        return True, 's reinstalled from ' + str(checkout)
 
     def defaults(self) -> PhaseResult:
         """Apply the saved allowlisted macOS preferences (restore semantics, backup first)."""

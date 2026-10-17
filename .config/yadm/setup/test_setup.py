@@ -198,6 +198,20 @@ class BootstrapTests(unittest.TestCase):
             setup.run(['sh', '-c', 'exit 3'], timeout=5)
         setup.run(['true'], timeout=5)
 
+    def test_search_installs_editable_from_developing_checkout(self):
+        setup = self.setup('--profile', 'mac', '--search')
+        checkout = self.root / m.SEARCH_CLI
+        (checkout / '.git').mkdir(parents=True)
+        (checkout / 'pyproject.toml').write_text('[project]\n')
+        with patch.object(setup, 'run') as run:
+            setup.search()
+        run.assert_called_once_with(['uv', 'tool', 'install', '--python', '3.12', '--editable', checkout])
+        self.assertNotIn('repos/search-cli', str(run.call_args))
+
+    def test_search_plan_clones_missing_checkout_into_developing(self):
+        self.setup('--plan', '--profile', 'linux', '--search').search()
+        self.assertIn('search-cli.git -> ' + str(self.root / m.SEARCH_CLI), self.output.getvalue())
+
     def test_read_ok_raises_with_stderr(self):
         setup = self.setup('--profile', 'linux')
         self.assertEqual(setup.read_ok(['sh', '-c', 'printf hi'], 'x'), 'hi')
