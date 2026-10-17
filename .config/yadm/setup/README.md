@@ -52,6 +52,7 @@ dotfiles-setup --skip-packages --skip-nvim   # shell/menu/config setup only
 dotfiles-setup --sync [--plan]              # converge this computer (see Daily sync)
 dotfiles-setup --status                     # result of the last sync
 dotfiles-setup --install-schedule           # daily launchd job (Mac) or crontab line (Linux)
+dotfiles-setup --fleet                      # last sync of every machine in setup/fleet.txt
 ```
 
 Flags combine, for example `dotfiles-setup --plan --desktop --previews --games --search`. To check optional components, include them with doctor: `dotfiles-setup --doctor --games --search --previews`.
@@ -92,6 +93,8 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 - State and log: `~/.local/state/dotfiles/sync/last.json` and `sync.log`. The `com.git-repo-checker.active` LaunchAgent stays; sync also runs `grc active sync --apply`.
 
 **Layout.** `setup/layout.txt` lists the `~`-relative directories every computer gets. Bootstrap and sync create missing ones and report unplanned top-level entries without touching them. Doctor flags literal home paths in tracked files: use `~` or `$HOME`.
+
+**Fleet.** `dotfiles-setup --fleet` prints one line per machine: this one first, then each `host class` line of `setup/fleet.txt` by running `ssh <host> ~/.local/bin/dotfiles-setup --status` with a 10-second connect timeout. Each line shows the class, the age of the last sync, its exit code and any phase that was not `ok`; a host that cannot be reached shows `unreachable`. The exit code is 0 only when every machine's last sync succeeded.
 
 **Classes.** `yadm config local.class laptop|studio|linux|cluster` selects `##class.<x>` alternates and the Brewfiles.
 

@@ -115,20 +115,62 @@ def write_state(root: Path, phases: Dict[str, PhaseResult], meta: dict) -> Path:
     return target
 
 
-def print_status(root: Path, schedule_installed: bool) -> int:
-    """Print the last sync result; returns its stored exit code (1 if none yet)."""
+def status_lines(root: Path, schedule_installed: bool) -> Tuple[List[str], int]:
+    """Lines describing the last sync, and its stored exit code (1 if none yet)."""
     path = Path(root) / STATE_DIR / 'last.json'
     if not path.exists():
-        print('No sync has run yet; try dotfiles-setup --sync --plan')
-        return 1
+        return ['No sync has run yet; try dotfiles-setup --sync --plan'], 1
     data = json.loads(path.read_text())
     finished = datetime.fromisoformat(data['finished'])
     hours = (datetime.now(timezone.utc) - finished).total_seconds() / 3600
-    print('Last sync: %s (%.0fh ago) on %s, exit %d' % (data['finished'], hours, data['machine'], data['exit']))
-    for line in format_results({k: PhaseResult(**v) for k, v in data['phases'].items()}):
-        print(line)
-    print('Schedule: ' + ('installed' if schedule_installed else 'not installed'))
-    return int(data['exit'])
+    lines = ['Last sync: %s (%.0fh ago) on %s, exit %d' % (data['finished'], hours, data['machine'], data['exit'])]
+    lines += format_results({k: PhaseResult(**v) for k, v in data['phases'].items()})
+    lines.append('Schedule: ' + ('installed' if schedule_installed else 'not installed'))
+    return lines, int(data['exit'])
+
+
+def print_status(root: Path, schedule_installed: bool) -> int:
+    """Print the last sync result; returns its stored exit code (1 if none yet)."""
+    lines, code = status_lines(root, schedule_installed)
+    print('\n'.join(lines))
+    return code
+
+
+def read_fleet(path: Path) -> List[Tuple[str, str]]:
+    """(ssh host, class) pairs from fleet.txt; blank lines and # comments are ignored."""
+    hosts = []
+    for line in Path(path).read_text().splitlines():
+        words = line.split('#')[0].split()
+        if words:
+            hosts.append((words[0], words[1] if len(words) > 1 else '?'))
+    return hosts
+
+
+def summarize_status(output: str, code: int) -> Tuple[str, str, str]:
+    """(age, exit, phases not ok) from --status output; ssh/transport failures read as unreachable."""
+    if code in (124, 255):
+        return 'unreachable', '-', ''
+    head = re.match(r'Last sync: \S+ \((\d+)h ago\) on \S+, exit (\d+)', output)
+    if not head:
+        if 'No sync has run yet' in output:
+            return 'never', str(code), ''
+        return 'no status', str(code), (output.strip().splitlines() or [''])[0][:40]
+    phases = re.findall(r'^  (\w+)\s+(\w+)\s', output, re.M)
+    return head.group(1) + 'h ago', head.group(2), ' '.join('%s:%s' % p for p in phases if p[1] != 'ok')
+
+
+def fleet(setup, schedule_installed: bool, path: Path, connect_timeout: int = 10) -> int:
+    """One line per machine (this one first, then fleet.txt over ssh); 1 unless every machine synced cleanly."""
+    local_host = platform.node().split('.')[0]
+    lines, code = status_lines(setup.root, schedule_installed)
+    rows = [(local_host, setup.machine_class(), summarize_status('\n'.join(lines), code))]
+    for host, cls in read_fleet(path):
+        done = setup.read(['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=%d' % connect_timeout, host,
+                           '~/.local/bin/dotfiles-setup --status'], timeout_s=connect_timeout + 60)
+        rows.append((host, cls, summarize_status(done.stdout, done.returncode)))
+    for host, cls, (age, exit_code, phases) in rows:
+        setup.say('%-14s %-8s %-12s exit %-3s %s' % (host, cls, age, exit_code, phases))
+    return int(any(exit_code != '0' for _, _, (_, exit_code, _) in rows))
 
 
 class Sync:

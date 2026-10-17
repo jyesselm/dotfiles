@@ -1,0 +1,4 @@
+# ssh host and yadm class of every other machine; dotfiles-setup --fleet asks each for --status
+mac-desktop studio
+home-gpu linux
+swan cluster

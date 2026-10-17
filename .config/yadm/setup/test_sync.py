@@ -273,6 +273,48 @@ class StateTests(Base):
         self.assertIn('layout fine', text)
         self.assertIn('Schedule: installed', text)
 
+    def test_fleet_one_line_per_machine_local_first(self):
+        with self.stub_phases():
+            self.make().execute()
+        fleet = self.root / 'fleet.txt'
+        fleet.write_text('# comment\nstudio-box studio\n\ngpu-box linux\nswan cluster\nbare\n')
+        remote = {'studio-box': done('Last sync: 2026-10-16T10:00:00+00:00 (3h ago) on studio@studio-box, exit 1\n'
+                                     '  layout    ok       fine\n  dotfiles  failed   push failed\n  doctor    warn     2 items\n'
+                                     'Schedule: installed\n'),
+                  'gpu-box': done('', 255, 'ssh: connect to host gpu-box port 22: Operation timed out'),
+                  'swan': done('No sync has run yet; try dotfiles-setup --sync --plan\n', 1),
+                  'bare': done('', 124, 'timed out after 70s')}
+        calls = []
+
+        def read(argv, cwd=None, timeout_s=60):
+            calls.append((argv, timeout_s))
+            return remote[argv[-2]]
+        sync = self.make()
+        sync.setup.read = read
+        self.assertEqual(sy.fleet(sync.setup, True, fleet, connect_timeout=5), 1)
+        lines = self.output.getvalue().splitlines()[-5:]
+        self.assertTrue(lines[0].split()[1:4] == ['laptop', '0h', 'ago'] and lines[0].rstrip().endswith('exit 0'), lines[0])
+        self.assertEqual(lines[1].split(), ['studio-box', 'studio', '3h', 'ago', 'exit', '1', 'dotfiles:failed', 'doctor:warn'])
+        self.assertEqual(lines[2].split(), ['gpu-box', 'linux', 'unreachable', 'exit', '-'])
+        self.assertEqual(lines[3].split(), ['swan', 'cluster', 'never', 'exit', '1'])
+        self.assertEqual(lines[4].split(), ['bare', '?', 'unreachable', 'exit', '-'])
+        self.assertEqual([a[-2] for a, _ in calls], ['studio-box', 'gpu-box', 'swan', 'bare'])
+        self.assertEqual(calls[0][0][:5], ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5'])
+        self.assertEqual(calls[0][0][-1], '~/.local/bin/dotfiles-setup --status')
+        self.assertEqual(calls[0][1], 65)
+
+    def test_fleet_returns_0_when_every_machine_synced_cleanly(self):
+        with self.stub_phases():
+            self.make().execute()
+        fleet = self.root / 'fleet.txt'
+        fleet.write_text('other linux\n')
+        ok = done('Last sync: x (20h ago) on linux@other, exit 0\n  layout    ok       fine\nSchedule: installed\n')
+        sync = self.make()
+        sync.setup.read = lambda argv, cwd=None, timeout_s=60: ok
+        self.assertEqual(sy.fleet(sync.setup, True, fleet), 0)
+        self.assertEqual(self.output.getvalue().splitlines()[-1].split(), ['other', 'linux', '20h', 'ago', 'exit', '0'])
+        self.assertEqual(sy.summarize_status('bash: dotfiles-setup: No such file\n', 127), ('no status', '127', 'bash: dotfiles-setup: No such file'))
+
     def test_failed_phase_does_not_stop_later_phases(self):
         sync = self.make()
         with self.stub_phases(failing='dotfiles'):

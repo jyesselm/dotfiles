@@ -394,6 +394,7 @@ def parser():
     action.add_argument('--sync', action='store_true', help='Converge this machine; combine with --plan')
     action.add_argument('--status', action='store_true', help='Show the last sync result')
     action.add_argument('--install-schedule', action='store_true', help='Install the daily launchd job / crontab line')
+    action.add_argument('--fleet', action='store_true', help='Last sync of every machine in setup/fleet.txt, over ssh')
     p.add_argument('--profile', choices=['auto', 'mac', 'linux', 'cluster'], default='auto')
     for name, help_text in [('desktop','Also install iTerm2 and Cursor (Mac)'),
                             ('previews','Install PDF, SVG, archive and video preview tools'),
@@ -408,9 +409,11 @@ def parser():
 def dispatch(args) -> int:
     """Run the requested action; sync modules are imported lazily."""
     setup = Setup(args)
-    if args.status:
-        from sync import print_status
+    if args.status or args.fleet:
+        from sync import fleet, print_status
         from sync_schedule import is_installed
+        if args.fleet:
+            return fleet(setup, is_installed(setup), setup.assets / 'fleet.txt')
         return print_status(setup.root, is_installed(setup))
     if args.install_schedule:
         from sync_schedule import install
@@ -426,8 +429,8 @@ def main(argv=None) -> int:
         sys.exit('dotfiles-setup requires Python 3.9 or newer.')
     p = parser()
     args = p.parse_args(argv)
-    if args.doctor and (args.sync or args.status or args.install_schedule):
-        p.error('--doctor cannot be combined with --sync, --status or --install-schedule')
+    if args.doctor and (args.sync or args.status or args.install_schedule or args.fleet):
+        p.error('--doctor cannot be combined with --sync, --status, --fleet or --install-schedule')
     try:
         return dispatch(args)
     except (OSError, RuntimeError) as exc:
