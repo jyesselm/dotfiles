@@ -436,7 +436,7 @@ COMMANDS = {  # subcommand -> (help, flag it replaces; `dotfiles-setup --flag` s
     'status': ("Last sync, each warning's details and how to clear it", '--status'),
     'doctor': ('Read-only tool/version/config/PATH checks', '--doctor'),
     'schedule': ('Install the daily launchd job (Mac) or crontab line (Linux)', '--install-schedule'),
-    'fleet': ('Last check-in of every machine (fetches the status/* branches)', '--fleet'),
+    'fleet': ('Last check-in of every machine; --diff shows what differs between them', '--fleet'),
     'checkin': ("Push this machine's last sync result now, then show the fleet", '--checkin'),
     'adopt-extras': ("Mac: allow this computer's current brew extras (appends to setup/extras.txt)", '--adopt-extras'),
 }
@@ -461,6 +461,10 @@ def parser():
         sub = commands.add_parser(name, help=help_text, description=help_text, parents=[common])
         if name == 'status':
             sub.add_argument('--all', action='store_true', help='Every detail line, not just the first 12 per group')
+        if name in ('fleet', 'checkin'):
+            sub.add_argument('--diff', action='store_true', help='Also list the state keys that differ between machines (setup/compare.yml)')
+            sub.add_argument('--all', action='store_true', help='With --diff: every differing key, not just the ones compare.yml selects')
+            sub.add_argument('--keys', action='store_true', help="List this machine's own snapshot keys and values")
     return p
 
 
@@ -488,7 +492,7 @@ def dispatch(args) -> int:
         return print_status(setup.root, is_installed(setup), show_all=args.all)
     if args.command in ('fleet', 'checkin'):
         from sync import fleet
-        return fleet(setup, setup.assets / 'fleet.txt', checkin=args.command == 'checkin')
+        return fleet(setup, setup.assets / 'fleet.txt', checkin=args.command == 'checkin', diff=args.diff, keys=args.keys, everything=args.all)
     if args.command == 'schedule':
         from sync_schedule import install
         return install(setup)

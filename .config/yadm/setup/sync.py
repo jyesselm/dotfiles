@@ -215,25 +215,34 @@ def status_ref(machine: str) -> str:
 
 
 def publish_status(setup, yadm: str) -> None:
-    """Force-push last.json as a single parentless commit to this machine's status branch."""
-    path = setup.root / STATE_DIR / 'last.json'
-    machine = json.loads(path.read_text())['machine']
-    blob = setup.read_ok([yadm, 'hash-object', '-w', path], 'hash-object failed').strip()
-    tree = setup.read_ok([yadm, 'mktree'], 'mktree failed', input='100644 blob %s\tlast.json\n' % blob).strip()
+    """Force-push last.json (and state.json) as a single parentless commit to this machine's status branch."""
+    directory = setup.root / STATE_DIR
+    machine = json.loads((directory / 'last.json').read_text())['machine']
+    entries = ''
+    for name in ['last.json', 'state.json']:  # state.json: the effective-state snapshot that fleet --diff compares
+        if (directory / name).exists():
+            blob = setup.read_ok([yadm, 'hash-object', '-w', directory / name], 'hash-object failed').strip()
+            entries += '100644 blob %s\t%s\n' % (blob, name)
+    tree = setup.read_ok([yadm, 'mktree'], 'mktree failed', input=entries).strip()
     commit = setup.read_ok([yadm, 'commit-tree', tree, '-m', 'status ' + machine], 'commit-tree failed').strip()
     setup.read_ok([yadm, 'push', '--force', '--quiet', 'origin', '%s:refs/heads/%s' % (commit, status_ref(machine))],
                   'push failed', timeout_s=GIT_TIMEOUT)  # read_ok: GitHub's pull-request hint stays out of the summary
 
 
 def fetch_statuses(setup, yadm: str) -> List[dict]:
-    """Fetch every status/* branch and return their last.json contents, newest check-in first."""
+    """Fetch every status/* branch and return their last.json contents (with the state.json snapshot under 'state'), newest first."""
     spec = '+refs/heads/%s*:refs/remotes/origin/%s*' % (STATUS_REFS, STATUS_REFS)
     fetched = setup.read([yadm, 'fetch', '--quiet', '--prune', 'origin', spec], timeout_s=60)
     if fetched.returncode:
         raise RuntimeError('fetch failed: ' + (fetched.stderr.strip().splitlines() or ['no reply'])[-1])
     refs = setup.read_ok([yadm, 'for-each-ref', '--format=%(refname)', 'refs/remotes/origin/' + STATUS_REFS],
                          'for-each-ref failed').split()
-    statuses = [json.loads(setup.read_ok([yadm, 'show', ref + ':last.json'], 'show failed')) for ref in refs]
+    statuses = []
+    for ref in refs:
+        data = json.loads(setup.read_ok([yadm, 'show', ref + ':last.json'], 'show failed'))
+        shown = setup.read([yadm, 'show', ref + ':state.json'])  # absent from check-ins made before snapshots existed
+        data['state'] = json.loads(shown.stdout) if shown.returncode == 0 else {}
+        statuses.append(data)
     return sorted(statuses, key=lambda d: d['finished'], reverse=True)
 
 
@@ -243,11 +252,32 @@ def stale(statuses: List[dict], days: int = STALE_DAYS) -> List[str]:
     return [d['machine'] for d in statuses if datetime.fromisoformat(d['finished']) < limit]
 
 
-def fleet(setup, expected: Path, checkin: bool = False) -> int:
-    """One line per machine that ever checked in, plus never-seen classes from fleet.txt; 1 unless all clean."""
+def print_differences(setup, statuses: List[dict], everything: bool = False) -> int:
+    """Table of the compared snapshot keys that differ between machines (setup/compare.yml selects them); its row count."""
+    import snapshot
+    rules = snapshot.load_compare(setup.assets / 'compare.yml')
+    rows = snapshot.differences(statuses, rules, everything)
+    hosts = [d['machine'].split('@', 1)[1] for d in statuses if d.get('state')]
+    compared = sum(1 for d in statuses for k in d.get('state') or {} if everything or snapshot.selected(k, rules))
+    setup.say('\n%d differences in %d compared keys (%s)' % (len(rows), compared, 'everything' if everything else 'setup/compare.yml'))
+    for line in snapshot.table(rows, hosts):
+        setup.say(line)
+    return len(rows)
+
+
+def fleet(setup, expected: Path, checkin: bool = False, diff: bool = False, keys: bool = False, everything: bool = False) -> int:
+    """One line per machine that ever checked in, plus never-seen classes from fleet.txt; 1 unless all clean.
+    --diff adds the state keys that differ between machines; --keys lists this machine's own snapshot instead."""
     yadm = setup.find('yadm')
     if not yadm:
         raise RuntimeError('yadm not on PATH')
+    if keys:
+        path = setup.root / STATE_DIR / 'state.json'
+        state = json.loads(path.read_text()) if path.exists() else {}
+        for key, value in sorted(state.items()):
+            setup.say('%-40s %s' % (key, value if not isinstance(value, list) else ', '.join(map(str, value))))
+        setup.say('%d keys (from the last sync; select them in setup/compare.yml)' % len(state))
+        return 0
     if checkin and setup.args.plan:
         setup.say('plan: check-in not pushed')
     elif checkin:
@@ -268,6 +298,8 @@ def fleet(setup, expected: Path, checkin: bool = False) -> int:
     for machine in stale(statuses):
         setup.say('stale: %s has not checked in for %d days' % (machine, STALE_DAYS))
         code = 1
+    if diff:
+        print_differences(setup, statuses, everything)
     return code
 
 
@@ -307,10 +339,13 @@ class Sync:
         return int(any(r.status == 'failed' for r in self.results.values()))
 
     def _save(self, started: datetime, code: int) -> None:
-        """Record this run in last.json."""
+        """Record this run in last.json and this computer's effective state in state.json."""
         meta = {'started': started.isoformat(), 'finished': datetime.now(timezone.utc).isoformat(),
                 'machine': self.machine_label(), 'profile': self.setup.profile, 'exit': code}
         write_state(self.root, self.results, meta)
+        import snapshot
+        state = snapshot.collect(self.setup, self.applications)
+        (self.root / STATE_DIR / 'state.json').write_text(json.dumps(state, indent=1, sort_keys=True))
 
     def execute(self) -> int:
         """Run every phase; returns 1 if any failed or another sync holds the lock."""
@@ -341,8 +376,13 @@ class Sync:
             if not yadm:
                 raise RuntimeError('yadm not on PATH')
             publish_status(self.setup, yadm)
-            for machine in stale(fetch_statuses(self.setup, yadm)):
+            statuses = fetch_statuses(self.setup, yadm)
+            for machine in stale(statuses):
                 self.setup.say('  stale: %s has not checked in for %d days' % (machine, STALE_DAYS))
+            import snapshot
+            rows = snapshot.differences(statuses, snapshot.load_compare(self.setup.assets / 'compare.yml'))
+            if rows:
+                self.setup.say('  differs from the other machines in %d compared keys: converge fleet --diff' % len(rows))
         except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
             self.setup.say('  check-in skipped: %s' % exc)
 

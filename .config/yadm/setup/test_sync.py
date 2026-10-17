@@ -322,9 +322,10 @@ class StateTests(Base):
         self.fake_remote([self.status('studio@studio', 3 * 24), self.status('linux@gpu', 1)])
         with self.stub_phases(), patch.object(sync.setup, 'read_ok', wraps=sync.setup.read_ok) as read_ok:
             self.git['hash-object -w %s' % (self.root / sy.STATE_DIR / 'last.json')] = 'b\n'
+            self.git['hash-object -w %s' % (self.root / sy.STATE_DIR / 'state.json')] = 's\n'
             self.assertEqual(sync.execute(), 0)
-        self.assertEqual(read_ok.call_args_list[1].kwargs['input'], '100644 blob b\tlast.json\n')
-        push = read_ok.call_args_list[3].args[0]
+        self.assertEqual(read_ok.call_args_list[2].kwargs['input'], '100644 blob b\tlast.json\n100644 blob s\tstate.json\n')
+        push = read_ok.call_args_list[4].args[0]
         self.assertEqual(push[:5], ['yadm', 'push', '--force', '--quiet', 'origin'])
         self.assertEqual(push[5], 'c:refs/heads/' + sy.status_ref(sync.machine_label()))
         text = self.output.getvalue()
@@ -364,12 +365,13 @@ class StateTests(Base):
             self.make().execute()
         sync = self.make()
         self.git.update({'hash-object -w %s' % (self.root / sy.STATE_DIR / 'last.json'): 'b\n', 'mktree': 't\n',
+                         'hash-object -w %s' % (self.root / sy.STATE_DIR / 'state.json'): 's\n',
                          'commit-tree t -m status ' + sync.machine_label(): 'c\n',
                          'push --force --quiet origin c:refs/heads/' + sy.status_ref(sync.machine_label()): ''})
         self.fake_remote([self.status('laptop@book', 5)])
         with patch.object(sync.setup, 'read', wraps=sync.setup.read) as read:
             self.assertEqual(sy.fleet(sync.setup, fleet, checkin=True), 0)
-        self.assertEqual(read.call_args_list[3].args[0][1:3], ['push', '--force'])
+        self.assertEqual(read.call_args_list[4].args[0][1:3], ['push', '--force'])  # two hash-objects, mktree, commit-tree, push
         self.assertEqual(self.output.getvalue().splitlines()[-1].split()[:2], ['book', 'laptop'])
 
     def test_fleet_offline_fetch_is_an_error(self):

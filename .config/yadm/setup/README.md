@@ -55,6 +55,8 @@ converge adopt-extras                    # Mac: allow this computer's brew extra
 converge schedule                        # daily launchd job (Mac) or crontab line (Linux)
 converge fleet                           # last check-in of every machine
 converge checkin                         # push this machine's last sync result now, then the fleet view
+converge fleet --diff                    # what differs between machines (setup/compare.yml selects the keys; --all for every key)
+converge fleet --keys                    # everything this machine's snapshot holds, to pick from for compare.yml
 ```
 
 Flags combine, for example `converge setup --plan --desktop --previews --games --search`. To check optional components, include them with doctor: `converge doctor --games --search --previews`.
@@ -101,6 +103,8 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 **Seeing what is off.** `converge status` prints the last sync with calm phases first, then a "Needs attention" section: for every warn or failed phase, the details grouped (first 12 per group; `--all` for everything) and the edit or command that clears it. `converge sync --plan` previews what the next sync would change.
 
 **Fleet.** Every real sync ends by checking in: it force-pushes its `last.json` as a one-commit branch `status/<class>-<host>` on the yadm remote, then warns in its summary about any machine that has not checked in for two days. No machine needs to reach another; each only needs GitHub. `converge fleet` fetches those branches on any machine and prints one line per machine, newest check-in first: host, class, age, exit code and the phases that were not `ok`, plus `never` for a class in `setup/fleet.txt` that has not checked in yet. `--checkin` pushes this machine's last result first, for example after a manual sync. The exit code is 0 only when every machine's last sync succeeded and none is stale.
+
+**Differences.** Git makes the tracked files identical everywhere, so what still differs between computers is untracked state. Each sync therefore also writes `state.json`, a snapshot of this computer's effective state, and pushes it with the check-in: OS, git identity, `gh` login, SSH keys, versions of every doctor tool and `uv` tool, HEAD of every grc-managed checkout (`+dirty` when uncommitted), every brew formula and cask version, every app in /Applications with its version, Karabiner version, profile, grabbed keyboards and problems, the fn-key setting, every macOS symbolic hotkey (screenshots, Spotlight, Mission Control), the live values of the allowlisted preferences, launch agents, fonts and login items. `converge fleet --diff` fetches the snapshots and prints only the keys whose values differ, one column per machine; a key a Linux box never has is compared among Macs only. `setup/compare.yml` is the tracked list of which keys to compare (`compare:` globs) and which may legitimately differ (`ignore:`); `--all` ignores it and shows every difference, and `converge fleet --keys` lists everything the snapshot holds so you can pick. The daily check-in notes how many compared keys differ. Permissions such as Input Monitoring are not readable, so they show up indirectly: Karabiner grabbing no keyboard.
 
 **Classes.** `yadm config local.class laptop|studio|linux|cluster` selects `##class.<x>` alternates and the Brewfiles.
 

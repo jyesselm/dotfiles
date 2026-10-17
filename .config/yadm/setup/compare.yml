@@ -1,0 +1,24 @@
+# What `converge fleet --diff` compares across computers. Each sync snapshots this computer's
+# effective state (everything `converge fleet --keys` lists) and pushes it with the check-in;
+# the diff prints only the selected keys whose values differ. Patterns are globs on the key.
+compare:
+  - os
+  - git.email
+  - gh.auth
+  - ssh.keys
+  - tools.*          # versions of the doctor's tools
+  - uv.*             # uv tool list (grc, s)
+  - checkouts.*      # HEAD of every grc-managed checkout, +dirty when uncommitted
+  - brew.*           # formula and cask versions
+  - apps.*           # every .app in /Applications and ~/Applications
+  - karabiner.*      # version, profile, grabbed keyboards, problems
+  - keys.*
+  - shortcuts.*      # macOS symbolic hotkeys (screenshots, Spotlight, Mission Control...)
+  - defaults.*       # live values of the allowlisted preferences
+  - launchagents
+  - fonts
+  - login_items
+# Keys that may legitimately differ per computer.
+ignore:
+  - brew.basictex
+  - shortcuts.* space-*
