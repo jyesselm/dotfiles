@@ -37,12 +37,12 @@ export PAGER="less"
 export LESS="-R -X -F"  # -R: color, -X: no clear, -F: quit if one screen
 
 # Directory Paths
-export DROPBOX="$HOME/Dropbox"
+export DROPBOX="$HOME/cloud/Dropbox"
 export NOTES="${DROPBOX}/0_notes/"
-export ICLOUD="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+export ICLOUD="$HOME/cloud/icloud"
 
 # Development Directories
-export CODE_DIR="$HOME/Dropbox/2_code"
+export CODE_DIR="$HOME/local/code"
 export PROJECTS_DIR="$HOME/projects"
 
 # Shell Options

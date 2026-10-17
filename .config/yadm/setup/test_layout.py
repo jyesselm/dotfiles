@@ -67,10 +67,25 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(list(self.root.iterdir()), [])
         self.assertIn('Create ~/local/code/python', self.output.getvalue())
 
-    def test_check_entry_is_reported_not_created(self):
+    def test_check_and_link_entries_without_target_are_reported_not_created(self):
         report = self.setup('--profile', 'mac').layout()
-        self.assertEqual(report.expected, ['cloud/Dropbox'])
+        self.assertEqual(report.expected, ['cloud/Dropbox', 'cloud/gdrive', 'cloud/onedrive'])
         self.assertFalse((self.root / 'cloud/Dropbox').exists())
+
+    def test_link_entry_links_once_target_exists_and_is_idempotent(self):
+        (self.root / 'setup').mkdir()
+        (self.root / 'setup/layout.txt').write_text(TEXT + 'cloud/x  link:Library/X\n')
+        setup = m.Setup(m.parse(['--profile', 'mac']), root=self.root, assets=self.root / 'setup')
+        setup._class = 'laptop'
+        self.assertEqual(setup.layout().expected, ['e/f', 'cloud/x'])
+        self.assertFalse((self.root / 'cloud/x').exists())
+        (self.root / 'Library/X').mkdir(parents=True)
+        self.assertEqual(setup.layout().created, ['cloud/x'])
+        self.assertEqual((self.root / 'cloud/x').resolve(), (self.root / 'Library/X').resolve())
+        self.assertEqual(setup.layout().created, [])
+        for bad in ['x  link:/abs', 'x  link:~/y', 'x  link:', 'x  check link:y']:
+            with self.assertRaises(ValueError):
+                lay.parse_layout(bad, None, None)
 
     def test_unplanned_skips_hidden_standard_and_planned(self):
         for name in ['.hidden', 'Documents', 'cloud', 'stray', 'Another']:

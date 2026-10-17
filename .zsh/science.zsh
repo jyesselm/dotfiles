@@ -23,7 +23,7 @@ _science_detect() {
   local key=$1 _science_command=$2 pattern=$3 bins=$4
   local candidate chosen='' origin='' explicit=${(P)key} executable base directory
   local -a candidates roots
-  roots=("$HOME/projects" "$HOME/local/installs" "$HOME/installs" "$HOME/Dropbox/2_code/cpp" "$HOME/Downloads")
+  roots=("$HOME/projects" "$HOME/local/installs" "$HOME/installs" "$HOME/local/code/cpp" "$HOME/Downloads")
   # Values exported by our last run are discoveries, not user overrides.
   [[ $explicit == ${_science_auto[$key]-} ]] && explicit=''
   if [[ -n $explicit ]]; then

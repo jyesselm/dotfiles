@@ -133,17 +133,29 @@ class Setup:
         return self._class
 
     def layout(self) -> lay.LayoutReport:
-        """Create missing manifest directories; report expected-but-absent and unplanned entries."""
+        """Create missing manifest directories and links; report expected-but-absent and unplanned entries."""
         text = (self.assets / 'layout.txt').read_text()
         report = lay.LayoutReport()
         for entry in lay.missing_dirs(self.root, lay.parse_layout(text, self.profile, self.machine_class())):
+            target = self.root / entry.link if entry.link else None
             if not entry.create:
                 report.expected.append(entry.path)
                 self.say('  Expected, not created: ~/' + entry.path + ' (created by another program)')
                 continue
-            self.say('  Create ~/' + entry.path)
+            if target is not None and not target.is_dir():
+                report.expected.append(entry.path)
+                self.say('  Expected, not linked: ~/%s -> ~/%s (target absent)' % (entry.path, entry.link))
+                continue
+            self.say('  Create ~/' + entry.path + (' -> ~/' + entry.link if entry.link else ''))
             if not self.args.plan:
-                (self.root / entry.path).mkdir(parents=True, exist_ok=True)
+                path = self.root / entry.path
+                if target is None:
+                    path.mkdir(parents=True, exist_ok=True)
+                else:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    if path.is_symlink():  # dangling link to a target that is gone
+                        path.unlink()
+                    path.symlink_to(target)
                 report.created.append(entry.path)
         report.unplanned = lay.unplanned_entries(self.root, lay.parse_layout(text, None, None))
         for name in report.unplanned:

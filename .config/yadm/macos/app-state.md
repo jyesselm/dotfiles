@@ -20,7 +20,7 @@ To explicitly copy a future encrypted snapshot to a private sync folder:
 
 ```sh
 mac-settings save
-mac-state save --destination "$HOME/Library/CloudStorage/Dropbox/Mac-state-backups"
+mac-state save --destination "$HOME/cloud/Dropbox/Mac-state-backups"
 ```
 
 Only the encrypted archive and its SHA-256 file are copied. **The recovery key stays local until you save it in your password manager.** This command does not verify the cloud client's upload status. The folder must be private; do not share keys or decrypted archives publicly.

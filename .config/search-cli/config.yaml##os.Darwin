@@ -5,8 +5,6 @@ live:
   - ~/Downloads
   - ~/Documents
   - ~/Desktop
-  - ~/Dropbox
-  - ~/Library/CloudStorage/Dropbox
   - ~/cloud/Dropbox
   - ~/cloud/gdrive
   - ~/local

@@ -3,6 +3,7 @@
 # "check" = report if missing, never create (another program owns it).
 # "ignore" = a top-level glob some computers have (cloud sync, vendor folders); never created, never reported
 #            as unplanned. Globs have no spaces, so "Google*" stands for "Google Drive".
+# "link:<target>" = make the path a symlink to ~/<target> once that exists; reported while it is absent.
 .config
 .local/bin
 .local/state/dotfiles
@@ -23,7 +24,11 @@ local/zotero-library
 notes
 projects
 cloud
-cloud/Dropbox  profile:mac check
+# Every cloud mount is reachable under ~/cloud. Google Drive mirrors "My Drive" straight into cloud/gdrive;
+# cloud/icloud is linked by hand because its target ("Mobile Documents") has a space.
+cloud/Dropbox  profile:mac link:Library/CloudStorage/Dropbox
+cloud/gdrive  profile:mac check
+cloud/onedrive  profile:mac link:Library/CloudStorage/OneDrive-UniversityofNebraska-Lincoln
 
 # Folders other programs put in ~ on some computers.
 Dropbox*  ignore
@@ -31,4 +36,3 @@ Google*  ignore
 OneDrive*  ignore
 Claude  ignore
 PrinterLogic  ignore
-gdrive  ignore
