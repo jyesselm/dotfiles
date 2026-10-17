@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from datetime import date
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -22,6 +23,7 @@ BREWFILES = {
 }
 TERMINAL_ONLY = ['Brewfile']  # mac with an unknown/unset class
 APP_CLASSES = ('laptop', 'studio')
+EXTRAS_FILE = 'extras.txt'  # formula:/cask: entries allowed on some computers without being wanted everywhere
 APP_KEYS = ('name', 'bundle_id', 'repo', 'bundle', 'assets')
 SEARCH_APP, SEARCH_APP_ID = 'Search CLI.app', 'com.yesselman.search-cli.gui'
 SEARCH_LAUNCHER = '''#!/bin/zsh
@@ -83,13 +85,27 @@ def _normal(name: str) -> str:
     return name.rsplit('/', 1)[-1].split('@', 1)[0]
 
 
-def brew_extras(leaves: List[str], installed_casks: List[str], manifest: Manifest) -> List[str]:
-    """Installed-on-request formulae/casks absent from the manifest (report-only)."""
+def parse_extras(text: str) -> set:
+    """Allowed 'formula:name' / 'cask:name' entries of extras.txt; '#' starts a comment."""
+    entries = set()
+    for number, raw in enumerate(text.splitlines(), 1):
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        kind, _, name = line.partition(':')
+        if kind not in ('formula', 'cask') or not name:
+            raise ValueError('%s line %d: expected formula:<name> or cask:<name>, got %r' % (EXTRAS_FILE, number, line))
+        entries.add(kind + ':' + _normal(name))
+    return entries
+
+
+def brew_extras(leaves: List[str], installed_casks: List[str], manifest: Manifest, allowed=frozenset()) -> List[str]:
+    """Installed-on-request formulae/casks neither in the manifest nor allowed by extras.txt (report-only)."""
     wanted_formulae = {_normal(n) for n in manifest.formulae}
     wanted_casks = {_normal(n) for n in manifest.casks}
     extras = ['formula:' + _normal(n) for n in leaves if _normal(n) not in wanted_formulae]
     extras += ['cask:' + _normal(n) for n in installed_casks if _normal(n) not in wanted_casks]
-    return sorted(set(extras))
+    return sorted(set(extras) - set(allowed))
 
 
 def cask_app_names(info_json: dict) -> Dict[str, List[str]]:
@@ -135,12 +151,19 @@ def _cask_apps(setup, brew: str, missing: List[str]) -> Dict[str, List[str]]:
 
 
 def _inventory(setup, brew: str, manifest: Manifest, applications: Path) -> Tuple[List[str], List[str]]:
-    """Return (casks to skip because present outside brew, extras)."""
+    """Return (casks to skip because present outside brew, extras not allowed by extras.txt)."""
     casks = _lines(setup, [brew, 'list', '--cask', '-1'])
     leaves = _lines(setup, [brew, 'leaves', '--installed-on-request'])
     app_names = _cask_apps(setup, brew, [c for c in manifest.casks if c not in casks])
+    allowed = parse_extras((setup.assets / EXTRAS_FILE).read_text())
     return (present_outside_brew(manifest, casks, app_names, applications),
-            brew_extras(leaves, casks, manifest))
+            brew_extras(leaves, casks, manifest, allowed))
+
+
+def _manifest(setup, machine_class: str) -> Tuple[List[str], str]:
+    """(Brewfile names for this class, their merged text)."""
+    names = BREWFILES.get(machine_class, TERMINAL_ONLY)
+    return names, merge_brewfiles([setup.assets / n for n in names])
 
 
 def _bundle_install(setup, brew: str, text: str, skip: List[str]) -> None:
@@ -164,16 +187,38 @@ def packages(setup, machine_class: str, applications: Path) -> PhaseResult:
     if not brew and not setup.args.plan:
         raise RuntimeError('Install Homebrew from https://brew.sh, then rerun.')
     known = machine_class in BREWFILES
-    names = BREWFILES.get(machine_class, TERMINAL_ONLY)
-    text = merge_brewfiles([setup.assets / n for n in names])
+    names, text = _manifest(setup, machine_class)
     skip, extras = _inventory(setup, brew or 'brew', parse_brewfile(text), applications)
     _bundle_install(setup, brew or 'brew', text, skip)
-    summary = '%d Brewfiles; %d casks present outside Homebrew; %d extras (not removed)' % (
-        len(names), len(skip), len(extras))
+    summary = '%d Brewfiles; %d casks present outside Homebrew; %d extras in no Brewfile or %s (not removed)' % (
+        len(names), len(skip), len(extras), EXTRAS_FILE)
     if not known:
         summary += '; class unknown, set: yadm config local.class laptop|studio'
     status = 'warn' if extras or not known else 'ok'
     return PhaseResult(status, summary, extras + ['present:' + t for t in skip])
+
+
+def adopt_extras(setup, machine_class: str, applications: Path) -> int:
+    """Allow this computer's current extras by appending them to extras.txt; the next sync commits and pushes it."""
+    if setup.profile != 'mac':
+        raise RuntimeError('--adopt-extras reads Homebrew; run it on a Mac.')
+    brew = setup.find('brew')
+    if not brew:
+        raise RuntimeError('brew not on PATH')
+    path = setup.assets / EXTRAS_FILE
+    _, extras = _inventory(setup, brew, parse_brewfile(_manifest(setup, machine_class)[1]), applications)
+    if not extras:
+        setup.say('Nothing to adopt: every installed package is in a Brewfile or ' + EXTRAS_FILE)
+        return 0
+    for extra in extras:
+        setup.say(('  Would allow ' if setup.args.plan else '  Allow ') + extra)
+    if setup.args.plan:
+        return 0
+    with path.open('a') as stream:
+        stream.write('# %s, adopted %s\n%s\n' % (machine_class, date.today(), '\n'.join(extras)))
+    setup.say('%d entries added to %s; the next sync commits and pushes it. Move anything wanted on every Mac into a Brewfile instead.'
+              % (len(extras), path))
+    return 0
 
 
 def load_apps(path: Path) -> List[dict]:

@@ -1,6 +1,7 @@
 """Pure helpers: the home-directory layout manifest and the portability scan."""
 from __future__ import annotations
 
+import fnmatch
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,9 +23,10 @@ MAX_SCAN_BYTES = 2 * 1024 * 1024
 
 @dataclass
 class LayoutEntry:
-    """One directory from layout.txt; create=False means report only."""
+    """One line of layout.txt: a directory to create, to check (report only) or a glob to ignore."""
     path: str
     create: bool = True
+    ignore: bool = False
 
 
 @dataclass
@@ -35,22 +37,26 @@ class LayoutReport:
     unplanned: List[str] = field(default_factory=list)
 
 
-def _parse_line(number: int, line: str) -> Tuple[str, dict, bool]:
-    """Return (path, filters, check) for one manifest line."""
+def _parse_line(number: int, line: str) -> Tuple[str, dict, bool, bool]:
+    """Return (path, filters, check, ignore) for one manifest line."""
     path, *tokens = line.split()
     if path.startswith(('/', '~')) or '..' in path.split('/'):
         raise ValueError('layout.txt line %d: path must be relative to $HOME: %s' % (number, path))
     filters: dict = {}
-    check = False
+    check = ignore = False
     for token in tokens:
         key, _, value = token.partition(':')
-        if token == 'check':
-            check = True
+        if token in ('check', 'ignore'):
+            check, ignore = check or token == 'check', ignore or token == 'ignore'
         elif (key, value) in {('profile', v) for v in PROFILES} | {('class', v) for v in CLASSES}:
             filters[key] = value
         else:
             raise ValueError('layout.txt line %d: unknown token %r' % (number, token))
-    return path.rstrip('/'), filters, check
+    if check and ignore:
+        raise ValueError('layout.txt line %d: check and ignore are exclusive' % number)
+    if ignore and '/' in path.rstrip('/'):
+        raise ValueError('layout.txt line %d: ignore patterns are top-level names: %s' % (number, path))
+    return path.rstrip('/'), filters, check, ignore
 
 
 def parse_layout(text: str, profile: Optional[str], machine_class: Optional[str]) -> List[LayoutEntry]:
@@ -60,23 +66,25 @@ def parse_layout(text: str, profile: Optional[str], machine_class: Optional[str]
         line = raw.split('#', 1)[0].strip()
         if not line:
             continue
-        path, filters, check = _parse_line(number, line)
+        path, filters, check, ignore = _parse_line(number, line)
         wanted = {'profile': profile, 'class': machine_class}
         if profile is None and machine_class is None or all(wanted[k] == v for k, v in filters.items()):
-            entries.append(LayoutEntry(path, not check))
+            entries.append(LayoutEntry(path, not (check or ignore), ignore))
     return entries
 
 
 def missing_dirs(root: Path, entries: List[LayoutEntry]) -> List[LayoutEntry]:
     """Entries whose directory is absent (a symlink to a directory counts as present)."""
-    return [e for e in entries if not (Path(root) / e.path).is_dir()]
+    return [e for e in entries if not e.ignore and not (Path(root) / e.path).is_dir()]
 
 
 def unplanned_entries(root: Path, entries: List[LayoutEntry]) -> List[str]:
-    """Sorted visible top-level names that are neither standard nor in the manifest."""
-    planned = {e.path.split('/')[0] for e in entries}
+    """Sorted visible top-level names that are neither standard, planned nor matched by an ignore glob."""
+    planned = {e.path.split('/')[0] for e in entries if not e.ignore}
+    ignored = [e.path for e in entries if e.ignore]
     names = [p.name for p in Path(root).iterdir() if not p.name.startswith('.')]
-    return sorted(n for n in names if n not in STANDARD_TOP_LEVEL and n not in planned)
+    return sorted(n for n in names if n not in STANDARD_TOP_LEVEL and n not in planned
+                  and not any(fnmatch.fnmatchcase(n, pattern) for pattern in ignored))
 
 
 def is_scannable(path: Path) -> bool:

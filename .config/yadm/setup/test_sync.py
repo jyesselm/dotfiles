@@ -274,6 +274,20 @@ class StateTests(Base):
         self.assertIn('layout fine', text)
         self.assertIn('Schedule: installed', text)
 
+    def test_status_lists_details_and_fix_hints_under_warn_phases(self):
+        phases = {'layout': sy.PhaseResult('warn', 'unplanned 2', ['unplanned:Google Drive', 'unplanned:stray']),
+                  'apps': sy.PhaseResult('warn', '1 app', ['Hotkeys absent: build locally']),
+                  'doctor': sy.PhaseResult('ok', 'all checks passed', ['hidden'])}
+        meta = {'started': 'x', 'finished': datetime.now(timezone.utc).isoformat(), 'machine': 'laptop@h', 'profile': 'linux', 'exit': 1}
+        sy.write_state(self.root, phases, meta)
+        self.assertEqual(sy.print_status(self.root, True), 1)
+        lines = self.output.getvalue().splitlines()
+        self.assertIn('      unplanned (2): Google Drive, stray', lines)
+        self.assertIn('      fix: ' + sy.HINTS['layout'], lines)
+        self.assertIn('      Hotkeys absent: build locally', lines)
+        self.assertNotIn('      hidden', lines)
+        self.assertEqual(len(sy.format_details(['cask:' + 'x' * 20] * 12)), 3)
+
     def fake_remote(self, statuses):
         """Stub fetch/for-each-ref/show so the remote holds these last.json dicts."""
         refs = ['refs/remotes/origin/' + sy.status_ref(d['machine']) for d in statuses]

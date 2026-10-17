@@ -78,6 +78,19 @@ class LayoutTests(unittest.TestCase):
         entries = lay.parse_layout(TEXT + 'cloud/x profile:linux\n', None, None)
         self.assertEqual(lay.unplanned_entries(self.root, entries), ['Another', 'stray'])
 
+    def test_ignore_globs_hide_unplanned_entries_and_are_never_created(self):
+        for name in ['Google Drive', 'Dropbox (Old)', 'Claude', 'stray']:
+            (self.root / name).mkdir()
+        entries = lay.parse_layout(TEXT + 'Google*  ignore\nDropbox*  ignore\nClaude  ignore class:laptop\n', None, None)
+        self.assertEqual(lay.unplanned_entries(self.root, entries), ['stray'])
+        self.assertEqual([e.path for e in lay.missing_dirs(self.root, entries)], ['a/b', 'c', 'd', 'e/f'])
+        for bad in ['x  check ignore', 'cloud/x  ignore']:
+            with self.assertRaises(ValueError):
+                lay.parse_layout(bad, None, None)
+        report = self.setup('--profile', 'mac').layout()
+        self.assertEqual(report.unplanned, ['stray'])
+        self.assertFalse((self.root / 'gdrive').exists())
+
     def test_portability_finds_planted_home_path_with_file_and_line(self):
         (self.root / 'f.py').write_text('a = 1\nb = 2\nx = "' + J + '/data"\n')
         self.assertEqual(lay.find_home_paths(self.root, 'f.py\0'), (['f.py:3'], []))

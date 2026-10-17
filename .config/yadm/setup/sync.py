@@ -10,6 +10,7 @@ import plistlib
 import re
 import subprocess
 import tempfile
+import textwrap
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -27,6 +28,13 @@ PHASES = [('layout', 'Directory layout'),
 SELF_PRINTING = {'layout', 'doctor'}  # these phases already print their own detail lines
 GIT_TIMEOUT, BREW_TIMEOUT, NET_TIMEOUT = 300, 1800, 600  # seconds, for mutating subprocesses
 GRC_FALLBACK = 'micromamba/envs/py3/bin/grc'
+HINTS = {  # printed by --status under a warn/failed phase: how to clear it
+    'layout': 'move stray entries out of ~, or add "<glob>  ignore" to setup/layout.txt for folders another program owns',
+    'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with dotfiles-setup --adopt-extras',
+    'dotfiles': 'yadm status, then yadm pull --rebase origin main',
+    'repos': 'fix the repo named above, then dotfiles-setup --sync',
+    'doctor': 'dotfiles-setup --doctor reruns the checks',
+}
 STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
 
 
@@ -126,16 +134,40 @@ def write_state(root: Path, phases: Dict[str, PhaseResult], meta: dict) -> Path:
     return target
 
 
+def format_details(details: List[str], width: int = 110) -> List[str]:
+    """Indented detail lines; 'key:value' details are grouped as 'key (n): a, b, c' and wrapped."""
+    groups: Dict[str, List[str]] = {}
+    plain = []
+    for detail in details:
+        match = re.match(r'^([a-z-]+):(\S.*)$', detail)
+        if match:
+            groups.setdefault(match.group(1), []).append(match.group(2))
+        else:
+            plain.append(detail)
+    lines = []
+    for key, values in groups.items():
+        head = '      %s (%d): ' % (key, len(values))
+        lines += textwrap.wrap(', '.join(values), width, initial_indent=head, subsequent_indent=' ' * len(head),
+                               break_long_words=False, break_on_hyphens=False)
+    return lines + ['      ' + d for d in plain]
+
+
 def print_status(root: Path, schedule_installed: bool) -> int:
-    """Print the last sync result; returns its stored exit code (1 if none yet)."""
+    """Print the last sync result with every warning's details and how to clear it; returns its exit code (1 if none yet)."""
     path = Path(root) / STATE_DIR / 'last.json'
     if not path.exists():
         print('No sync has run yet; try dotfiles-setup --sync --plan')
         return 1
     data = json.loads(path.read_text())
     print('Last sync: %s (%s) on %s, exit %d' % (data['finished'], age(data['finished']), data['machine'], data['exit']))
-    for line in format_results({k: PhaseResult(**v) for k, v in data['phases'].items()}):
-        print(line)
+    for key, value in data['phases'].items():
+        result = PhaseResult(**value)
+        print(format_results({key: result})[0])
+        if result.status in ('warn', 'failed'):
+            for line in format_details(result.details):
+                print(line)
+            if key in HINTS:
+                print('      fix: ' + HINTS[key])
     print('Schedule: ' + ('installed' if schedule_installed else 'not installed'))
     return int(data['exit'])
 

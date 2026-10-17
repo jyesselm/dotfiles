@@ -150,6 +150,25 @@ class Setup:
             self.say('  Unplanned: ' + name)
         return report
 
+    def shell_path(self) -> list:
+        """Failures when an interactive login zsh resolves grc (and s) elsewhere than the uv installs in ~/.local/bin."""
+        zsh = self.find('zsh')
+        if not zsh:
+            return []
+        names = ['grc'] + (['s'] if self.args.search else [])
+        script = 'for n in %s; do print -r -- "$n=$(whence -p $n)"; done' % ' '.join(names)
+        probe = self.read([zsh, '-ilc', script], timeout_s=30)
+        if probe.returncode:
+            return ['shell PATH check failed: zsh -ilc exited %d' % probe.returncode]
+        expected = (self.root / '.local/bin').resolve()
+        failures = []
+        for line in probe.stdout.splitlines():
+            name, _, found = line.partition('=')
+            if not found or Path(found).parent.resolve() != expected:
+                failures.append('%s resolves to %s in a login shell, not ~/.local/bin/%s (uv install): check PATH order in ~/.zsh/tools.zsh'
+                                % (name, found or 'nothing', name))
+        return failures
+
     def portability(self) -> list:
         """Failures for literal home paths in yadm-tracked files."""
         yadm = self.find('yadm')
@@ -355,6 +374,7 @@ class Setup:
             failures.append('grc missing; dotfiles-setup --sync cannot sync repos')
         if self.args.search and not self.find('s'):
             failures.append('search-cli command s missing')
+        failures += self.shell_path()
         if self.args.previews:
             for name in ['resvg', 'pdftoppm', 'ffmpeg', 'ffprobe']:
                 if not self.find(name):
@@ -409,6 +429,7 @@ def parser():
     action.add_argument('--install-schedule', action='store_true', help='Install the daily launchd job / crontab line')
     action.add_argument('--fleet', action='store_true', help='Last check-in of every machine (fetches the status/* branches)')
     action.add_argument('--checkin', action='store_true', help="Push this machine's last sync result now, then show the fleet")
+    action.add_argument('--adopt-extras', action='store_true', help="Mac: allow this computer's current brew extras (appends to setup/extras.txt)")
     p.add_argument('--profile', choices=['auto', 'mac', 'linux', 'cluster'], default='auto')
     for name, help_text in [('desktop','Also install iTerm2 and Cursor (Mac)'),
                             ('previews','Install PDF, SVG, archive and video preview tools'),
@@ -433,6 +454,9 @@ def dispatch(args) -> int:
     if args.install_schedule:
         from sync_schedule import install
         return install(setup)
+    if args.adopt_extras:
+        from sync_mac import adopt_extras
+        return adopt_extras(setup, setup.machine_class(), Path('/Applications'))
     if args.sync:
         from sync import Sync
         return Sync(setup).execute()
@@ -444,8 +468,8 @@ def main(argv=None) -> int:
         sys.exit('dotfiles-setup requires Python 3.9 or newer.')
     p = parser()
     args = p.parse_args(argv)
-    if args.doctor and (args.sync or args.status or args.install_schedule or args.fleet or args.checkin):
-        p.error('--doctor cannot be combined with --sync, --status, --fleet, --checkin or --install-schedule')
+    if args.doctor and (args.sync or args.status or args.install_schedule or args.fleet or args.checkin or args.adopt_extras):
+        p.error('--doctor cannot be combined with --sync, --status, --fleet, --checkin, --adopt-extras or --install-schedule')
     try:
         return dispatch(args)
     except (OSError, RuntimeError) as exc:

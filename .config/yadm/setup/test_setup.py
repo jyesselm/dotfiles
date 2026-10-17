@@ -153,6 +153,22 @@ class BootstrapTests(unittest.TestCase):
             failures = setup.doctor()
         self.assertIn('Absolute home path: rc:3', failures)
 
+    def test_doctor_checks_login_shell_resolves_grc_and_s_to_uv_installs(self):
+        setup = self.setup('--doctor', '--profile', 'linux', '--search')
+        (self.root / '.local/bin').mkdir(parents=True)
+
+        def read(argv, **kwargs):
+            if argv[0] == 'zsh':
+                self.assertEqual(argv[1], '-ilc')
+                return subprocess.CompletedProcess(argv, 0, 'grc=%s\ns=/opt/conda/bin/s\n' % (self.root / '.local/bin/grc'), '')
+            return subprocess.CompletedProcess(argv, 1, '', '')
+        with patch.object(setup, 'find', side_effect=lambda n: 'zsh' if n == 'zsh' else None), patch.object(setup, 'read', side_effect=read):
+            failures = setup.doctor()
+        self.assertEqual([f for f in failures if 'resolves to' in f],
+                         ['s resolves to /opt/conda/bin/s in a login shell, not ~/.local/bin/s (uv install): check PATH order in ~/.zsh/tools.zsh'])
+        with patch.object(setup, 'find', return_value=None):
+            self.assertEqual(setup.shell_path(), [])
+
     def test_editors_link_cursor_settings_and_keybindings_only(self):
         setup = self.setup('--profile', 'linux')
         files = self.root / '.config/yadm/files'; files.mkdir(parents=True)

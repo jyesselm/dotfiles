@@ -69,6 +69,12 @@ class PureHelperTests(unittest.TestCase):
         manifest = sm.parse_brewfile('brew "python"\nbrew "jq"\ncask "slack"\n')
         extras = sm.brew_extras(['python@3.14', 'jq', 'homebrew/core/ripgrep'], ['slack', 'runelite'], manifest)
         self.assertEqual(extras, ['cask:runelite', 'formula:ripgrep'])
+        self.assertEqual(sm.brew_extras(['ripgrep'], ['runelite'], manifest, {'cask:runelite'}), ['formula:ripgrep'])
+
+    def test_parse_extras_normalizes_and_rejects_bare_names(self):
+        self.assertEqual(sm.parse_extras('# why\nformula:wget  # keep\ncask:zed@preview\n\n'), {'formula:wget', 'cask:zed'})
+        with self.assertRaises(ValueError):
+            sm.parse_extras('wget\n')
 
     def test_present_outside_brew_uses_app_artifact_and_hint(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,9 +91,43 @@ class PureHelperTests(unittest.TestCase):
 
 class PackagesTests(Base):
     def reads(self, argv):
-        table = {'list': done('slack\n'), 'leaves': done('git\nwget\n'),
+        table = {'list': done('slack\n'), 'leaves': done('git\nwget\nnot-in-any-brewfile\n'),
                  'info': done(json.dumps({'casks': [{'token': 'zoom', 'artifacts': []}]}))}
         return table[argv[1]]
+
+    def assets(self, extras=''):
+        """A manifest directory with one Brewfile and an extras.txt."""
+        assets = self.root / 'assets'
+        assets.mkdir()
+        (assets / 'Brewfile').write_text('brew "git"\ncask "zoom"\n')
+        for name in sm.BREWFILES['laptop'][1:]:
+            (assets / name).write_text('')
+        (assets / sm.EXTRAS_FILE).write_text(extras)
+        return assets
+
+    def test_adopt_extras_appends_unlisted_extras_until_clean(self):
+        assets = self.assets('formula:wget\n')
+        setup = m.Setup(m.parser().parse_args(['--adopt-extras', '--profile', 'mac']), root=self.root, assets=assets)
+        with patch.object(setup, 'read', side_effect=self.reads), patch.object(setup, 'find', return_value='brew'), \
+                patch.object(setup, 'run'):
+            self.assertEqual(sm.adopt_extras(setup, 'laptop', self.root), 0)
+            text = (assets / sm.EXTRAS_FILE).read_text()
+            self.assertEqual(text.splitlines()[2:], ['cask:slack', 'formula:not-in-any-brewfile'])
+            self.assertTrue(text.splitlines()[1].startswith('# laptop, adopted '))
+            self.assertEqual(sm.adopt_extras(setup, 'laptop', self.root), 0)
+            self.assertEqual((assets / sm.EXTRAS_FILE).read_text(), text)
+            result = sm.packages(setup, 'laptop', self.root)
+        self.assertNotIn('warn', result.status)
+        self.assertEqual([d for d in result.details if not d.startswith('present:')], [])
+
+    def test_adopt_extras_plan_writes_nothing_and_needs_a_mac(self):
+        assets = self.assets()
+        setup = m.Setup(m.parser().parse_args(['--adopt-extras', '--plan', '--profile', 'mac']), root=self.root, assets=assets)
+        with patch.object(setup, 'read', side_effect=self.reads), patch.object(setup, 'find', return_value='brew'):
+            sm.adopt_extras(setup, 'laptop', self.root)
+        self.assertEqual((assets / sm.EXTRAS_FILE).read_text(), '')
+        with self.assertRaises(RuntimeError):
+            sm.adopt_extras(self.setup('--adopt-extras', '--profile', 'linux'), 'linux', self.root)
 
     def test_packages_plan_prints_bundle_command_without_temp_file(self):
         setup = self.setup('--plan', '--profile', 'mac')
@@ -97,7 +137,7 @@ class PackagesTests(Base):
             result = sm.packages(setup, 'laptop', self.root)
         self.assertEqual(result.status, 'warn')
         self.assertIn('extras', result.summary)
-        self.assertIn('formula:wget', result.details)
+        self.assertIn('formula:not-in-any-brewfile', result.details)
 
     def test_packages_real_passes_cask_skip_env_and_devnull_stdin(self):
         setup = self.setup('--profile', 'mac')

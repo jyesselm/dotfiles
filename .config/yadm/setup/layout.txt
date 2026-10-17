@@ -1,6 +1,8 @@
 # Directories every computer should have, relative to $HOME.
 # Optional filters: profile:mac|linux|cluster  class:laptop|studio|linux|cluster
 # "check" = report if missing, never create (another program owns it).
+# "ignore" = a top-level glob some computers have (cloud sync, vendor folders); never created, never reported
+#            as unplanned. Globs have no spaces, so "Google*" stands for "Google Drive".
 .config
 .local/bin
 .local/state/dotfiles
@@ -22,3 +24,11 @@ notes
 projects
 cloud
 cloud/Dropbox  profile:mac check
+
+# Folders other programs put in ~ on some computers.
+Dropbox*  ignore
+Google*  ignore
+OneDrive*  ignore
+Claude  ignore
+PrinterLogic  ignore
+gdrive  ignore

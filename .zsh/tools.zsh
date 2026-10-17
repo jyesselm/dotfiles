@@ -94,7 +94,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 path=("$HOME/.local/bin" $path "$HOME/go/bin")
-# Mamba initializes after these paths and takes precedence.
 
 # Additional system paths; path is unique, so reloads do not duplicate entries.
 [[ -d /usr/local/bin ]] && path+=(/usr/local/bin /usr/local/sbin)
@@ -137,7 +136,5 @@ fi
 
 fi
 
-# Optional search-cli installation managed by dotfiles-setup --search.
-if [[ -f "$HOME/.local/share/dotfiles/repos/search-cli/shell/search-cli.sh" ]]; then
-  source "$HOME/.local/share/dotfiles/repos/search-cli/shell/search-cli.sh"
-fi
+# uv tool installs (grc, s) win over same-named commands in the conda env; dotfiles-setup --doctor checks this.
+path=("$HOME/.local/bin" $path)
