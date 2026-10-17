@@ -148,8 +148,8 @@ def publish_status(setup, yadm: str) -> None:
     blob = setup.read_ok([yadm, 'hash-object', '-w', path], 'hash-object failed').strip()
     tree = setup.read_ok([yadm, 'mktree'], 'mktree failed', input='100644 blob %s\tlast.json\n' % blob).strip()
     commit = setup.read_ok([yadm, 'commit-tree', tree, '-m', 'status ' + machine], 'commit-tree failed').strip()
-    setup.run([yadm, 'push', '--force', '--quiet', 'origin', '%s:refs/heads/%s' % (commit, status_ref(machine))],
-              timeout=GIT_TIMEOUT)
+    setup.read_ok([yadm, 'push', '--force', '--quiet', 'origin', '%s:refs/heads/%s' % (commit, status_ref(machine))],
+                  'push failed', timeout_s=GIT_TIMEOUT)  # read_ok: GitHub's pull-request hint stays out of the summary
 
 
 def fetch_statuses(setup, yadm: str) -> List[dict]:
@@ -175,7 +175,9 @@ def fleet(setup, expected: Path, checkin: bool = False) -> int:
     yadm = setup.find('yadm')
     if not yadm:
         raise RuntimeError('yadm not on PATH')
-    if checkin:
+    if checkin and setup.args.plan:
+        setup.say('plan: check-in not pushed')
+    elif checkin:
         publish_status(setup, yadm)
     statuses = fetch_statuses(setup, yadm)
     code = 0
@@ -185,7 +187,8 @@ def fleet(setup, expected: Path, checkin: bool = False) -> int:
         setup.say('%-22s %-8s %-8s exit %-3d %s' % (host, cls, age(data['finished']), data['exit'], bad))
         code |= int(data['exit'] != 0)
     seen = {d['machine'].split('@', 1)[0] for d in statuses}
-    for cls in expected.read_text().split():
+    classes = [line.split('#')[0].strip() for line in expected.read_text().splitlines()]
+    for cls in filter(None, classes):
         if cls not in seen:
             setup.say('%-22s %-8s never' % ('?', cls))
             code = 1
