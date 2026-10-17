@@ -1,4 +1,4 @@
-"""dotfiles-setup --sync: converge this machine daily and record per-phase results."""
+"""converge sync: converge this machine daily and record per-phase results."""
 from __future__ import annotations
 
 import fcntl
@@ -30,10 +30,10 @@ GIT_TIMEOUT, BREW_TIMEOUT, NET_TIMEOUT = 300, 1800, 600  # seconds, for mutating
 GRC_FALLBACK = 'micromamba/envs/py3/bin/grc'
 HINTS = {  # printed by --status under a warn/failed phase: how to clear it
     'layout': 'move stray entries out of ~, or add "<glob>  ignore" to setup/layout.txt for folders another program owns',
-    'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with dotfiles-setup --adopt-extras',
+    'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with converge adopt-extras',
     'dotfiles': 'yadm status, then yadm pull --rebase origin main',
-    'repos': 'fix the repo named above, then dotfiles-setup --sync',
-    'doctor': 'dotfiles-setup --doctor reruns the checks',
+    'repos': 'fix the repo named above, then converge sync',
+    'doctor': 'converge doctor reruns the checks',
 }
 STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
 
@@ -156,7 +156,7 @@ def print_status(root: Path, schedule_installed: bool) -> int:
     """Print the last sync result with every warning's details and how to clear it; returns its exit code (1 if none yet)."""
     path = Path(root) / STATE_DIR / 'last.json'
     if not path.exists():
-        print('No sync has run yet; try dotfiles-setup --sync --plan')
+        print('No sync has run yet; try converge sync --plan')
         return 1
     data = json.loads(path.read_text())
     print('Last sync: %s (%s) on %s, exit %d' % (data['finished'], age(data['finished']), data['machine'], data['exit']))
@@ -421,7 +421,7 @@ class Sync:
         pulled, pushed = self._pull_and_push(yadm, bool(files)) if online and not deleted else (False, False)
         held = self.setup.editors(protect_live=True)
         details = files + ['deleted locally, not synced: ' + p for p in deleted]
-        details += ['live settings differ from tracked; reconcile then run dotfiles-setup: ' + p for p in held]
+        details += ['live settings differ from tracked; reconcile then run converge setup: ' + p for p in held]
         if not online:
             summary = 'remote unreachable (%s): committed %d files locally; pull/push skipped' % (why, len(files))
             return PhaseResult('warn', summary, details)

@@ -1,4 +1,4 @@
-"""Daily schedule for dotfiles-setup --sync: a launchd job on Mac, a crontab line on Linux."""
+"""Daily schedule for converge sync: a launchd job on Mac, a crontab line on Linux."""
 from __future__ import annotations
 
 import os
@@ -25,7 +25,7 @@ def interpreter(profile: str) -> str:
 
 def _command(root: Path, python: str) -> List[str]:
     """The sync command line."""
-    return [python, str(Path(root) / '.config/yadm/setup/setup.py'), '--sync']
+    return [python, str(Path(root) / '.config/yadm/setup/setup.py'), 'sync']
 
 
 def _path_env(root: Path) -> str:

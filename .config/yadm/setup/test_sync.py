@@ -59,7 +59,7 @@ class Base(unittest.TestCase):
         self.run_kwargs.append(kwargs)
 
     def make(self, *argv):
-        setup = m.Setup(m.parser().parse_args(list(argv) or ['--profile', 'linux']), root=self.root)
+        setup = m.Setup(m.parse(list(argv) or ['--profile', 'linux']), root=self.root)
         setup._class = 'laptop'
         for name, fake in [('find', lambda n: n), ('read', self.read), ('run', self.run_cmd), ('editors', MagicMock(return_value=[]))]:
             setattr(setup, name, fake)
@@ -214,7 +214,7 @@ class DotfilesTests(Base):
         result = sync.dotfiles()
         sync.setup.editors.assert_called_once_with(protect_live=True)
         self.assertEqual(result.status, 'warn')
-        self.assertIn('live settings differ from tracked; reconcile then run dotfiles-setup: /live/settings.json', result.details)
+        self.assertIn('live settings differ from tracked; reconcile then run converge setup: /live/settings.json', result.details)
 
     def test_plan_counts_pending_commit_as_ahead(self):
         sync = self.make('--plan', '--profile', 'linux')

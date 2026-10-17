@@ -1,4 +1,4 @@
-"""Mac phases of dotfiles-setup --sync: Brewfile packages and home-made apps."""
+"""Mac phases of converge sync: Brewfile packages and home-made apps."""
 from __future__ import annotations
 
 import json
@@ -27,7 +27,7 @@ EXTRAS_FILE = 'extras.txt'  # formula:/cask: entries allowed on some computers w
 APP_KEYS = ('name', 'bundle_id', 'repo', 'bundle', 'assets')
 SEARCH_APP, SEARCH_APP_ID = 'Search CLI.app', 'com.yesselman.search-cli.gui'
 SEARCH_LAUNCHER = '''#!/bin/zsh
-# Written by dotfiles-setup --sync: opens the search-cli desktop launcher through the uv-installed `s`.
+# Written by converge sync: opens the search-cli desktop launcher through the uv-installed `s`.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 cd "$HOME"
 mkdir -p "$HOME/Library/Logs"

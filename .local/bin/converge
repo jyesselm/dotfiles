@@ -1,0 +1,4 @@
+#!/bin/sh
+# converge: make this computer match the dotfiles repo. `converge -h` lists the commands.
+set -eu
+exec python3 "$HOME/.config/yadm/setup/setup.py" "$@"

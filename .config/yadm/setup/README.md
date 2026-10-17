@@ -38,26 +38,26 @@ Install/select the Nerd Font **on the terminal's client computer**, not on an SS
 
 ## Options
 
-After cloning, use either `~/.config/yadm/bootstrap` or `~/.local/bin/dotfiles-setup`. Open a new terminal to get the shorter `dotfiles-setup` command on PATH.
+After cloning, use either `~/.config/yadm/bootstrap` (runs `converge setup`) or `~/.local/bin/converge`. Open a new terminal to get `converge` on PATH; `converge -h` lists the commands. The old name `dotfiles-setup` and its flag form (`dotfiles-setup --sync`) still work.
 
 ```sh
-dotfiles-setup --plan                       # no changes, installs or downloads
-dotfiles-setup --doctor                     # read-only health check
-dotfiles-setup --previews                   # PDF / SVG / archive / video previews
-dotfiles-setup --desktop                    # Mac: iTerm2, Cursor
+converge setup --plan                    # bootstrap preview: no changes, installs or downloads
+converge setup --previews                # PDF / SVG / archive / video previews
+converge setup --desktop                 # Mac: iTerm2, Cursor
 gh auth login
-dotfiles-setup --games                      # private tmux-dojo and nvim-dojo
-dotfiles-setup --search                     # search-cli (s) from the developing checkout
-dotfiles-setup --skip-packages --skip-nvim   # shell/menu/config setup only
-dotfiles-setup --sync [--plan]              # converge this computer (see Daily sync)
-dotfiles-setup --status                     # last sync: each warning's details and how to clear it
-dotfiles-setup --adopt-extras               # Mac: allow this computer's brew extras (appends to setup/extras.txt)
-dotfiles-setup --install-schedule           # daily launchd job (Mac) or crontab line (Linux)
-dotfiles-setup --fleet                      # last check-in of every machine
-dotfiles-setup --checkin                    # push this machine's last sync result now, then --fleet
+converge setup --games                   # private tmux-dojo and nvim-dojo
+converge setup --search                  # search-cli (s) from the developing checkout
+converge setup --skip-packages --skip-nvim   # shell/menu/config setup only
+converge doctor                          # read-only health check (add --search --games --previews to cover them)
+converge sync [--plan]                   # converge this computer (see Daily sync)
+converge status                          # last sync: each warning's details and how to clear it
+converge adopt-extras                    # Mac: allow this computer's brew extras (appends to setup/extras.txt)
+converge schedule                        # daily launchd job (Mac) or crontab line (Linux)
+converge fleet                           # last check-in of every machine
+converge checkin                         # push this machine's last sync result now, then the fleet view
 ```
 
-Flags combine, for example `dotfiles-setup --plan --desktop --previews --games --search`. To check optional components, include them with doctor: `dotfiles-setup --doctor --games --search --previews`.
+Flags combine, for example `converge setup --plan --desktop --previews --games --search`. To check optional components, include them with doctor: `converge doctor --games --search --previews`.
 
 **Use the wrapper for options.** The installed yadm version executes its bootstrap without forwarding arguments; `yadm bootstrap --plan` is not the documented interface here.
 
@@ -78,7 +78,7 @@ Existing shell/plugin/private-repository checkouts are retained, including local
 
 - Open a new terminal; select JetBrainsMono Nerd Font and enable Option-as-Esc if you want Option tmux shortcuts.
 - Log into GitHub/Atuin and any desktop apps as needed. No credentials or shell history are copied by bootstrap.
-- Run `dotfiles-setup --doctor`. Use `:checkhealth` in Neovim for language-server/parser details.
+- Run `converge doctor`. Use `:checkhealth` in Neovim for language-server/parser details.
 - If Git still expects `cursor --wait` but you chose terminal-only setup, use `git config --global core.editor nvim`.
 - A local override in `~/.zsh/local.zsh` can configure host-specific paths. Bootstrap preserves it.
 
@@ -86,19 +86,19 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 
 ## Daily sync
 
-`dotfiles-setup --sync` runs these phases in order: layout, dotfiles, packages, repos, apps, defaults, hotkeys, doctor. Preview with `--plan` (read-only). One failed phase never stops the others; any failure makes the exit code 1.
+`converge sync` runs these phases in order: layout, dotfiles, packages, repos, apps, defaults, hotkeys, doctor. Preview with `--plan` (read-only). One failed phase never stops the others; any failure makes the exit code 1.
 
 - **Dotfiles** auto-commit modified *tracked* files only, `pull --rebase`, then push, and only on branch `main`. A rebase conflict is aborted and reported (fix with `yadm pull --rebase origin main`); offline, it commits locally and skips pull/push.
-- **Packages:** Brewfiles per class (Linux: the tool environment). Installed packages in no Brewfile are reported as extras, never removed. Anything wanted on every Mac goes into a Brewfile; `setup/extras.txt` lists what some computers may keep without a warning, and `dotfiles-setup --adopt-extras` appends this computer's current extras to it (the next sync commits and pushes the file). Casks present outside Homebrew are informational.
+- **Packages:** Brewfiles per class (Linux: the tool environment). Installed packages in no Brewfile are reported as extras, never removed. Anything wanted on every Mac goes into a Brewfile; `setup/extras.txt` lists what some computers may keep without a warning, and `converge adopt-extras` appends this computer's current extras to it (the next sync commits and pushes the file). Casks present outside Homebrew are informational.
 - **Defaults:** the saved snapshot is applied every day, so run `mac-settings save` to keep a preference change (Magnet also syncs itself through iCloud).
 - Run the first sync on a new Mac in a terminal; cask installs may exceed the timeout under launchd.
 - State and log: `~/.local/state/dotfiles/sync/last.json` and `sync.log`. The `com.git-repo-checker.active` LaunchAgent stays; sync fast-forwards git-repo-checker and refreshes `grc`, runs `grc active sync --apply`, then refreshes `s` from its checkout (tool refreshes are skipped where uv is absent).
 
 **Layout.** `setup/layout.txt` lists the `~`-relative directories every computer gets. Bootstrap and sync create missing ones and report unplanned top-level entries without touching them; `<glob>  ignore` lines name entries other programs create (cloud sync folders), which are never created or reported. Doctor flags literal home paths in tracked files: use `~` or `$HOME`.
 
-**Seeing what is off.** `dotfiles-setup --status` prints the last sync and, under every phase that is not `ok`, the full detail (unplanned entries, extras, failing repo) and the edit or command that clears it. `dotfiles-setup --sync --plan` previews what the next sync would change.
+**Seeing what is off.** `converge status` prints the last sync and, under every phase that is not `ok`, the full detail (unplanned entries, extras, failing repo) and the edit or command that clears it. `converge sync --plan` previews what the next sync would change.
 
-**Fleet.** Every real sync ends by checking in: it force-pushes its `last.json` as a one-commit branch `status/<class>-<host>` on the yadm remote, then warns in its summary about any machine that has not checked in for two days. No machine needs to reach another; each only needs GitHub. `dotfiles-setup --fleet` fetches those branches on any machine and prints one line per machine, newest check-in first: host, class, age, exit code and the phases that were not `ok`, plus `never` for a class in `setup/fleet.txt` that has not checked in yet. `--checkin` pushes this machine's last result first, for example after a manual sync. The exit code is 0 only when every machine's last sync succeeded and none is stale.
+**Fleet.** Every real sync ends by checking in: it force-pushes its `last.json` as a one-commit branch `status/<class>-<host>` on the yadm remote, then warns in its summary about any machine that has not checked in for two days. No machine needs to reach another; each only needs GitHub. `converge fleet` fetches those branches on any machine and prints one line per machine, newest check-in first: host, class, age, exit code and the phases that were not `ok`, plus `never` for a class in `setup/fleet.txt` that has not checked in yet. `--checkin` pushes this machine's last result first, for example after a manual sync. The exit code is 0 only when every machine's last sync succeeded and none is stale.
 
 **Classes.** `yadm config local.class laptop|studio|linux|cluster` selects `##class.<x>` alternates and the Brewfiles.
 
@@ -109,13 +109,13 @@ yadm clone --no-bootstrap https://github.com/jyesselm/dotfiles.git   # already c
 yadm config local.class studio          # laptop | studio | linux | cluster
 ~/.config/yadm/bootstrap --plan         # read-only preview; fix any reported conflict first
 yadm bootstrap                          # terminal environment; Mac Studio: add --desktop afterwards
-dotfiles-setup --sync --plan            # read-only preview of the daily sync
-dotfiles-setup --sync                   # first real sync, in a terminal; checks this machine in
-dotfiles-setup --install-schedule       # daily 10:00 launchd job or crontab line
-dotfiles-setup --fleet                  # this machine now appears on every computer
+converge sync --plan            # read-only preview of the daily sync
+converge sync                   # first real sync, in a terminal; checks this machine in
+converge schedule               # daily 10:00 launchd job or crontab line
+converge fleet                  # this machine now appears on every computer
 ```
 
-Then the manual steps under "Finish once per computer": Nerd Font on the terminal client, `gh auth login` and Atuin, and any permission prompts macOS raises during the first sync. On Swan, `--install-schedule` prints "schedule skipped" when crontab is unavailable; run `dotfiles-setup --sync` by hand there, and it still checks in. The sync and `--fleet` only need GitHub, so a machine behind a firewall or off Tailscale works the same.
+Then the manual steps under "Finish once per computer": Nerd Font on the terminal client, `gh auth login` and Atuin, and any permission prompts macOS raises during the first sync. On Swan, `--install-schedule` prints "schedule skipped" when crontab is unavailable; run `converge sync` by hand there, and it still checks in. The sync and `--fleet` only need GitHub, so a machine behind a firewall or off Tailscale works the same.
 
 ## Validation
 
@@ -123,7 +123,7 @@ Run `python3 -m unittest discover -s ~/.config/yadm/setup -v` for isolated files
 
 ## Your Mac preferences
 
-The separate `~/.local/bin/mac-settings save` command captures selected current Mac preferences into yadm. On a new Mac, preview with `mac-settings plan` and explicitly apply with `mac-settings restore`; every restore first saves a rollback snapshot. Regular bootstrap never applies these system preferences; `dotfiles-setup --sync` re-applies the saved snapshot daily. See `~/.config/yadm/macos/README.md` for coverage, app exports, and limitations.
+The separate `~/.local/bin/mac-settings save` command captures selected current Mac preferences into yadm. On a new Mac, preview with `mac-settings plan` and explicitly apply with `mac-settings restore`; every restore first saves a rollback snapshot. Regular bootstrap never applies these system preferences; `converge sync` re-applies the saved snapshot daily. See `~/.config/yadm/macos/README.md` for coverage, app exports, and limitations.
 
 ### Hourly search indexing on the MacBook
 

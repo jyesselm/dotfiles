@@ -25,7 +25,7 @@ Clone your yadm repository and run the regular bootstrap first. Desktop apps rem
 ~/.local/bin/mac-settings restore
 ```
 
-Restore is deliberately separate from `yadm bootstrap` and `--desktop`. `dotfiles-setup --sync` runs the same restore daily. It changes only the allowlisted keys recorded in the snapshot. Other preferences remain untouched. No applications are killed or restarted. Log out and back in when convenient to refresh cached settings; a running app can otherwise overwrite preferences.
+Restore is deliberately separate from `yadm bootstrap` and `--desktop`. `converge sync` runs the same restore daily. It changes only the allowlisted keys recorded in the snapshot. Other preferences remain untouched. No applications are killed or restarted. Log out and back in when convenient to refresh cached settings; a running app can otherwise overwrite preferences.
 
 Before any restore changes, the tool saves the current supported settings under `~/.local/state/dotfiles/mac-settings/`. The displayed backup is itself restorable:
 

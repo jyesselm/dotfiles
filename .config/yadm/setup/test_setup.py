@@ -27,7 +27,7 @@ class BootstrapTests(unittest.TestCase):
         self.temp.cleanup()
 
     def setup(self, *argv):
-        return m.Setup(m.parser().parse_args(list(argv)), root=self.root)
+        return m.Setup(m.parse(list(argv)), root=self.root)
 
     def test_plan_is_read_only_for_both_platforms_and_options(self):
         for profile in ['mac', 'linux', 'cluster']:
@@ -127,16 +127,27 @@ class BootstrapTests(unittest.TestCase):
         self.assertIsNone(setup.phase('Parse', bad))
         self.assertEqual(setup.errors, ['Parse: bad json'])
 
-    def test_doctor_with_sync_is_rejected(self):
+    def test_two_legacy_action_flags_are_rejected(self):
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             m.main(['--doctor', '--sync'])
 
-    def test_main_dispatches_actions_to_sync_modules(self):
+    def test_legacy_flags_become_subcommands(self):
+        self.assertEqual(m.normalize(['--sync', '--plan']), ['sync', '--plan'])
+        self.assertEqual(m.normalize(['--plan', '--profile', 'linux']), ['setup', '--plan', '--profile', 'linux'])
+        self.assertEqual(m.normalize(['--install-schedule']), ['schedule'])
+        self.assertEqual(m.normalize(['doctor', '--search']), ['doctor', '--search'])
+        self.assertEqual(m.normalize([]), ['setup'])
+        self.assertEqual(m.normalize(['-h']), ['-h'])
+        args = m.parse(['--doctor', '--search'])
+        self.assertEqual((args.command, args.search, args.plan), ('doctor', True, False))
+
+    def test_main_dispatches_commands_to_sync_modules(self):
         import sync, sync_schedule
         with patch.object(sync, 'Sync') as engine, patch.object(sync_schedule, 'install', return_value=4):
             engine.return_value.execute.return_value = 3
+            self.assertEqual(m.main(['sync', '--plan', '--profile', 'linux']), 3)
             self.assertEqual(m.main(['--sync', '--plan', '--profile', 'linux']), 3)
-            self.assertEqual(m.main(['--install-schedule', '--profile', 'linux']), 4)
+            self.assertEqual(m.main(['schedule', '--profile', 'linux']), 4)
 
     def test_run_env_override(self):
         setup = self.setup('--profile', 'linux')

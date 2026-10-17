@@ -28,12 +28,12 @@ class ScheduleTests(unittest.TestCase):
         self.temp.cleanup()
 
     def setup(self, *argv):
-        return m.Setup(m.parser().parse_args(list(argv)), root=self.root)
+        return m.Setup(m.parse(list(argv)), root=self.root)
 
     def test_launchd_plist_content(self):
         plist = ss.launchd_plist(Path('/h'), '/usr/bin/python3')
         self.assertEqual(plist['Label'], 'com.yesselman.dotfiles-sync')
-        self.assertEqual(plist['ProgramArguments'], ['/usr/bin/python3', '/h/.config/yadm/setup/setup.py', '--sync'])
+        self.assertEqual(plist['ProgramArguments'], ['/usr/bin/python3', '/h/.config/yadm/setup/setup.py', 'sync'])
         self.assertEqual(plist['StartCalendarInterval'], {'Hour': 10, 'Minute': 0})
         self.assertTrue(plist['RunAtLoad'])
         self.assertEqual(plist['StandardOutPath'], '/h/.local/state/dotfiles/sync/sync.log')

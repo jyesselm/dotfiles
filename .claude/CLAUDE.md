@@ -19,7 +19,7 @@ against the standards before reporting done.
 ## Machines
 
 Every computer is defined by the yadm dotfiles repo (`~/.config/yadm/setup/README.md`).
-`dotfiles-setup --sync` converges a machine; `--status` shows the last run. Config edits go in tracked
+`converge sync` converges a machine; `converge status` shows the last run and how to clear each warning. Config edits go in tracked
 files; manifests (`Brewfile*`, `apps.json`, `layout.txt`, `~/.config/git-repo-checker/active.yml`) are the
 source of truth for packages, apps, directories and repos. Paths are always `$HOME`-relative.
 

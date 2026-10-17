@@ -1,7 +1,7 @@
 # Tool paths and environment; loaded before plugins.
 typeset -U path
 
-# Paths installed by dotfiles-setup. Load before Oh My Zsh on each platform.
+# Paths installed by converge. Load before Oh My Zsh on each platform.
 # Only terminal commands are exposed; the managed environment's Python is not.
 if [[ -d "$HOME/.local/share/dotfiles/bin" ]]; then
   path=("$HOME/.local/share/dotfiles/bin" $path)
@@ -136,5 +136,5 @@ fi
 
 fi
 
-# uv tool installs (grc, s) win over same-named commands in the conda env; dotfiles-setup --doctor checks this.
+# uv tool installs (grc, s) win over same-named commands in the conda env; converge doctor checks this.
 path=("$HOME/.local/bin" $path)

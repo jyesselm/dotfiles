@@ -45,7 +45,7 @@ class Base(unittest.TestCase):
         self.temp.cleanup()
 
     def setup(self, *argv):
-        return m.Setup(m.parser().parse_args(list(argv)), root=self.root)
+        return m.Setup(m.parse(list(argv)), root=self.root)
 
 
 class PureHelperTests(unittest.TestCase):
@@ -107,7 +107,7 @@ class PackagesTests(Base):
 
     def test_adopt_extras_appends_unlisted_extras_until_clean(self):
         assets = self.assets('formula:wget\n')
-        setup = m.Setup(m.parser().parse_args(['--adopt-extras', '--profile', 'mac']), root=self.root, assets=assets)
+        setup = m.Setup(m.parse(['adopt-extras', '--profile', 'mac']), root=self.root, assets=assets)
         with patch.object(setup, 'read', side_effect=self.reads), patch.object(setup, 'find', return_value='brew'), \
                 patch.object(setup, 'run'):
             self.assertEqual(sm.adopt_extras(setup, 'laptop', self.root), 0)
@@ -122,7 +122,7 @@ class PackagesTests(Base):
 
     def test_adopt_extras_plan_writes_nothing_and_needs_a_mac(self):
         assets = self.assets()
-        setup = m.Setup(m.parser().parse_args(['--adopt-extras', '--plan', '--profile', 'mac']), root=self.root, assets=assets)
+        setup = m.Setup(m.parse(['adopt-extras', '--plan', '--profile', 'mac']), root=self.root, assets=assets)
         with patch.object(setup, 'read', side_effect=self.reads), patch.object(setup, 'find', return_value='brew'):
             sm.adopt_extras(setup, 'laptop', self.root)
         self.assertEqual((assets / sm.EXTRAS_FILE).read_text(), '')

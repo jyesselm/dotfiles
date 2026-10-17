@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Terminal-first, repeatable dotfiles setup. --plan and --doctor never install."""
+"""converge: make this computer match the dotfiles repo. `setup` bootstraps, `sync` converges daily; --plan and doctor never install."""
 import argparse
 import hashlib
 import json
@@ -371,7 +371,7 @@ class Setup:
                 if not (self.root / relative).is_file():
                     failures.append('Missing optional game: ' + relative)
         if not self.find('grc'):
-            failures.append('grc missing; dotfiles-setup --sync cannot sync repos')
+            failures.append('grc missing; converge sync cannot sync repos')
         if self.args.search and not self.find('s'):
             failures.append('search-cli command s missing')
         failures += self.shell_path()
@@ -394,7 +394,7 @@ class Setup:
         self.say(('PLAN ONLY' if self.args.plan else 'DOTFILES SETUP') + ' — ' + self.profile)
         if self.args.desktop and self.profile != 'mac':
             raise RuntimeError('--desktop currently supports macOS only; Linux desktop apps are left to your distribution.')
-        if self.args.doctor:
+        if self.args.command == 'doctor':
             return int(bool(self.doctor()))
         self.phase('Directory layout', self.layout)
         self.phase('Terminal packages', self.packages)
@@ -418,60 +418,80 @@ class Setup:
         return 0
 
 
+COMMANDS = {  # subcommand -> (help, flag it replaces; `dotfiles-setup --flag` still works through normalize())
+    'setup': ('Bootstrap this computer (what yadm bootstrap runs); flags choose optional components', None),
+    'sync': ('Converge this computer: layout, dotfiles, packages, repos, apps, defaults, hotkeys, doctor', '--sync'),
+    'status': ("Last sync, each warning's details and how to clear it", '--status'),
+    'doctor': ('Read-only tool/version/config/PATH checks', '--doctor'),
+    'schedule': ('Install the daily launchd job (Mac) or crontab line (Linux)', '--install-schedule'),
+    'fleet': ('Last check-in of every machine (fetches the status/* branches)', '--fleet'),
+    'checkin': ("Push this machine's last sync result now, then show the fleet", '--checkin'),
+    'adopt-extras': ("Mac: allow this computer's current brew extras (appends to setup/extras.txt)", '--adopt-extras'),
+}
+LEGACY = {flag: name for name, (_, flag) in COMMANDS.items() if flag}
+FLAGS = [('plan', 'Show actions without writing files, downloads or installs'),
+         ('desktop', 'Also install iTerm2 and Cursor (Mac)'),
+         ('previews', 'Install PDF, SVG, archive and video preview tools'),
+         ('games', 'Install the two private Dojo repositories'),
+         ('search', 'Install search-cli (command s) from its developing checkout'),
+         ('skip-packages', 'Configure only; do not install terminal packages'),
+         ('skip-nvim', 'Skip Neovim plugin restore')]
+
+
 def parser():
-    p = argparse.ArgumentParser(description=__doc__)
-    mode = p.add_mutually_exclusive_group()
-    mode.add_argument('--plan', action='store_true', help='Show actions without writing files, downloads or installs')
-    mode.add_argument('--doctor', action='store_true', help='Read-only tool/version/config checks')
-    action = p.add_mutually_exclusive_group()
-    action.add_argument('--sync', action='store_true', help='Converge this machine; combine with --plan')
-    action.add_argument('--status', action='store_true', help='Show the last sync result')
-    action.add_argument('--install-schedule', action='store_true', help='Install the daily launchd job / crontab line')
-    action.add_argument('--fleet', action='store_true', help='Last check-in of every machine (fetches the status/* branches)')
-    action.add_argument('--checkin', action='store_true', help="Push this machine's last sync result now, then show the fleet")
-    action.add_argument('--adopt-extras', action='store_true', help="Mac: allow this computer's current brew extras (appends to setup/extras.txt)")
-    p.add_argument('--profile', choices=['auto', 'mac', 'linux', 'cluster'], default='auto')
-    for name, help_text in [('desktop','Also install iTerm2 and Cursor (Mac)'),
-                            ('previews','Install PDF, SVG, archive and video preview tools'),
-                            ('games','Install the two private Dojo repositories'),
-                            ('search','Install search-cli (command s) from its developing checkout'),
-                            ('skip-packages','Configure only; do not install terminal packages'),
-                            ('skip-nvim','Skip Neovim plugin restore')]:
-        p.add_argument('--' + name, action='store_true', help=help_text)
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument('--profile', choices=['auto', 'mac', 'linux', 'cluster'], default='auto')
+    for name, help_text in FLAGS:
+        common.add_argument('--' + name, action='store_true', help=help_text)
+    p = argparse.ArgumentParser(prog='converge', description=__doc__)
+    commands = p.add_subparsers(dest='command', metavar='command', required=True)
+    for name, (help_text, _) in COMMANDS.items():
+        commands.add_parser(name, help=help_text, description=help_text, parents=[common])
     return p
 
 
+def normalize(argv) -> list:
+    """Accept the old flag form (dotfiles-setup --sync --plan): the action flag becomes the subcommand, none means setup."""
+    argv = list(argv)
+    if argv and (argv[0] in COMMANDS or argv[0] in ('-h', '--help')):
+        return argv
+    flags = [a for a in argv if a in LEGACY]
+    if len(flags) > 1:
+        parser().error('one command at a time, not ' + ' '.join(flags))
+    return [LEGACY[flags[0]] if flags else 'setup'] + [a for a in argv if a not in LEGACY]
+
+
+def parse(argv):
+    return parser().parse_args(normalize(argv))
+
+
 def dispatch(args) -> int:
-    """Run the requested action; sync modules are imported lazily."""
+    """Run the requested command; sync modules are imported lazily."""
     setup = Setup(args)
-    if args.status:
+    if args.command == 'status':
         from sync import print_status
         from sync_schedule import is_installed
         return print_status(setup.root, is_installed(setup))
-    if args.fleet or args.checkin:
+    if args.command in ('fleet', 'checkin'):
         from sync import fleet
-        return fleet(setup, setup.assets / 'fleet.txt', checkin=args.checkin)
-    if args.install_schedule:
+        return fleet(setup, setup.assets / 'fleet.txt', checkin=args.command == 'checkin')
+    if args.command == 'schedule':
         from sync_schedule import install
         return install(setup)
-    if args.adopt_extras:
+    if args.command == 'adopt-extras':
         from sync_mac import adopt_extras
         return adopt_extras(setup, setup.machine_class(), Path('/Applications'))
-    if args.sync:
+    if args.command == 'sync':
         from sync import Sync
         return Sync(setup).execute()
-    return setup.execute()
+    return setup.execute()  # setup, doctor
 
 
 def main(argv=None) -> int:
     if sys.version_info < (3, 9):
-        sys.exit('dotfiles-setup requires Python 3.9 or newer.')
-    p = parser()
-    args = p.parse_args(argv)
-    if args.doctor and (args.sync or args.status or args.install_schedule or args.fleet or args.checkin or args.adopt_extras):
-        p.error('--doctor cannot be combined with --sync, --status, --fleet, --checkin, --adopt-extras or --install-schedule')
+        sys.exit('converge requires Python 3.9 or newer.')
     try:
-        return dispatch(args)
+        return dispatch(parse(sys.argv[1:] if argv is None else argv))
     except (OSError, RuntimeError) as exc:
         sys.exit(str(exc))
 

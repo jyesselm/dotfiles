@@ -1,3 +1,4 @@
 #!/bin/sh
+# Old name of converge; the old flag form (dotfiles-setup --sync) is translated. Use `converge sync` etc.
 set -eu
-exec python3 "$HOME/.config/yadm/setup/setup.py" "$@"
+exec "$HOME/.local/bin/converge" "$@"

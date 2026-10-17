@@ -1,8 +1,8 @@
 #!/bin/sh
-# yadm does not forward arguments to bootstrap; use dotfiles-setup for options.
+# yadm does not forward arguments to bootstrap; this runs `converge setup`. Use converge for options.
 set -eu
 if ! command -v python3 >/dev/null 2>&1; then
   echo 'Bootstrap needs Python 3.9+. On a new Mac: brew install python yadm' >&2
   exit 1
 fi
-exec python3 "$HOME/.config/yadm/setup/setup.py" "$@"
+exec python3 "$HOME/.config/yadm/setup/setup.py" setup "$@"

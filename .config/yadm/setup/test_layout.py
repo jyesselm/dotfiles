@@ -37,7 +37,7 @@ class LayoutTests(unittest.TestCase):
         self.temp.cleanup()
 
     def setup(self, *argv):
-        setup = m.Setup(m.parser().parse_args(list(argv)), root=self.root)
+        setup = m.Setup(m.parse(list(argv)), root=self.root)
         setup._class = 'laptop'
         return setup
 
