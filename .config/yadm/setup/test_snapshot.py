@@ -70,6 +70,7 @@ class CollectTests(Base):
         (apps / 'Tasks.app/Contents').mkdir(parents=True)
         (apps / 'Tasks.app/Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleShortVersionString': '0.2.1'}))
         (apps / 'Broken.app').mkdir()
+        (apps / '.Helper.app').mkdir()
         self.assertEqual(sn.app_versions([apps, self.root / 'none']), {'apps.Tasks': '0.2.1', 'apps.Broken': '?'})
         self.assertEqual(sn.active_repos(self.root / 'missing.yml'), [])
         (self.root / 'a.yml').write_text("path_prefix: '~'\nrepos:\n- path: local/code/x\n  remote: r\n- path: 'local/code/y'\n")
@@ -105,6 +106,10 @@ class CompareTests(Base):
         self.assertEqual(lines[0], 'key               book    desk    gpu')
         self.assertEqual(lines[1], 'apps.CleanShot X  4.7     -')
         self.assertEqual(sn.table([], ['book']), [])
+        fonts = sn.table([('fonts', {'book': ['a', 'b'], 'desk': ['a', 'c'], 'gpu': 'x'})], ['book', 'desk', 'gpu'])
+        self.assertEqual(fonts[1], 'fonts  lacks: c  lacks: b  x')
+        self.assertEqual(sn.show(['a'], [['a']]), 'has all')
+        self.assertEqual(sn.show('x' * 60), 'x' * 49 + '…')
 
     def test_fleet_diff_prints_table_and_keys_lists_own_state(self):
         setup = self.setup(tools=('git', 'yadm'))

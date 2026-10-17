@@ -101,7 +101,7 @@ def app_versions(dirs: List[Path]) -> Dict[str, str]:
     """{'apps.Name': version} for every top-level .app bundle."""
     apps = {}
     for base in dirs:
-        for bundle in sorted(base.glob('*.app')) if base.is_dir() else []:
+        for bundle in sorted(base.glob('[!.]*.app')) if base.is_dir() else []:  # hidden bundles are helpers, not apps
             try:
                 info = plistlib.loads((bundle / 'Contents/Info.plist').read_bytes())
                 apps['apps.' + bundle.stem] = str(info.get('CFBundleShortVersionString') or info.get('CFBundleVersion') or '?')
@@ -119,8 +119,11 @@ def mac(setup, applications: Path) -> Dict[str, Callable[[], Value]]:
         tool = setup.find('brew')
         if not tool:
             return {}
+        chosen = set(setup.read([tool, 'leaves', '--installed-on-request']).stdout.split())  # not their dependencies
         lines = setup.read([tool, 'list', '--versions']).stdout + setup.read([tool, 'list', '--cask', '--versions']).stdout
-        return {line.split()[0]: ' '.join(line.split()[1:]) for line in lines.splitlines() if line.split()}
+        casks = set(setup.read([tool, 'list', '--cask', '-1']).stdout.split())
+        return {line.split()[0]: ' '.join(line.split()[1:]) for line in lines.splitlines()
+                if line.split() and line.split()[0] in chosen | casks}
 
     def defaults_live() -> Dict[str, str]:
         from sync import load_mac_settings
@@ -218,8 +221,14 @@ def differences(statuses: List[dict], rules: Dict[str, List[str]], everything: b
     return rows
 
 
-def show(value: Value, width: int = 40) -> str:
-    text = ', '.join(map(str, value)) if isinstance(value, list) else str(value)
+def show(value: Value, others: List[Value] = (), width: int = 50) -> str:
+    """A cell: a list shows only what this machine lacks compared with the others (`lacks: a, b`), so long lists stay readable."""
+    if isinstance(value, list):
+        union = [x for other in others if isinstance(other, list) for x in other]
+        lacking = sorted({str(x) for x in union if x not in value})
+        text = 'lacks: ' + ', '.join(lacking) if lacking else 'has all'
+    else:
+        text = str(value)
     return text if len(text) <= width else text[:width - 1] + '…'
 
 
@@ -227,7 +236,8 @@ def table(rows: List[Tuple[str, Dict[str, Value]]], hosts: List[str]) -> List[st
     """Aligned lines: a header of hosts, then one line per differing key."""
     if not rows:
         return []
-    key_width = max(len('key'), *(len(k) for k, _ in rows))
-    widths = [max(len(h), *(len(show(v.get(h, ''))) for _, v in rows)) for h in hosts]
-    fmt = lambda key, cells: '  '.join([key.ljust(key_width)] + [c.ljust(w) for c, w in zip(cells, widths)]).rstrip()
-    return [fmt('key', hosts)] + [fmt(key, [show(values.get(h, '')) for h in hosts]) for key, values in rows]
+    cells = [(key, [show(values.get(h, ''), [v for o, v in values.items() if o != h]) for h in hosts]) for key, values in rows]
+    key_width = max(len('key'), *(len(k) for k, _ in cells))
+    widths = [max(len(h), *(len(c[i]) for _, c in cells)) for i, h in enumerate(hosts)]
+    fmt = lambda key, row: '  '.join([key.ljust(key_width)] + [c.ljust(w) for c, w in zip(row, widths)]).rstrip()
+    return [fmt('key', hosts)] + [fmt(key, row) for key, row in cells]
