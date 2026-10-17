@@ -106,6 +106,28 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(report.unplanned, ['stray'])
         self.assertFalse((self.root / 'gdrive').exists())
 
+    def test_unlink_glob_removes_top_level_symlinks_only(self):
+        (self.root / 'Library/CloudStorage/G').mkdir(parents=True)
+        (self.root / 'Google Drive').symlink_to(self.root / 'Library/CloudStorage/G')
+        (self.root / 'Google Real').mkdir()
+        (self.root / 'setup').mkdir()
+        (self.root / 'setup/layout.txt').write_text(TEXT + 'Google*  unlink\n')
+        setup = m.Setup(m.parse(['--plan', '--profile', 'mac']), root=self.root, assets=self.root / 'setup')
+        setup._class = 'laptop'
+        self.assertEqual(setup.layout().unlinked, ['Google Drive'])
+        self.assertTrue((self.root / 'Google Drive').is_symlink())
+        setup = m.Setup(m.parse(['--profile', 'mac']), root=self.root, assets=self.root / 'setup')
+        setup._class = 'laptop'
+        report = setup.layout()
+        self.assertEqual(report.unlinked, ['Google Drive'])
+        self.assertFalse((self.root / 'Google Drive').exists())
+        self.assertTrue((self.root / 'Google Real').is_dir())
+        self.assertNotIn('Google Real', report.unplanned)
+        self.assertEqual(setup.layout().unlinked, [])
+        for bad in ['x  unlink ignore', 'a/b  unlink', 'x  unlink link:y']:
+            with self.assertRaises(ValueError):
+                lay.parse_layout(bad, None, None)
+
     def test_portability_finds_planted_home_path_with_file_and_line(self):
         (self.root / 'f.py').write_text('a = 1\nb = 2\nx = "' + J + '/data"\n')
         self.assertEqual(lay.find_home_paths(self.root, 'f.py\0'), (['f.py:3'], []))

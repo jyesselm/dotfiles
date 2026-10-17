@@ -23,11 +23,13 @@ MAX_SCAN_BYTES = 2 * 1024 * 1024
 
 @dataclass
 class LayoutEntry:
-    """One line of layout.txt: a directory to create or link, to check (report only) or a glob to ignore."""
+    """One line of layout.txt: a directory to create or link, to check (report only), a glob to ignore
+    or a glob whose top-level symlinks are removed on every sync."""
     path: str
     create: bool = True
     ignore: bool = False
     link: Optional[str] = None  # ~-relative symlink target
+    unlink: bool = False
 
 
 @dataclass
@@ -36,35 +38,36 @@ class LayoutReport:
     created: List[str] = field(default_factory=list)
     expected: List[str] = field(default_factory=list)
     unplanned: List[str] = field(default_factory=list)
+    unlinked: List[str] = field(default_factory=list)
 
 
 def _home_relative(path: str) -> bool:
     return bool(path) and not path.startswith(('/', '~')) and '..' not in path.split('/')
 
 
-def _parse_line(number: int, line: str) -> Tuple[str, dict, bool, bool, Optional[str]]:
-    """Return (path, filters, check, ignore, link) for one manifest line."""
+def _parse_line(number: int, line: str) -> Tuple[str, dict, bool, bool, Optional[str], bool]:
+    """Return (path, filters, check, ignore, link, unlink) for one manifest line."""
     path, *tokens = line.split()
     if not _home_relative(path):
         raise ValueError('layout.txt line %d: path must be relative to $HOME: %s' % (number, path))
     filters: dict = {}
-    check = ignore = False
+    check = ignore = unlink = False
     link: Optional[str] = None
     for token in tokens:
         key, _, value = token.partition(':')
-        if token in ('check', 'ignore'):
-            check, ignore = check or token == 'check', ignore or token == 'ignore'
+        if token in ('check', 'ignore', 'unlink'):
+            check, ignore, unlink = check or token == 'check', ignore or token == 'ignore', unlink or token == 'unlink'
         elif (key, value) in {('profile', v) for v in PROFILES} | {('class', v) for v in CLASSES}:
             filters[key] = value
         elif key == 'link' and _home_relative(value):
             link = value.rstrip('/')
         else:
             raise ValueError('layout.txt line %d: unknown token %r' % (number, token))
-    if (check and ignore) or (link and (check or ignore)):
-        raise ValueError('layout.txt line %d: check, ignore and link are exclusive' % number)
-    if ignore and '/' in path.rstrip('/'):
-        raise ValueError('layout.txt line %d: ignore patterns are top-level names: %s' % (number, path))
-    return path.rstrip('/'), filters, check, ignore, link
+    if sum([check, ignore, unlink, bool(link)]) > 1:
+        raise ValueError('layout.txt line %d: check, ignore, unlink and link are exclusive' % number)
+    if (ignore or unlink) and '/' in path.rstrip('/'):
+        raise ValueError('layout.txt line %d: ignore/unlink patterns are top-level names: %s' % (number, path))
+    return path.rstrip('/'), filters, check, ignore, link, unlink
 
 
 def parse_layout(text: str, profile: Optional[str], machine_class: Optional[str]) -> List[LayoutEntry]:
@@ -74,10 +77,10 @@ def parse_layout(text: str, profile: Optional[str], machine_class: Optional[str]
         line = raw.split('#', 1)[0].strip()
         if not line:
             continue
-        path, filters, check, ignore, link = _parse_line(number, line)
+        path, filters, check, ignore, link, unlink = _parse_line(number, line)
         wanted = {'profile': profile, 'class': machine_class}
         if profile is None and machine_class is None or all(wanted[k] == v for k, v in filters.items()):
-            entries.append(LayoutEntry(path, not (check or ignore), ignore, link))
+            entries.append(LayoutEntry(path, not (check or ignore or unlink), ignore or unlink, link, unlink))
     return entries
 
 
@@ -93,6 +96,13 @@ def unplanned_entries(root: Path, entries: List[LayoutEntry]) -> List[str]:
     names = [p.name for p in Path(root).iterdir() if not p.name.startswith('.')]
     return sorted(n for n in names if n not in STANDARD_TOP_LEVEL and n not in planned
                   and not any(fnmatch.fnmatchcase(n, pattern) for pattern in ignored))
+
+
+def stray_links(root: Path, entries: List[LayoutEntry]) -> List[str]:
+    """Sorted top-level symlinks matched by an unlink glob; real files and directories never qualify."""
+    globs = [e.path for e in entries if e.unlink]
+    return sorted(p.name for p in Path(root).iterdir()
+                  if p.is_symlink() and any(fnmatch.fnmatchcase(p.name, g) for g in globs))
 
 
 def is_scannable(path: Path) -> bool:

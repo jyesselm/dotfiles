@@ -4,6 +4,8 @@
 # "ignore" = a top-level glob some computers have (cloud sync, vendor folders); never created, never reported
 #            as unplanned. Globs have no spaces, so "Google*" stands for "Google Drive".
 # "link:<target>" = make the path a symlink to ~/<target> once that exists; reported while it is absent.
+# "unlink" = a top-level glob for symlinks an app re-creates in ~ at every launch (Google Drive, OneDrive);
+#            removed on every sync. Only symlinks are ever removed, and the real folder lives under ~/cloud.
 .config
 .local/bin
 .local/state/dotfiles
@@ -16,6 +18,7 @@ local/code/javascript
 local/code/other
 local/code/rust
 local/code/nextflow
+local/archive
 local/installs
 local/papers
 local/research
@@ -32,7 +35,7 @@ cloud/onedrive  profile:mac link:Library/CloudStorage/OneDrive-UniversityofNebra
 
 # Folders other programs put in ~ on some computers.
 Dropbox*  ignore
-Google*  ignore
-OneDrive*  ignore
+Google*  unlink
+OneDrive*  unlink
 Claude  ignore
 PrinterLogic  ignore

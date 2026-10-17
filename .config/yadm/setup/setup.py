@@ -133,10 +133,12 @@ class Setup:
         return self._class
 
     def layout(self) -> lay.LayoutReport:
-        """Create missing manifest directories and links; report expected-but-absent and unplanned entries."""
+        """Create missing manifest directories and links, remove symlinks apps re-create in ~ (unlink globs);
+        report expected-but-absent and unplanned entries."""
         text = (self.assets / 'layout.txt').read_text()
         report = lay.LayoutReport()
-        for entry in lay.missing_dirs(self.root, lay.parse_layout(text, self.profile, self.machine_class())):
+        entries = lay.parse_layout(text, self.profile, self.machine_class())
+        for entry in lay.missing_dirs(self.root, entries):
             target = self.root / entry.link if entry.link else None
             if not entry.create:
                 report.expected.append(entry.path)
@@ -157,6 +159,11 @@ class Setup:
                         path.unlink()
                     path.symlink_to(target)
                 report.created.append(entry.path)
+        for name in lay.stray_links(self.root, entries):
+            self.say('  Unlink ~/' + name + ' (symlink an app re-creates; the real folder is under ~/cloud)')
+            if not self.args.plan:
+                (self.root / name).unlink()
+            report.unlinked.append(name)
         report.unplanned = lay.unplanned_entries(self.root, lay.parse_layout(text, None, None))
         for name in report.unplanned:
             self.say('  Unplanned: ' + name)
