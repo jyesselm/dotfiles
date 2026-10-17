@@ -1,4 +1,5 @@
-# ssh host and yadm class of every other machine; dotfiles-setup --fleet asks each for --status
-mac-desktop studio
-home-gpu linux
-swan cluster
+# yadm classes expected to check in; --fleet lists a class here that never has
+laptop
+studio
+linux
+cluster

@@ -95,11 +95,11 @@ class Setup:
         if code:
             raise subprocess.CalledProcessError(code, argv)
 
-    def read(self, argv, cwd=None, timeout_s=60):
+    def read(self, argv, cwd=None, timeout_s=60, input=None):
         """Run a read-only command (even in plan mode); never raises for missing binary or timeout."""
         argv = list(map(str, argv))
         try:
-            return subprocess.run(argv, capture_output=True, text=True, check=False, env=self.env, cwd=cwd, timeout=timeout_s)
+            return subprocess.run(argv, capture_output=True, text=True, check=False, env=self.env, cwd=cwd, timeout=timeout_s, input=input)
         except FileNotFoundError as exc:
             return subprocess.CompletedProcess(argv, 127, '', str(exc))
         except subprocess.TimeoutExpired:
@@ -394,7 +394,8 @@ def parser():
     action.add_argument('--sync', action='store_true', help='Converge this machine; combine with --plan')
     action.add_argument('--status', action='store_true', help='Show the last sync result')
     action.add_argument('--install-schedule', action='store_true', help='Install the daily launchd job / crontab line')
-    action.add_argument('--fleet', action='store_true', help='Last sync of every machine in setup/fleet.txt, over ssh')
+    action.add_argument('--fleet', action='store_true', help='Last check-in of every machine (fetches the status/* branches)')
+    action.add_argument('--checkin', action='store_true', help="Push this machine's last sync result now, then show the fleet")
     p.add_argument('--profile', choices=['auto', 'mac', 'linux', 'cluster'], default='auto')
     for name, help_text in [('desktop','Also install iTerm2 and Cursor (Mac)'),
                             ('previews','Install PDF, SVG, archive and video preview tools'),
@@ -409,12 +410,13 @@ def parser():
 def dispatch(args) -> int:
     """Run the requested action; sync modules are imported lazily."""
     setup = Setup(args)
-    if args.status or args.fleet:
-        from sync import fleet, print_status
+    if args.status:
+        from sync import print_status
         from sync_schedule import is_installed
-        if args.fleet:
-            return fleet(setup, is_installed(setup), setup.assets / 'fleet.txt')
         return print_status(setup.root, is_installed(setup))
+    if args.fleet or args.checkin:
+        from sync import fleet
+        return fleet(setup, setup.assets / 'fleet.txt', checkin=args.checkin)
     if args.install_schedule:
         from sync_schedule import install
         return install(setup)
@@ -429,8 +431,8 @@ def main(argv=None) -> int:
         sys.exit('dotfiles-setup requires Python 3.9 or newer.')
     p = parser()
     args = p.parse_args(argv)
-    if args.doctor and (args.sync or args.status or args.install_schedule or args.fleet):
-        p.error('--doctor cannot be combined with --sync, --status, --fleet or --install-schedule')
+    if args.doctor and (args.sync or args.status or args.install_schedule or args.fleet or args.checkin):
+        p.error('--doctor cannot be combined with --sync, --status, --fleet, --checkin or --install-schedule')
     try:
         return dispatch(args)
     except (OSError, RuntimeError) as exc:

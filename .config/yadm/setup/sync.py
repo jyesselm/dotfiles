@@ -10,7 +10,7 @@ import re
 import subprocess
 import tempfile
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -26,6 +26,7 @@ PHASES = [('layout', 'Directory layout'),
 SELF_PRINTING = {'layout', 'doctor'}  # these phases already print their own detail lines
 GIT_TIMEOUT, BREW_TIMEOUT, NET_TIMEOUT = 300, 1800, 600  # seconds, for mutating subprocesses
 GRC_FALLBACK = 'micromamba/envs/py3/bin/grc'
+STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
 
 
 @dataclass
@@ -115,62 +116,83 @@ def write_state(root: Path, phases: Dict[str, PhaseResult], meta: dict) -> Path:
     return target
 
 
-def status_lines(root: Path, schedule_installed: bool) -> Tuple[List[str], int]:
-    """Lines describing the last sync, and its stored exit code (1 if none yet)."""
-    path = Path(root) / STATE_DIR / 'last.json'
-    if not path.exists():
-        return ['No sync has run yet; try dotfiles-setup --sync --plan'], 1
-    data = json.loads(path.read_text())
-    finished = datetime.fromisoformat(data['finished'])
-    hours = (datetime.now(timezone.utc) - finished).total_seconds() / 3600
-    lines = ['Last sync: %s (%.0fh ago) on %s, exit %d' % (data['finished'], hours, data['machine'], data['exit'])]
-    lines += format_results({k: PhaseResult(**v) for k, v in data['phases'].items()})
-    lines.append('Schedule: ' + ('installed' if schedule_installed else 'not installed'))
-    return lines, int(data['exit'])
-
-
 def print_status(root: Path, schedule_installed: bool) -> int:
     """Print the last sync result; returns its stored exit code (1 if none yet)."""
-    lines, code = status_lines(root, schedule_installed)
-    print('\n'.join(lines))
+    path = Path(root) / STATE_DIR / 'last.json'
+    if not path.exists():
+        print('No sync has run yet; try dotfiles-setup --sync --plan')
+        return 1
+    data = json.loads(path.read_text())
+    print('Last sync: %s (%s) on %s, exit %d' % (data['finished'], age(data['finished']), data['machine'], data['exit']))
+    for line in format_results({k: PhaseResult(**v) for k, v in data['phases'].items()}):
+        print(line)
+    print('Schedule: ' + ('installed' if schedule_installed else 'not installed'))
+    return int(data['exit'])
+
+
+def age(finished: str) -> str:
+    """'3h ago' under two days, else '8d ago'."""
+    hours = (datetime.now(timezone.utc) - datetime.fromisoformat(finished)).total_seconds() / 3600
+    return '%dh ago' % hours if hours < 48 else '%dd ago' % (hours / 24)
+
+
+def status_ref(machine: str) -> str:
+    """Branch that holds a machine's last.json: status/<class>-<host>, ref-safe."""
+    return STATUS_REFS + re.sub(r'[^A-Za-z0-9.-]+', '-', machine).strip('-')
+
+
+def publish_status(setup, yadm: str) -> None:
+    """Force-push last.json as a single parentless commit to this machine's status branch."""
+    path = setup.root / STATE_DIR / 'last.json'
+    machine = json.loads(path.read_text())['machine']
+    blob = setup.read_ok([yadm, 'hash-object', '-w', path], 'hash-object failed').strip()
+    tree = setup.read_ok([yadm, 'mktree'], 'mktree failed', input='100644 blob %s\tlast.json\n' % blob).strip()
+    commit = setup.read_ok([yadm, 'commit-tree', tree, '-m', 'status ' + machine], 'commit-tree failed').strip()
+    setup.run([yadm, 'push', '--force', '--quiet', 'origin', '%s:refs/heads/%s' % (commit, status_ref(machine))],
+              timeout=GIT_TIMEOUT)
+
+
+def fetch_statuses(setup, yadm: str) -> List[dict]:
+    """Fetch every status/* branch and return their last.json contents, newest check-in first."""
+    spec = '+refs/heads/%s*:refs/remotes/origin/%s*' % (STATUS_REFS, STATUS_REFS)
+    fetched = setup.read([yadm, 'fetch', '--quiet', '--prune', 'origin', spec], timeout_s=60)
+    if fetched.returncode:
+        raise RuntimeError('fetch failed: ' + (fetched.stderr.strip().splitlines() or ['no reply'])[-1])
+    refs = setup.read_ok([yadm, 'for-each-ref', '--format=%(refname)', 'refs/remotes/origin/' + STATUS_REFS],
+                         'for-each-ref failed').split()
+    statuses = [json.loads(setup.read_ok([yadm, 'show', ref + ':last.json'], 'show failed')) for ref in refs]
+    return sorted(statuses, key=lambda d: d['finished'], reverse=True)
+
+
+def stale(statuses: List[dict], days: int = STALE_DAYS) -> List[str]:
+    """Machines whose last check-in is older than `days`."""
+    limit = datetime.now(timezone.utc) - timedelta(days=days)
+    return [d['machine'] for d in statuses if datetime.fromisoformat(d['finished']) < limit]
+
+
+def fleet(setup, expected: Path, checkin: bool = False) -> int:
+    """One line per machine that ever checked in, plus never-seen classes from fleet.txt; 1 unless all clean."""
+    yadm = setup.find('yadm')
+    if not yadm:
+        raise RuntimeError('yadm not on PATH')
+    if checkin:
+        publish_status(setup, yadm)
+    statuses = fetch_statuses(setup, yadm)
+    code = 0
+    for data in statuses:
+        cls, host = data['machine'].split('@', 1)
+        bad = ' '.join('%s:%s' % (k, v['status']) for k, v in data['phases'].items() if v['status'] != 'ok')
+        setup.say('%-22s %-8s %-8s exit %-3d %s' % (host, cls, age(data['finished']), data['exit'], bad))
+        code |= int(data['exit'] != 0)
+    seen = {d['machine'].split('@', 1)[0] for d in statuses}
+    for cls in expected.read_text().split():
+        if cls not in seen:
+            setup.say('%-22s %-8s never' % ('?', cls))
+            code = 1
+    for machine in stale(statuses):
+        setup.say('stale: %s has not checked in for %d days' % (machine, STALE_DAYS))
+        code = 1
     return code
-
-
-def read_fleet(path: Path) -> List[Tuple[str, str]]:
-    """(ssh host, class) pairs from fleet.txt; blank lines and # comments are ignored."""
-    hosts = []
-    for line in Path(path).read_text().splitlines():
-        words = line.split('#')[0].split()
-        if words:
-            hosts.append((words[0], words[1] if len(words) > 1 else '?'))
-    return hosts
-
-
-def summarize_status(output: str, code: int) -> Tuple[str, str, str]:
-    """(age, exit, phases not ok) from --status output; ssh/transport failures read as unreachable."""
-    if code in (124, 255):
-        return 'unreachable', '-', ''
-    head = re.match(r'Last sync: \S+ \((\d+)h ago\) on \S+, exit (\d+)', output)
-    if not head:
-        if 'No sync has run yet' in output:
-            return 'never', str(code), ''
-        return 'no status', str(code), (output.strip().splitlines() or [''])[0][:40]
-    phases = re.findall(r'^  (\w+)\s+(\w+)\s', output, re.M)
-    return head.group(1) + 'h ago', head.group(2), ' '.join('%s:%s' % p for p in phases if p[1] != 'ok')
-
-
-def fleet(setup, schedule_installed: bool, path: Path, connect_timeout: int = 10) -> int:
-    """One line per machine (this one first, then fleet.txt over ssh); 1 unless every machine synced cleanly."""
-    local_host = platform.node().split('.')[0]
-    lines, code = status_lines(setup.root, schedule_installed)
-    rows = [(local_host, setup.machine_class(), summarize_status('\n'.join(lines), code))]
-    for host, cls in read_fleet(path):
-        done = setup.read(['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=%d' % connect_timeout, host,
-                           '~/.local/bin/dotfiles-setup --status'], timeout_s=connect_timeout + 60)
-        rows.append((host, cls, summarize_status(done.stdout, done.returncode)))
-    for host, cls, (age, exit_code, phases) in rows:
-        setup.say('%-14s %-8s %-12s exit %-3s %s' % (host, cls, age, exit_code, phases))
-    return int(any(exit_code != '0' for _, _, (_, exit_code, _) in rows))
 
 
 class Sync:
@@ -232,7 +254,21 @@ class Sync:
                 self._save(started, code)
             if lock is not None:
                 lock.close()
+        if not plan:
+            self.checkin()
         return code
+
+    def checkin(self) -> None:
+        """Publish this run and warn about machines that have gone quiet; never changes the exit code."""
+        try:
+            yadm = self.setup.find('yadm')
+            if not yadm:
+                raise RuntimeError('yadm not on PATH')
+            publish_status(self.setup, yadm)
+            for machine in stale(fetch_statuses(self.setup, yadm)):
+                self.setup.say('  stale: %s has not checked in for %d days' % (machine, STALE_DAYS))
+        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            self.setup.say('  check-in skipped: %s' % exc)
 
     def layout(self) -> PhaseResult:
         """Create missing directories; warn about expected-but-absent and unplanned entries."""

@@ -7,6 +7,7 @@ import plistlib
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -44,11 +45,11 @@ class Base(unittest.TestCase):
         self.quiet.__exit__(None, None, None)
         self.temp.cleanup()
 
-    def read(self, argv, cwd=None, timeout_s=60):
+    def read(self, argv, cwd=None, timeout_s=60, input=None):
         key = ' '.join(map(str, argv[1:]))
         if key.startswith('ls-remote'):
             return self.remote
-        value = self.git[key]
+        value = self.git.get(key, done('', 1, 'not stubbed: ' + key))
         return value if isinstance(value, subprocess.CompletedProcess) else done(value)
 
     def run_cmd(self, argv, **kwargs):
@@ -273,47 +274,82 @@ class StateTests(Base):
         self.assertIn('layout fine', text)
         self.assertIn('Schedule: installed', text)
 
-    def test_fleet_one_line_per_machine_local_first(self):
+    def fake_remote(self, statuses):
+        """Stub fetch/for-each-ref/show so the remote holds these last.json dicts."""
+        refs = ['refs/remotes/origin/' + sy.status_ref(d['machine']) for d in statuses]
+        self.git['fetch --quiet --prune origin +refs/heads/status/*:refs/remotes/origin/status/*'] = ''
+        self.git['for-each-ref --format=%(refname) refs/remotes/origin/status/'] = '\n'.join(refs) + '\n'
+        for ref, data in zip(refs, statuses):
+            self.git['show %s:last.json' % ref] = json.dumps(data)
+
+    @staticmethod
+    def status(machine, hours_ago, exit_code=0, phases=None):
+        finished = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).isoformat()
+        return {'machine': machine, 'finished': finished, 'exit': exit_code,
+                'phases': phases or {'layout': {'status': 'ok', 'summary': '', 'details': []}}}
+
+    def test_status_ref_is_ref_safe(self):
+        self.assertEqual(sy.status_ref("laptop@Joseph\u2019s-MacBook-Pro"), 'status/laptop-Joseph-s-MacBook-Pro')
+        self.assertEqual(sy.status_ref('cluster@login.swan'), 'status/cluster-login.swan')
+
+    def test_sync_checks_in_and_warns_about_stale_machines(self):
+        sync = self.make()
+        self.git.update({'commit-tree t -m status laptop@%s' % sync.machine_label().split('@')[1]: 'c\n', 'mktree': 't\n'})
+        self.fake_remote([self.status('studio@studio', 3 * 24), self.status('linux@gpu', 1)])
+        with self.stub_phases(), patch.object(sync.setup, 'read_ok', wraps=sync.setup.read_ok) as read_ok:
+            self.git['hash-object -w %s' % (self.root / sy.STATE_DIR / 'last.json')] = 'b\n'
+            self.assertEqual(sync.execute(), 0)
+        self.assertEqual(read_ok.call_args_list[1].kwargs['input'], '100644 blob b\tlast.json\n')
+        self.assertEqual(self.runs[-1][:5], ['yadm', 'push', '--force', '--quiet', 'origin'])
+        self.assertEqual(self.runs[-1][5], 'c:refs/heads/' + sy.status_ref(sync.machine_label()))
+        text = self.output.getvalue()
+        self.assertIn('stale: studio@studio has not checked in for 2 days', text)
+        self.assertNotIn('linux@gpu has not', text)
+
+    def test_checkin_failure_is_a_note_not_an_error(self):
+        sync = self.make()
+        with self.stub_phases():
+            self.assertEqual(sync.execute(), 0)
+        self.assertIn('check-in skipped: hash-object failed', self.output.getvalue())
+        sync = self.make('--plan', '--profile', 'linux')
+        with self.stub_phases():
+            sync.execute()
+        self.assertEqual(self.output.getvalue().count('check-in skipped'), 1)
+
+    def test_fleet_lists_every_checkin_newest_first_and_missing_classes(self):
+        fleet = self.root / 'fleet.txt'
+        fleet.write_text('# expected\nlaptop\nstudio\nlinux\ncluster\n')
+        failed = {'dotfiles': {'status': 'failed', 'summary': 'x', 'details': []},
+                  'doctor': {'status': 'warn', 'summary': 'y', 'details': []},
+                  'apps': {'status': 'ok', 'summary': '', 'details': []}}
+        self.fake_remote([self.status('studio@studio', 60, 1, failed), self.status('laptop@book', 2)])
+        sync = self.make()
+        self.assertEqual(sy.fleet(sync.setup, fleet), 1)
+        lines = self.output.getvalue().splitlines()
+        self.assertEqual(lines[0].split(), ['book', 'laptop', '2h', 'ago', 'exit', '0'])
+        self.assertEqual(lines[1].split(), ['studio', 'studio', '2d', 'ago', 'exit', '1', 'dotfiles:failed', 'doctor:warn'])
+        self.assertEqual([l.split() for l in lines[2:4]], [['?', 'linux', 'never'], ['?', 'cluster', 'never']])
+        self.assertEqual(lines[4], 'stale: studio@studio has not checked in for 2 days')
+        self.assertEqual(len(lines), 5)
+
+    def test_fleet_checkin_publishes_first_and_is_clean_when_all_ok(self):
+        fleet = self.root / 'fleet.txt'
+        fleet.write_text('laptop\n')
         with self.stub_phases():
             self.make().execute()
-        fleet = self.root / 'fleet.txt'
-        fleet.write_text('# comment\nstudio-box studio\n\ngpu-box linux\nswan cluster\nbare\n')
-        remote = {'studio-box': done('Last sync: 2026-10-16T10:00:00+00:00 (3h ago) on studio@studio-box, exit 1\n'
-                                     '  layout    ok       fine\n  dotfiles  failed   push failed\n  doctor    warn     2 items\n'
-                                     'Schedule: installed\n'),
-                  'gpu-box': done('', 255, 'ssh: connect to host gpu-box port 22: Operation timed out'),
-                  'swan': done('No sync has run yet; try dotfiles-setup --sync --plan\n', 1),
-                  'bare': done('', 124, 'timed out after 70s')}
-        calls = []
-
-        def read(argv, cwd=None, timeout_s=60):
-            calls.append((argv, timeout_s))
-            return remote[argv[-2]]
         sync = self.make()
-        sync.setup.read = read
-        self.assertEqual(sy.fleet(sync.setup, True, fleet, connect_timeout=5), 1)
-        lines = self.output.getvalue().splitlines()[-5:]
-        self.assertTrue(lines[0].split()[1:4] == ['laptop', '0h', 'ago'] and lines[0].rstrip().endswith('exit 0'), lines[0])
-        self.assertEqual(lines[1].split(), ['studio-box', 'studio', '3h', 'ago', 'exit', '1', 'dotfiles:failed', 'doctor:warn'])
-        self.assertEqual(lines[2].split(), ['gpu-box', 'linux', 'unreachable', 'exit', '-'])
-        self.assertEqual(lines[3].split(), ['swan', 'cluster', 'never', 'exit', '1'])
-        self.assertEqual(lines[4].split(), ['bare', '?', 'unreachable', 'exit', '-'])
-        self.assertEqual([a[-2] for a, _ in calls], ['studio-box', 'gpu-box', 'swan', 'bare'])
-        self.assertEqual(calls[0][0][:5], ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5'])
-        self.assertEqual(calls[0][0][-1], '~/.local/bin/dotfiles-setup --status')
-        self.assertEqual(calls[0][1], 65)
+        self.git.update({'hash-object -w %s' % (self.root / sy.STATE_DIR / 'last.json'): 'b\n', 'mktree': 't\n',
+                         'commit-tree t -m status ' + sync.machine_label(): 'c\n'})
+        self.fake_remote([self.status('laptop@book', 5)])
+        self.assertEqual(sy.fleet(sync.setup, fleet, checkin=True), 0)
+        self.assertEqual(self.runs[-1][1:3], ['push', '--force'])
+        self.assertEqual(self.output.getvalue().splitlines()[-1].split()[:2], ['book', 'laptop'])
 
-    def test_fleet_returns_0_when_every_machine_synced_cleanly(self):
-        with self.stub_phases():
-            self.make().execute()
-        fleet = self.root / 'fleet.txt'
-        fleet.write_text('other linux\n')
-        ok = done('Last sync: x (20h ago) on linux@other, exit 0\n  layout    ok       fine\nSchedule: installed\n')
-        sync = self.make()
-        sync.setup.read = lambda argv, cwd=None, timeout_s=60: ok
-        self.assertEqual(sy.fleet(sync.setup, True, fleet), 0)
-        self.assertEqual(self.output.getvalue().splitlines()[-1].split(), ['other', 'linux', '20h', 'ago', 'exit', '0'])
-        self.assertEqual(sy.summarize_status('bash: dotfiles-setup: No such file\n', 127), ('no status', '127', 'bash: dotfiles-setup: No such file'))
+    def test_fleet_offline_fetch_is_an_error(self):
+        self.git['fetch --quiet --prune origin +refs/heads/status/*:refs/remotes/origin/status/*'] = done('', 128, 'fatal: unable to access')
+        with self.assertRaises(RuntimeError) as caught:
+            sy.fleet(self.make().setup, self.root / 'fleet.txt')
+        self.assertIn('fetch failed: fatal: unable to access', str(caught.exception))
 
     def test_failed_phase_does_not_stop_later_phases(self):
         sync = self.make()

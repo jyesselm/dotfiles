@@ -52,7 +52,8 @@ dotfiles-setup --skip-packages --skip-nvim   # shell/menu/config setup only
 dotfiles-setup --sync [--plan]              # converge this computer (see Daily sync)
 dotfiles-setup --status                     # result of the last sync
 dotfiles-setup --install-schedule           # daily launchd job (Mac) or crontab line (Linux)
-dotfiles-setup --fleet                      # last sync of every machine in setup/fleet.txt
+dotfiles-setup --fleet                      # last check-in of every machine
+dotfiles-setup --checkin                    # push this machine's last sync result now, then --fleet
 ```
 
 Flags combine, for example `dotfiles-setup --plan --desktop --previews --games --search`. To check optional components, include them with doctor: `dotfiles-setup --doctor --games --search --previews`.
@@ -94,7 +95,7 @@ The pending search-cli ↔ Yazi integration is a separate feature; this bootstra
 
 **Layout.** `setup/layout.txt` lists the `~`-relative directories every computer gets. Bootstrap and sync create missing ones and report unplanned top-level entries without touching them. Doctor flags literal home paths in tracked files: use `~` or `$HOME`.
 
-**Fleet.** `dotfiles-setup --fleet` prints one line per machine: this one first, then each `host class` line of `setup/fleet.txt` by running `ssh <host> ~/.local/bin/dotfiles-setup --status` with a 10-second connect timeout. Each line shows the class, the age of the last sync, its exit code and any phase that was not `ok`; a host that cannot be reached shows `unreachable`. The exit code is 0 only when every machine's last sync succeeded.
+**Fleet.** Every real sync ends by checking in: it force-pushes its `last.json` as a one-commit branch `status/<class>-<host>` on the yadm remote, then warns in its summary about any machine that has not checked in for two days. No machine needs to reach another; each only needs GitHub. `dotfiles-setup --fleet` fetches those branches on any machine and prints one line per machine, newest check-in first: host, class, age, exit code and the phases that were not `ok`, plus `never` for a class in `setup/fleet.txt` that has not checked in yet. `--checkin` pushes this machine's last result first, for example after a manual sync. The exit code is 0 only when every machine's last sync succeeded and none is stale.
 
 **Classes.** `yadm config local.class laptop|studio|linux|cluster` selects `##class.<x>` alternates and the Brewfiles.
 
