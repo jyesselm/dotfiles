@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 PROFILES = {'mac', 'linux', 'cluster'}
-CLASSES = {'laptop', 'studio', 'linux', 'cluster'}
+CLASSES = {'laptop', 'studio', 'linux', 'cluster', 'server'}
 STANDARD_TOP_LEVEL = {'Desktop', 'Documents', 'Downloads', 'Library', 'Movies', 'Music', 'Pictures',
                       'Public', 'Applications', 'go', 'micromamba', 'Zotero'}
 # Written as (parent, user) pairs so this file does not trip its own scan.
@@ -57,8 +57,8 @@ def _parse_line(number: int, line: str) -> Tuple[str, dict, bool, bool, Optional
         key, _, value = token.partition(':')
         if token in ('check', 'ignore', 'unlink'):
             check, ignore, unlink = check or token == 'check', ignore or token == 'ignore', unlink or token == 'unlink'
-        elif (key, value) in {('profile', v) for v in PROFILES} | {('class', v) for v in CLASSES}:
-            filters[key] = value
+        elif key in ('profile', 'class') and value and set(value.split(',')) <= (PROFILES if key == 'profile' else CLASSES):
+            filters[key] = set(value.split(','))
         elif key == 'link' and _home_relative(value):
             link = value.rstrip('/')
         else:
@@ -79,7 +79,7 @@ def parse_layout(text: str, profile: Optional[str], machine_class: Optional[str]
             continue
         path, filters, check, ignore, link, unlink = _parse_line(number, line)
         wanted = {'profile': profile, 'class': machine_class}
-        if profile is None and machine_class is None or all(wanted[k] == v for k, v in filters.items()):
+        if profile is None and machine_class is None or all(wanted[k] in v for k, v in filters.items()):
             entries.append(LayoutEntry(path, not (check or ignore or unlink), ignore or unlink, link, unlink))
     return entries
 

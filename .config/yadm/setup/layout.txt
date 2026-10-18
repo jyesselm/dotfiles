@@ -1,5 +1,5 @@
 # Directories every computer should have, relative to $HOME.
-# Optional filters: profile:mac|linux|cluster  class:laptop|studio|linux|cluster
+# Optional filters: profile:mac|linux|cluster  class:laptop|studio|linux|cluster|server (comma-separated lists allowed)
 # "check" = report if missing, never create (another program owns it).
 # "ignore" = a top-level glob some computers have (cloud sync, vendor folders); never created, never reported
 #            as unplanned. Globs have no spaces, so "Google*" stands for "Google Drive".
@@ -29,9 +29,9 @@ projects
 cloud
 # Every cloud mount is reachable under ~/cloud. Google Drive mirrors "My Drive" straight into cloud/gdrive;
 # cloud/icloud is linked by hand because its target ("Mobile Documents") has a space.
-cloud/Dropbox  profile:mac link:Library/CloudStorage/Dropbox
-cloud/gdrive  profile:mac check
-cloud/onedrive  profile:mac link:Library/CloudStorage/OneDrive-UniversityofNebraska-Lincoln
+cloud/Dropbox  class:laptop,studio link:Library/CloudStorage/Dropbox
+cloud/gdrive  class:laptop,studio check
+cloud/onedrive  class:laptop,studio link:Library/CloudStorage/OneDrive-UniversityofNebraska-Lincoln
 
 # Folders other programs put in ~ on some computers.
 Dropbox*  ignore
@@ -39,3 +39,4 @@ Google*  unlink
 OneDrive*  unlink
 Claude  ignore
 PrinterLogic  ignore
+iCloud*  ignore  # "iCloud Drive (Archive)" on the Plex server
