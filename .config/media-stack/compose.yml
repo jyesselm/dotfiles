@@ -1,13 +1,14 @@
-# Plex server media automation (OrbStack). Plex, Seerr and Transmission run natively;
-# these three ship unsigned macOS builds, so they run as Linux containers instead.
-# The media disk is mounted at its macOS path so Transmission, Plex and the containers see identical paths.
+# Plex server media stack. See README.md here for setup, updates and moving to Linux.
+# Machine-specific values and API keys live in the untracked .env next to this file (template: env.example).
+# The media disk is always mounted at /Volumes/Plex_Disk_4 inside containers, whatever its host path,
+# so the paths Radarr/Sonarr have stored keep working on a new machine.
 # Up/update: docker-compose -f ~/.config/media-stack/compose.yml pull && docker-compose -f ~/.config/media-stack/compose.yml up -d
 x-common: &common
   restart: unless-stopped
   environment:
-    PUID: "501"
-    PGID: "20"
-    TZ: America/Chicago
+    PUID: ${PUID}
+    PGID: ${PGID}
+    TZ: ${TZ}
 
 services:
   radarr:
@@ -16,8 +17,8 @@ services:
     container_name: radarr
     ports: ["7878:7878"]
     volumes:
-      - ${HOME}/.local/share/radarr/config:/config
-      - /Volumes/Plex_Disk_4:/Volumes/Plex_Disk_4
+      - ${DATA_ROOT}/radarr/config:/config
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
   sonarr:
     <<: *common
@@ -25,8 +26,8 @@ services:
     container_name: sonarr
     ports: ["8989:8989"]
     volumes:
-      - ${HOME}/.local/share/sonarr/config:/config
-      - /Volumes/Plex_Disk_4:/Volumes/Plex_Disk_4
+      - ${DATA_ROOT}/sonarr/config:/config
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
   prowlarr:
     <<: *common
@@ -34,4 +35,29 @@ services:
     container_name: prowlarr
     ports: ["9696:9696"]
     volumes:
-      - ${HOME}/.local/share/prowlarr/config:/config
+      - ${DATA_ROOT}/prowlarr/config:/config
+
+  # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports: ["3000:3000"]
+    env_file: .env
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS}
+      HOMEPAGE_VAR_HOST_ADDR: ${HOST_ADDR}
+    volumes:
+      - ./homepage:/app/config
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4:ro
+
+  # Up/down checks with history and phone alerts.
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports: ["3001:3001"]
+    volumes:
+      - ${DATA_ROOT}/uptime-kuma:/app/data

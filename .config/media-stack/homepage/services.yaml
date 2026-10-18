@@ -1,0 +1,68 @@
+# Dashboard tiles. Links use the LAN address; widgets call each service from inside the container network.
+# {{HOMEPAGE_VAR_*}} values come from ../.env, so this file holds no secrets.
+- Watch:
+    - Plex:
+        icon: plex.svg
+        href: http://192.168.4.26:32400/web
+        siteMonitor: http://{{HOMEPAGE_VAR_HOST_ADDR}}:32400/identity
+        description: Streaming
+        # Live streams/library counts: set HOMEPAGE_VAR_PLEX_TOKEN in .env, then uncomment.
+        # widget:
+        #   type: plex
+        #   url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:32400
+        #   key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+    - Seerr:
+        icon: overseerr.svg
+        href: http://192.168.4.26:5055
+        siteMonitor: http://{{HOMEPAGE_VAR_HOST_ADDR}}:5055
+        description: Requests
+        widget:
+          type: seerr
+          url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:5055
+          key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
+
+- Automation:
+    - Radarr:
+        icon: radarr.svg
+        href: http://192.168.4.26:7878
+        siteMonitor: http://radarr:7878/ping
+        description: Movies
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+          enableQueue: true
+    - Sonarr:
+        icon: sonarr.svg
+        href: http://192.168.4.26:8989
+        siteMonitor: http://sonarr:8989/ping
+        description: TV
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+          enableQueue: true
+    - Prowlarr:
+        icon: prowlarr.svg
+        href: http://192.168.4.26:9696
+        siteMonitor: http://prowlarr:9696/ping
+        description: Indexers
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+
+- Downloads:
+    - Transmission:
+        icon: transmission.svg
+        href: http://192.168.4.26:9091/transmission/web/
+        siteMonitor: http://{{HOMEPAGE_VAR_HOST_ADDR}}:9091/transmission/web/
+        description: Torrents (only while NordVPN is connected)
+        widget:
+          type: transmission
+          url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:9091
+    - Uptime Kuma:
+        icon: uptime-kuma.svg
+        href: http://192.168.4.26:3001
+        siteMonitor: http://uptime-kuma:3001
+        description: Up/down history and alerts

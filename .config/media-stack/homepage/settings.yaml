@@ -1,0 +1,9 @@
+title: Plex Server
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+layout:
+  Watch: {style: row, columns: 2}
+  Automation: {style: row, columns: 3}
+  Downloads: {style: row, columns: 2}

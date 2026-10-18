@@ -1,0 +1,5 @@
+- resources:
+    label: Plex_Disk_4
+    disk: /Volumes/Plex_Disk_4
+- datetime:
+    format: {dateStyle: medium, timeStyle: short}
