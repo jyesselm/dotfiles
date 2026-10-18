@@ -10,3 +10,6 @@ repos:
   remote: https://github.com/jyesselm/hotkeys.git
   branch: main
   enabled: true
+approved_accounts:
+- jyesselm
+- yesselmanlab
