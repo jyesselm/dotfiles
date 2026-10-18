@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Seerr (movie/TV request app for Plex), built from source in ~/.local/share/seerr/app. Web UI: http://localhost:5055 -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.yesselman.seerr</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/opt/homebrew/opt/node@22/bin/node</string>
+		<string>dist/index.js</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/jyesselm/.local/share/seerr/app</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>NODE_ENV</key>
+		<string>production</string>
+		<key>PORT</key>
+		<string>5055</string>
+		<key>CONFIG_DIRECTORY</key>
+		<string>/Users/jyesselm/.local/share/seerr/config</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>30</integer>
+	<key>StandardOutPath</key>
+	<string>/Users/jyesselm/Library/Logs/seerr/seerr.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/jyesselm/Library/Logs/seerr/seerr.log</string>
+</dict>
+</plist>
