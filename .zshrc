@@ -106,6 +106,16 @@ if $IS_MACOS; then
   fi
 fi
 
+# Prompt label (starship/tmux HOSTNAME_ALIAS) from the yadm class; local.zsh may override.
+case "$(yadm config local.class 2>/dev/null)" in
+  laptop)  HOSTNAME_ALIAS=mac-laptop ;;
+  studio)  HOSTNAME_ALIAS=mac-studio ;;
+  server)  HOSTNAME_ALIAS=plex-server ;;
+  linux)   HOSTNAME_ALIAS=home-gpu ;;
+  cluster) HOSTNAME_ALIAS=swan ;;
+esac
+export HOSTNAME_ALIAS="${HOSTNAME_ALIAS:-$(hostname -s)}"
+
 # Local Overrides (not tracked in git)
 # Create ~/.zsh/local.zsh for machine-specific settings
 [[ -f "$HOME/.zsh/local.zsh" ]] && source "$HOME/.zsh/local.zsh"
