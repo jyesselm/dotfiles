@@ -43,6 +43,16 @@ from Alfred with **Hyper+/** (keyword `hk`). This file is only the rules; Hotkey
 3. If it is a shared verb, use the key above (Karabiner can fix one app that disagrees).
 4. Rescan Hotkeys: Clashes must stay at 0.
 
+## Linux (home-gpu)
+
+Same keys, same meanings. Toshy plays Karabiner, GNOME plays Magnet and `open -a`. Both are set from
+`~/.config/hotkeys/linux/` by `converge sync`, so edit those files, not the live configs.
+
+- Physical keys on a PC keyboard: Alt is ⌘, Win is ⌥, Ctrl is ⌃, Caps is Hyper (tap = Esc).
+- Hyper+letter focuses or launches an app through the dock order in `gnome.dconf`, so keep the two lists aligned.
+- Not on Linux: Hyper+1-6, numpad sixths (no tiling-assistant keys), Hyper+S/M/W/H/D/N/Q/V/Space/`/`
+  (the app isn't installed or there's no Linux equivalent), and ⌘, → `s gui`.
+
 ## Where things live
 
 Karabiner `~/.config/karabiner/karabiner.json` · Magnet's own settings · tmux `~/.config/tmux/shortcuts.txt` ·

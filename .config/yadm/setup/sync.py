@@ -593,7 +593,11 @@ class Sync:
         return PhaseResult('changed' if count else 'ok', '%d preferences applied' % count)
 
     def hotkeys(self) -> PhaseResult:
-        """Run the hotkeys repo's clash checker and check that Karabiner is actually applying karabiner.json."""
+        """Run the hotkeys repo's clash checker and check that Karabiner is actually applying karabiner.json.
+        On Linux, converge Toshy + GNOME to ~/.config/hotkeys/linux instead (sync_linux)."""
+        if self.setup.profile == 'linux':
+            import sync_linux
+            return PhaseResult(*sync_linux.hotkeys(self.setup))
         repo = self.root / 'local/code/web/hotkeys'
         node = self.setup.find('node')
         if self.setup.profile != 'mac' or not (repo / 'scripts/check.js').exists() or not node:

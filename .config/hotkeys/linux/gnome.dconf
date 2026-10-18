@@ -1,0 +1,116 @@
+# GNOME half of the Linux hotkeys (see toshy_user.py). Loaded with `dconf load /` by `converge sync`.
+# Hyper = <Shift><Control><Alt><Super>. Physical Ctrl reaches GNOME as Super in GUI apps, so
+# single-letter/number <Super> shortcuts are cleared: on a Mac, Ctrl+letter never fires a global action.
+
+[org/gnome/desktop/wm/keybindings]
+switch-windows=['<Super>Tab']
+switch-windows-backward=['<Shift><Super>Tab']
+switch-applications=@as []
+switch-applications-backward=@as []
+switch-input-source=@as []
+switch-input-source-backward=@as []
+switch-group=['<Alt>Above_Tab', '<Shift><Control><Alt><Super>bracketright']
+switch-group-backward=['<Shift><Alt>Above_Tab', '<Shift><Control><Alt><Super>bracketleft']
+show-desktop=['<Control><Super>d']
+move-to-monitor-left=['<Shift><Control><Alt><Super>comma']
+move-to-monitor-right=['<Shift><Control><Alt><Super>period']
+minimize=['<Super>h']
+close=['<Alt>F4', '<Super>q']
+maximize=@as []
+unmaximize=@as []
+
+[org/gnome/shell/keybindings]
+toggle-overview=['<Shift><Control>space', '<Shift><Control><Alt><Super>x']
+screenshot=['<Shift><Super>3']
+show-screenshot-ui=['<Shift><Super>4', 'Print']
+focus-active-notification=@as []
+toggle-application-view=@as []
+toggle-message-tray=@as []
+toggle-quick-settings=@as []
+switch-to-application-1=@as []
+switch-to-application-2=@as []
+switch-to-application-3=@as []
+switch-to-application-4=@as []
+switch-to-application-5=@as []
+switch-to-application-6=@as []
+switch-to-application-7=@as []
+switch-to-application-8=@as []
+switch-to-application-9=@as []
+
+[org/gnome/mutter]
+overlay-key=''
+edge-tiling=false
+
+[org/gnome/mutter/keybindings]
+switch-monitor=['XF86Display']
+toggle-tiled-left=@as []
+toggle-tiled-right=@as []
+
+[org/gnome/mutter/wayland/keybindings]
+restore-shortcuts=@as []
+
+[org/gnome/settings-daemon/plugins/media-keys]
+screensaver=['<Control><Super>l']
+rotate-video-lock-static=['XF86RotationLockToggle']
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/hyper-l/']
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/hyper-l]
+name='Hyper+L: 1Password Quick Access'
+command='1password --quick-access'
+binding='<Shift><Control><Alt><Super>l'
+
+# Hyper+letter focuses the app if it is running, else launches it (macOS `open -a`).
+# The dock's app-hotkey-N follows favorite-apps order, so the two lists must stay aligned.
+[org/gnome/shell]
+favorite-apps=['google-chrome.desktop', 'com.mitchellh.ghostty.desktop', 'cursor.desktop', 'org.gnome.Nautilus.desktop', 'com.anthropic.Claude.desktop', 'chatgpt.desktop', 'org.zotero.Zotero.desktop', 'com.onepassword.OnePassword.desktop']
+
+[org/gnome/shell/extensions/dash-to-dock]
+hot-keys=true
+hotkeys-overlay=false
+hotkeys-show-dock=false
+shortcut=@as []
+app-hotkey-1=['<Shift><Control><Alt><Super>b']
+app-hotkey-2=['<Shift><Control><Alt><Super>t']
+app-hotkey-3=['<Shift><Control><Alt><Super>c']
+app-hotkey-4=['<Shift><Control><Alt><Super>e']
+app-hotkey-5=['<Shift><Control><Alt><Super>a']
+app-hotkey-6=['<Shift><Control><Alt><Super>g']
+app-hotkey-7=@as []
+app-hotkey-8=@as []
+app-hotkey-9=@as []
+app-hotkey-10=@as []
+app-shift-hotkey-1=@as []
+app-shift-hotkey-2=@as []
+app-shift-hotkey-3=@as []
+app-shift-hotkey-4=@as []
+app-shift-hotkey-5=@as []
+app-shift-hotkey-6=@as []
+app-shift-hotkey-7=@as []
+app-shift-hotkey-8=@as []
+app-shift-hotkey-9=@as []
+app-shift-hotkey-10=@as []
+app-ctrl-hotkey-1=@as []
+app-ctrl-hotkey-2=@as []
+app-ctrl-hotkey-3=@as []
+app-ctrl-hotkey-4=@as []
+app-ctrl-hotkey-5=@as []
+app-ctrl-hotkey-6=@as []
+app-ctrl-hotkey-7=@as []
+app-ctrl-hotkey-8=@as []
+app-ctrl-hotkey-9=@as []
+app-ctrl-hotkey-10=@as []
+
+# Hyper -> Magnet. Thirds/sixths (Hyper+1-6, numpad) have no tiling-assistant keybinding.
+[org/gnome/shell/extensions/tiling-assistant]
+tile-left-half=['<Shift><Control><Alt><Super>Left']
+tile-right-half=['<Shift><Control><Alt><Super>Right']
+tile-top-half=['<Shift><Control><Alt><Super>Up']
+tile-bottom-half=['<Shift><Control><Alt><Super>Down']
+tile-topleft-quarter=['<Shift><Control><Alt><Super>u']
+tile-topright-quarter=['<Shift><Control><Alt><Super>i']
+tile-bottomleft-quarter=['<Shift><Control><Alt><Super>j']
+tile-bottomright-quarter=['<Shift><Control><Alt><Super>k']
+tile-maximize=['<Shift><Control><Alt><Super>Return']
+restore-window=['<Shift><Control><Alt><Super>BackSpace']
+center-window=['<Shift><Control><Alt><Super>f', '<Shift><Control><Alt><Super>2']
+enable-tiling-popup=false

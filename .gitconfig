@@ -22,3 +22,7 @@
 [credential "https://gist.github.com"]
 	helper = 
 	helper = !/opt/homebrew/bin/gh auth git-credential
+
+# Per-machine overrides (untracked); later values win
+[include]
+	path = ~/.config/git/local
