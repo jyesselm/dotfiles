@@ -14,11 +14,11 @@
     - Seerr:
         icon: overseerr.svg
         href: http://192.168.4.26:5055
-        siteMonitor: http://{{HOMEPAGE_VAR_HOST_ADDR}}:5055
+        siteMonitor: http://seerr:5055
         description: Requests
         widget:
           type: seerr
-          url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:5055
+          url: http://seerr:5055
           key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
 
 - Automation:
@@ -53,14 +53,22 @@
           key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
 
 - Downloads:
-    - Transmission:
-        icon: transmission.svg
-        href: http://192.168.4.26:9091/transmission/web/
-        siteMonitor: http://{{HOMEPAGE_VAR_HOST_ADDR}}:9091/transmission/web/
-        description: Torrents (only while NordVPN is connected)
+    - qBittorrent:
+        icon: qbittorrent.svg
+        href: http://192.168.4.26:8080
+        siteMonitor: http://gluetun:8080
+        description: Torrents, only through the VPN
         widget:
-          type: transmission
-          url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:9091
+          type: qbittorrent
+          url: http://gluetun:8080
+          username: ""
+          password: ""
+    - VPN:
+        icon: gluetun.svg
+        description: NordVPN exit for qBittorrent
+        widget:
+          type: gluetun
+          url: http://gluetun:8000
     - Uptime Kuma:
         icon: uptime-kuma.svg
         href: http://192.168.4.26:3001

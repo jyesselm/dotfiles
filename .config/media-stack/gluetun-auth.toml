@@ -1,0 +1,5 @@
+# gluetun control server (port 8000, reachable only inside the stack): the dashboard may read the VPN's public IP.
+[[roles]]
+name = "homepage"
+routes = ["GET /v1/publicip/ip"]
+auth = "none"

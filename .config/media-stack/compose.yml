@@ -37,6 +37,59 @@ services:
     volumes:
       - ${DATA_ROOT}/prowlarr/config:/config
 
+  # NordVPN tunnel. qBittorrent shares this container's network, so it has no internet unless the tunnel is up.
+  # Its web UI port is published here, not on qbittorrent.
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add: [NET_ADMIN]
+    devices: [/dev/net/tun:/dev/net/tun]
+    ports: ["8080:8080"]
+    environment:
+      TZ: ${TZ}
+      VPN_SERVICE_PROVIDER: nordvpn
+      VPN_TYPE: wireguard
+      WIREGUARD_PRIVATE_KEY: ${NORDVPN_WIREGUARD_KEY}
+      SERVER_COUNTRIES: ${VPN_COUNTRIES}
+      # Let the other containers reach qBittorrent's web UI through the tunnel's firewall.
+      FIREWALL_OUTBOUND_SUBNETS: 172.30.0.0/24
+    volumes:
+      - ./gluetun-auth.toml:/gluetun/auth/config.toml:ro
+
+  qbittorrent:
+    <<: *common
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    depends_on: [gluetun]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+      WEBUI_PORT: "8080"
+    volumes:
+      - ${DATA_ROOT}/qbittorrent/config:/config
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+
+  # Request app (formerly Jellyseerr/Overseerr). Runs as uid 1000 inside the container.
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    restart: unless-stopped
+    ports: ["5055:5055"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${DATA_ROOT}/seerr/config:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+
   # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
@@ -61,3 +114,10 @@ services:
     ports: ["3001:3001"]
     volumes:
       - ${DATA_ROOT}/uptime-kuma:/app/data
+
+# Fixed subnet so qBittorrent's "no login from the stack" rule and gluetun's firewall rule work on any machine.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

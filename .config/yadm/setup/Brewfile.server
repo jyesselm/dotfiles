@@ -2,6 +2,4 @@
 cask "karabiner-elements"
 cask "iterm2"
 
-# Seerr (Plex request app, built from source in ~/.local/share/seerr) needs Node 22; keg-only so the default node is unchanged.
-brew "node@22"
 cask "orbstack"
