@@ -29,6 +29,7 @@ MINIMUM = {'tmux': (3, 6), 'nvim': (0, 11), 'yazi': (26, 9, 1), 'fzf': (0, 53)}
 DEVELOPING = 'local/code/python/developing'  # grc-managed checkouts
 # command -> (repo it runs from, pip extras); a commit on main propagates via sync. `s` needs gui for `s gui` and docs for previews.
 CHECKOUT_TOOLS = {'grc': ('git-repo-checker', ''), 's': ('search-cli', '[gui,docs]')}
+LEAN_CLASSES = ('server',)  # terminal only: no preference restores (the Plex server); repos come from active.yml##class.server
 
 
 def detect_profile():
@@ -134,6 +135,10 @@ class Setup:
             out = done.stdout.strip() if done is not None else ''
             self._class = out.splitlines()[0].strip() if out else self.profile
         return self._class
+
+    def lean(self) -> bool:
+        """A class that keeps only the terminal environment and its own repo list (see LEAN_CLASSES)."""
+        return self.machine_class() in LEAN_CLASSES
 
     def layout(self) -> lay.LayoutReport:
         """Create missing manifest directories and links, remove symlinks apps re-create in ~ (unlink globs);

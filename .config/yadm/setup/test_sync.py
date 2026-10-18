@@ -435,6 +435,13 @@ class PhaseTests(Base):
         result = sync.hotkeys()
         self.assertEqual((result.status, result.summary), ('warn', '1 clashes, 1 layer overlaps'))
 
+    def test_lean_class_restores_no_defaults(self):
+        sync = self.make('--profile', 'mac')
+        sync.setup._class = 'server'
+        (self.root / '.config/yadm/macos').mkdir(parents=True)
+        (self.root / '.config/yadm/macos/preferences.plist').write_bytes(b'')
+        self.assertEqual(sync.defaults().status, 'skipped')
+
     def test_repos_skipped_without_grc_and_runs_with_it(self):
         sync = self.make()
         sync.setup.find = lambda n: None

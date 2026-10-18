@@ -1,0 +1,8 @@
+# Repos the Plex server (class server) keeps in sync; the other classes use active.yml##default.
+# yadm links active.yml to the file matching this computer's class. Add entries like:
+# - path: local/code/web/notes
+#   remote: https://github.com/jyesselm/notes.git
+#   branch: main
+#   enabled: true
+path_prefix: '~'
+repos: []
