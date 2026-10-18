@@ -21,6 +21,10 @@ A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlin
 - `.env`: untracked, this machine's paths and keys. Template: `env.example`.
 - `$DATA_ROOT/<app>/config` (and `$DATA_ROOT/uptime-kuma`): each app's settings and database. Not tracked; this is
   what you copy to move the stack.
+- `app-config/`: tracked, secret-free JSON of each app's settings (custom formats, quality profiles, naming, root
+  folders, download clients, Prowlarr apps, Seerr settings). Refresh with `./export-config.sh` after changing
+  settings, then commit. It's the reference for rebuilding an app by hand if `$DATA_ROOT` is lost; API keys,
+  passwords and indexers are left out, so re-enter those.
 - The media disk is always mounted at `/Volumes/Plex_Disk_4` inside containers, whatever its host path, so the
   paths stored in Radarr, Sonarr, qBittorrent and Plex stay valid on any machine. Downloads (`downloading/`) and
   the libraries share that one disk so imports are instant hardlinks.

@@ -1,0 +1,268 @@
+{
+  "main": {
+    "applicationTitle": "Seerr",
+    "applicationUrl": "",
+    "cacheImages": false,
+    "defaultPermissions": 8388768,
+    "defaultQuotas": {
+      "movie": {},
+      "tv": {}
+    },
+    "hideAvailable": false,
+    "hideBlocklisted": false,
+    "hideRequested": false,
+    "localLogin": true,
+    "mediaServerLogin": true,
+    "newPlexLogin": true,
+    "discoverRegion": "",
+    "streamingRegion": "",
+    "originalLanguage": "",
+    "blocklistRegion": "",
+    "blocklistLanguage": "",
+    "blocklistedTags": "",
+    "blocklistedTagsLimit": 50,
+    "mediaServerType": 1,
+    "partialRequestsEnabled": true,
+    "enableSpecialEpisodes": false,
+    "locale": "en",
+    "youtubeUrl": "",
+    "versionCheck": true
+  },
+  "plex": {
+    "name": "plex-server",
+    "ip": "0.250.250.254",
+    "port": 32400,
+    "useSsl": false,
+    "libraries": [
+      {
+        "id": "1",
+        "name": "Movies",
+        "enabled": true,
+        "type": "movie",
+        "lastScan": 1792351204082
+      },
+      {
+        "id": "2",
+        "name": "TV Shows",
+        "enabled": true,
+        "type": "show",
+        "lastScan": 1792351204136
+      }
+    ],
+    "machineId": "ee41ae9cca848b09fa0291f1a8f331587a584325"
+  },
+  "jellyfin": {
+    "name": "",
+    "ip": "",
+    "port": 8096,
+    "useSsl": false,
+    "urlBase": "",
+    "externalHostname": "",
+    "libraries": [],
+    "serverId": ""
+  },
+  "tautulli": {},
+  "metadataSettings": {
+    "tv": "tmdb",
+    "anime": "tmdb"
+  },
+  "radarr": [
+    {
+      "name": "Radarr",
+      "hostname": "radarr",
+      "port": 7878,
+      "useSsl": false,
+      "baseUrl": "",
+      "activeProfileId": 4,
+      "activeProfileName": "HD-1080p",
+      "activeDirectory": "/Volumes/Plex_Disk_4/Movies",
+      "is4k": false,
+      "minimumAvailability": "released",
+      "isDefault": true,
+      "externalUrl": "",
+      "syncEnabled": true,
+      "preventSearch": false,
+      "tags": [],
+      "id": 0
+    }
+  ],
+  "sonarr": [
+    {
+      "name": "Sonarr",
+      "hostname": "sonarr",
+      "port": 8989,
+      "useSsl": false,
+      "baseUrl": "",
+      "activeProfileId": 4,
+      "activeProfileName": "HD-1080p",
+      "activeDirectory": "/Volumes/Plex_Disk_4/TV Shows",
+      "activeAnimeProfileId": 4,
+      "activeAnimeProfileName": "HD-1080p",
+      "activeAnimeDirectory": "/Volumes/Plex_Disk_4/Anime",
+      "is4k": false,
+      "isDefault": true,
+      "enableSeasonFolders": true,
+      "seriesType": "standard",
+      "animeSeriesType": "anime",
+      "externalUrl": "",
+      "syncEnabled": true,
+      "preventSearch": false,
+      "tags": [],
+      "animeTags": [],
+      "id": 0
+    }
+  ],
+  "public": {
+    "initialized": true
+  },
+  "notifications": {
+    "agents": {
+      "email": {
+        "enabled": false,
+        "embedPoster": true,
+        "options": {
+          "userEmailRequired": false,
+          "emailFrom": "",
+          "smtpHost": "",
+          "smtpPort": 587,
+          "secure": false,
+          "ignoreTls": false,
+          "requireTls": false,
+          "allowSelfSigned": false,
+          "senderName": "Seerr",
+          "usePublicLogo": false
+        }
+      },
+      "discord": {
+        "enabled": false,
+        "embedPoster": true,
+        "types": 0,
+        "options": {
+          "enableMentions": true,
+          "locale": "en",
+          "useUserLocale": true
+        }
+      },
+      "slack": {
+        "enabled": false,
+        "embedPoster": true,
+        "types": 0,
+        "options": {
+          "locale": "en"
+        }
+      },
+      "telegram": {
+        "enabled": false,
+        "embedPoster": true,
+        "types": 0,
+        "options": {
+          "botAPI": "",
+          "chatId": "",
+          "messageThreadId": "",
+          "sendSilently": false
+        }
+      },
+      "pushbullet": {
+        "enabled": false,
+        "embedPoster": false,
+        "types": 0,
+        "options": {}
+      },
+      "pushover": {
+        "enabled": false,
+        "embedPoster": true,
+        "types": 0,
+        "options": {
+          "sound": ""
+        }
+      },
+      "webpush": {
+        "enabled": false,
+        "embedPoster": true,
+        "options": {}
+      },
+      "gotify": {
+        "enabled": false,
+        "embedPoster": false,
+        "types": 0,
+        "options": {
+          "url": "",
+          "priority": 0,
+          "locale": "en"
+        }
+      },
+      "ntfy": {
+        "enabled": false,
+        "embedPoster": true,
+        "types": 0,
+        "options": {
+          "url": "",
+          "topic": "",
+          "tags": "",
+          "priority": 3,
+          "locale": "en"
+        }
+      }
+    }
+  },
+  "jobs": {
+    "plex-recently-added-scan": {
+      "schedule": "0 */5 * * * *"
+    },
+    "plex-full-scan": {
+      "schedule": "0 0 3 * * *"
+    },
+    "plex-watchlist-sync": {
+      "schedule": "0 */3 * * * *"
+    },
+    "radarr-scan": {
+      "schedule": "0 0 4 * * *"
+    },
+    "sonarr-scan": {
+      "schedule": "0 30 4 * * *"
+    },
+    "availability-sync": {
+      "schedule": "0 0 5 * * *"
+    },
+    "download-sync": {
+      "schedule": "0 * * * * *"
+    },
+    "download-sync-reset": {
+      "schedule": "0 0 1 * * *"
+    },
+    "jellyfin-recently-added-scan": {
+      "schedule": "0 */5 * * * *"
+    },
+    "jellyfin-full-scan": {
+      "schedule": "0 0 3 * * *"
+    },
+    "image-cache-cleanup": {
+      "schedule": "0 0 5 * * *"
+    },
+    "process-blocklisted-tags": {
+      "schedule": "0 30 1 */7 * *"
+    }
+  },
+  "network": {
+    "csrfProtection": false,
+    "forceIpv4First": false,
+    "trustProxy": false,
+    "proxy": {
+      "enabled": false,
+      "hostname": "",
+      "port": 8080,
+      "useSsl": false,
+      "user": ""
+    },
+    "dnsCache": {
+      "enabled": false,
+      "forceMinTtl": 0,
+      "forceMaxTtl": -1
+    },
+    "apiRequestTimeout": 10000
+  },
+  "migrations": [
+    "0007_migrate_arr_tags",
+    "0008_migrate_blacklist_to_blocklist"
+  ]
+}

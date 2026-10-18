@@ -1,0 +1,603 @@
+[
+  {
+    "path": "/Volumes/Plex_Disk_4/TV Shows",
+    "accessible": true,
+    "freeSpace": 1655609688064,
+    "unmappedFolders": [
+      {
+        "name": "30 Rock",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/30 Rock",
+        "relativePath": "30 Rock"
+      },
+      {
+        "name": "Adventure Time",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Adventure Time",
+        "relativePath": "Adventure Time"
+      },
+      {
+        "name": "Almost Human",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Almost Human",
+        "relativePath": "Almost Human"
+      },
+      {
+        "name": "American Dad",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/American Dad",
+        "relativePath": "American Dad"
+      },
+      {
+        "name": "American Ninja Warrior",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/American Ninja Warrior",
+        "relativePath": "American Ninja Warrior"
+      },
+      {
+        "name": "Anne of Avonlea ",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Anne of Avonlea ",
+        "relativePath": "Anne of Avonlea "
+      },
+      {
+        "name": "Anne of Green Gables The Sequel",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Anne of Green Gables The Sequel",
+        "relativePath": "Anne of Green Gables The Sequel"
+      },
+      {
+        "name": "Apocalypse The Second World War",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Apocalypse The Second World War",
+        "relativePath": "Apocalypse The Second World War"
+      },
+      {
+        "name": "Aqua Teen Hunger Force",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Aqua Teen Hunger Force",
+        "relativePath": "Aqua Teen Hunger Force"
+      },
+      {
+        "name": "Archer",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Archer",
+        "relativePath": "Archer"
+      },
+      {
+        "name": "Arrested Development",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Arrested Development",
+        "relativePath": "Arrested Development"
+      },
+      {
+        "name": "Avatar The Last Airbender",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Avatar The Last Airbender",
+        "relativePath": "Avatar The Last Airbender"
+      },
+      {
+        "name": "Band of Brothers",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Band of Brothers",
+        "relativePath": "Band of Brothers"
+      },
+      {
+        "name": "Batman The Animated Series",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Batman The Animated Series",
+        "relativePath": "Batman The Animated Series"
+      },
+      {
+        "name": "Better Call Saul",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Better Call Saul",
+        "relativePath": "Better Call Saul"
+      },
+      {
+        "name": "Big Bang Theory",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Big Bang Theory",
+        "relativePath": "Big Bang Theory"
+      },
+      {
+        "name": "Bob's Burgers",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Bob's Burgers",
+        "relativePath": "Bob's Burgers"
+      },
+      {
+        "name": "Bored to death",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Bored to death",
+        "relativePath": "Bored to death"
+      },
+      {
+        "name": "Brave New World",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Brave New World",
+        "relativePath": "Brave New World"
+      },
+      {
+        "name": "Brooklyn Nine Nine",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Brooklyn Nine Nine",
+        "relativePath": "Brooklyn Nine Nine"
+      },
+      {
+        "name": "Buffy the Vampire Slayer",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Buffy the Vampire Slayer",
+        "relativePath": "Buffy the Vampire Slayer"
+      },
+      {
+        "name": "Burn Notice",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Burn Notice",
+        "relativePath": "Burn Notice"
+      },
+      {
+        "name": "Chernobyl",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Chernobyl",
+        "relativePath": "Chernobyl"
+      },
+      {
+        "name": "Childhoods End",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Childhoods End",
+        "relativePath": "Childhoods End"
+      },
+      {
+        "name": "Clone High",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Clone High",
+        "relativePath": "Clone High"
+      },
+      {
+        "name": "Community",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Community",
+        "relativePath": "Community"
+      },
+      {
+        "name": "Cosmos A Space Time Odyssey",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Cosmos A Space Time Odyssey",
+        "relativePath": "Cosmos A Space Time Odyssey"
+      },
+      {
+        "name": "Criminal Minds",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Criminal Minds",
+        "relativePath": "Criminal Minds"
+      },
+      {
+        "name": "CSI Miami",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/CSI Miami",
+        "relativePath": "CSI Miami"
+      },
+      {
+        "name": "CSI New York",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/CSI New York",
+        "relativePath": "CSI New York"
+      },
+      {
+        "name": "CSI Vegas",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/CSI Vegas",
+        "relativePath": "CSI Vegas"
+      },
+      {
+        "name": "Daredevil",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Daredevil",
+        "relativePath": "Daredevil"
+      },
+      {
+        "name": "Dilbert",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Dilbert",
+        "relativePath": "Dilbert"
+      },
+      {
+        "name": "Diners Drive-Ins and Dives",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Diners Drive-Ins and Dives",
+        "relativePath": "Diners Drive-Ins and Dives"
+      },
+      {
+        "name": "Doom Patrol",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Doom Patrol",
+        "relativePath": "Doom Patrol"
+      },
+      {
+        "name": "Drawn Together",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Drawn Together",
+        "relativePath": "Drawn Together"
+      },
+      {
+        "name": "Elementary",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Elementary",
+        "relativePath": "Elementary"
+      },
+      {
+        "name": "Endeavour",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Endeavour",
+        "relativePath": "Endeavour"
+      },
+      {
+        "name": "Falling Skies",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Falling Skies",
+        "relativePath": "Falling Skies"
+      },
+      {
+        "name": "Family Guy",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Family Guy",
+        "relativePath": "Family Guy"
+      },
+      {
+        "name": "Fargo",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Fargo",
+        "relativePath": "Fargo"
+      },
+      {
+        "name": "Friends",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Friends",
+        "relativePath": "Friends"
+      },
+      {
+        "name": "Futurama",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Futurama",
+        "relativePath": "Futurama"
+      },
+      {
+        "name": "Gravity Falls",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Gravity Falls",
+        "relativePath": "Gravity Falls"
+      },
+      {
+        "name": "House M.D",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/House M.D",
+        "relativePath": "House M.D"
+      },
+      {
+        "name": "How I Met Your Mother",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/How I Met Your Mother",
+        "relativePath": "How I Met Your Mother"
+      },
+      {
+        "name": "Investigation",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Investigation",
+        "relativePath": "Investigation"
+      },
+      {
+        "name": "Jackie Chan Adventures",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Jackie Chan Adventures",
+        "relativePath": "Jackie Chan Adventures"
+      },
+      {
+        "name": "just shoot me",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/just shoot me",
+        "relativePath": "just shoot me"
+      },
+      {
+        "name": "Justice League",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Justice League",
+        "relativePath": "Justice League"
+      },
+      {
+        "name": "Justice League Unlimited",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Justice League Unlimited",
+        "relativePath": "Justice League Unlimited"
+      },
+      {
+        "name": "King of the Hill",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/King of the Hill",
+        "relativePath": "King of the Hill"
+      },
+      {
+        "name": "Last Week Tonight With John Oliver",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Last Week Tonight With John Oliver",
+        "relativePath": "Last Week Tonight With John Oliver"
+      },
+      {
+        "name": "Malcolm in the Middle",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Malcolm in the Middle",
+        "relativePath": "Malcolm in the Middle"
+      },
+      {
+        "name": "Married With Children",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Married With Children",
+        "relativePath": "Married With Children"
+      },
+      {
+        "name": "Mission Hill",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Mission Hill",
+        "relativePath": "Mission Hill"
+      },
+      {
+        "name": "Mr. Robot",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Mr. Robot",
+        "relativePath": "Mr. Robot"
+      },
+      {
+        "name": "Only Fools And Horses",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Only Fools And Horses",
+        "relativePath": "Only Fools And Horses"
+      },
+      {
+        "name": "Over the Garden Wall",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Over the Garden Wall",
+        "relativePath": "Over the Garden Wall"
+      },
+      {
+        "name": "Pantheon",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Pantheon",
+        "relativePath": "Pantheon"
+      },
+      {
+        "name": "Parks and Recreation",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Parks and Recreation",
+        "relativePath": "Parks and Recreation"
+      },
+      {
+        "name": "Planet Earth",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Planet Earth",
+        "relativePath": "Planet Earth"
+      },
+      {
+        "name": "Planet.Earth.II.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Planet.Earth.II.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]",
+        "relativePath": "Planet.Earth.II.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]"
+      },
+      {
+        "name": "Raised by Wolves",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Raised by Wolves",
+        "relativePath": "Raised by Wolves"
+      },
+      {
+        "name": "Raising Hope",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Raising Hope",
+        "relativePath": "Raising Hope"
+      },
+      {
+        "name": "Reno 911!",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Reno 911!",
+        "relativePath": "Reno 911!"
+      },
+      {
+        "name": "Rick and Morty",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Rick and Morty",
+        "relativePath": "Rick and Morty"
+      },
+      {
+        "name": "Samurai Jack",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Samurai Jack",
+        "relativePath": "Samurai Jack"
+      },
+      {
+        "name": "Scene",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Scene",
+        "relativePath": "Scene"
+      },
+      {
+        "name": "Scrubs",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Scrubs",
+        "relativePath": "Scrubs"
+      },
+      {
+        "name": "Sealab 2021",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Sealab 2021",
+        "relativePath": "Sealab 2021"
+      },
+      {
+        "name": "Seinfeld",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Seinfeld",
+        "relativePath": "Seinfeld"
+      },
+      {
+        "name": "Shitts Creek",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Shitts Creek",
+        "relativePath": "Shitts Creek"
+      },
+      {
+        "name": "South Park",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/South Park",
+        "relativePath": "South Park"
+      },
+      {
+        "name": "Spartacus",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Spartacus",
+        "relativePath": "Spartacus"
+      },
+      {
+        "name": "Spider-man",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Spider-man",
+        "relativePath": "Spider-man"
+      },
+      {
+        "name": "Star Trek",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Star Trek",
+        "relativePath": "Star Trek"
+      },
+      {
+        "name": "Star Trek Discovery",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Star Trek Discovery",
+        "relativePath": "Star Trek Discovery"
+      },
+      {
+        "name": "Star Trek Lower Decks",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Star Trek Lower Decks",
+        "relativePath": "Star Trek Lower Decks"
+      },
+      {
+        "name": "Star Trek Next Generation",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Star Trek Next Generation",
+        "relativePath": "Star Trek Next Generation"
+      },
+      {
+        "name": "Star Trek Voyager",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Star Trek Voyager",
+        "relativePath": "Star Trek Voyager"
+      },
+      {
+        "name": "Stargate Atlantis",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Stargate Atlantis",
+        "relativePath": "Stargate Atlantis"
+      },
+      {
+        "name": "Station Eleven",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Station Eleven",
+        "relativePath": "Station Eleven"
+      },
+      {
+        "name": "Swamp Thing",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Swamp Thing",
+        "relativePath": "Swamp Thing"
+      },
+      {
+        "name": "Terra Nova",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Terra Nova",
+        "relativePath": "Terra Nova"
+      },
+      {
+        "name": "The Black List",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Black List",
+        "relativePath": "The Black List"
+      },
+      {
+        "name": "The Drew Carey Show",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Drew Carey Show",
+        "relativePath": "The Drew Carey Show"
+      },
+      {
+        "name": "The Falcon and The Winter Soldier",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Falcon and The Winter Soldier",
+        "relativePath": "The Falcon and The Winter Soldier"
+      },
+      {
+        "name": "The Great British Bake Off",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Great British Bake Off",
+        "relativePath": "The Great British Bake Off"
+      },
+      {
+        "name": "The IT Crowd",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The IT Crowd",
+        "relativePath": "The IT Crowd"
+      },
+      {
+        "name": "The Last of Us",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Last of Us",
+        "relativePath": "The Last of Us"
+      },
+      {
+        "name": "The League",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The League",
+        "relativePath": "The League"
+      },
+      {
+        "name": "The Leftovers",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Leftovers",
+        "relativePath": "The Leftovers"
+      },
+      {
+        "name": "The Mandalorian",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Mandalorian",
+        "relativePath": "The Mandalorian"
+      },
+      {
+        "name": "The Nevers",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Nevers",
+        "relativePath": "The Nevers"
+      },
+      {
+        "name": "The Night Of",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Night Of",
+        "relativePath": "The Night Of"
+      },
+      {
+        "name": "The Oblongs",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Oblongs",
+        "relativePath": "The Oblongs"
+      },
+      {
+        "name": "The Office (US)",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Office (US)",
+        "relativePath": "The Office (US)"
+      },
+      {
+        "name": "The Orville",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Orville",
+        "relativePath": "The Orville"
+      },
+      {
+        "name": "The Regular Show",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Regular Show",
+        "relativePath": "The Regular Show"
+      },
+      {
+        "name": "The Resort",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Resort",
+        "relativePath": "The Resort"
+      },
+      {
+        "name": "The Simpsons",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Simpsons",
+        "relativePath": "The Simpsons"
+      },
+      {
+        "name": "The Wire",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/The Wire",
+        "relativePath": "The Wire"
+      },
+      {
+        "name": "Titans",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Titans",
+        "relativePath": "Titans"
+      },
+      {
+        "name": "Transformers (1984)",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Transformers (1984)",
+        "relativePath": "Transformers (1984)"
+      },
+      {
+        "name": "Transformers Prime",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Transformers Prime",
+        "relativePath": "Transformers Prime"
+      },
+      {
+        "name": "Travel Man",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Travel Man",
+        "relativePath": "Travel Man"
+      },
+      {
+        "name": "True Detective (2014)",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/True Detective (2014)",
+        "relativePath": "True Detective (2014)"
+      },
+      {
+        "name": "Under the Dome",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Under the Dome",
+        "relativePath": "Under the Dome"
+      },
+      {
+        "name": "Westworld",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/Westworld",
+        "relativePath": "Westworld"
+      },
+      {
+        "name": "X-men The Animated Series",
+        "path": "/Volumes/Plex_Disk_4/TV Shows/X-men The Animated Series",
+        "relativePath": "X-men The Animated Series"
+      }
+    ],
+    "id": 1
+  },
+  {
+    "path": "/Volumes/Plex_Disk_4/Anime",
+    "accessible": true,
+    "freeSpace": 1655609688064,
+    "unmappedFolders": [
+      {
+        "name": "[CBM] Cowboy Bebop 1-26 Complete (Dual Audio) [BDRip-720p-8bit]",
+        "path": "/Volumes/Plex_Disk_4/Anime/[CBM] Cowboy Bebop 1-26 Complete (Dual Audio) [BDRip-720p-8bit]",
+        "relativePath": "[CBM] Cowboy Bebop 1-26 Complete (Dual Audio) [BDRip-720p-8bit]"
+      },
+      {
+        "name": "Berserk Dual Audio Complete BD",
+        "path": "/Volumes/Plex_Disk_4/Anime/Berserk Dual Audio Complete BD",
+        "relativePath": "Berserk Dual Audio Complete BD"
+      },
+      {
+        "name": "Claymore.JP,EN",
+        "path": "/Volumes/Plex_Disk_4/Anime/Claymore.JP,EN",
+        "relativePath": "Claymore.JP,EN"
+      },
+      {
+        "name": "Hunter x Hunter",
+        "path": "/Volumes/Plex_Disk_4/Anime/Hunter x Hunter",
+        "relativePath": "Hunter x Hunter"
+      },
+      {
+        "name": "Mahou Shoujo Madoka Magica",
+        "path": "/Volumes/Plex_Disk_4/Anime/Mahou Shoujo Madoka Magica",
+        "relativePath": "Mahou Shoujo Madoka Magica"
+      },
+      {
+        "name": "Trigun (The Complete Anime Series) [540p] [HEVC]",
+        "path": "/Volumes/Plex_Disk_4/Anime/Trigun (The Complete Anime Series) [540p] [HEVC]",
+        "relativePath": "Trigun (The Complete Anime Series) [540p] [HEVC]"
+      }
+    ],
+    "id": 2
+  }
+]
