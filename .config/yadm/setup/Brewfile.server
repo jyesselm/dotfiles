@@ -1,3 +1,6 @@
 # Server class (Plex server): the terminal Brewfile plus the terminal app and the keyboard remapper so the keyboard behaves the same.
 cask "karabiner-elements"
 cask "iterm2"
+
+# Seerr (Plex request app, built from source in ~/.local/share/seerr) needs Node 22; keg-only so the default node is unchanged.
+brew "node@22"
