@@ -5,4 +5,8 @@
 #   branch: main
 #   enabled: true
 path_prefix: '~'
-repos: []
+repos:
+- path: local/code/web/hotkeys
+  remote: https://github.com/jyesselm/hotkeys.git
+  branch: main
+  enabled: true
