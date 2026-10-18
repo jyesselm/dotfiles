@@ -1,2 +1,3 @@
-# Server class (Plex server): the terminal Brewfile plus the one desktop cask that makes the keyboard behave the same.
+# Server class (Plex server): the terminal Brewfile plus the terminal app and the keyboard remapper so the keyboard behaves the same.
 cask "karabiner-elements"
+cask "iterm2"
