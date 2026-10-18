@@ -1,0 +1,37 @@
+# Plex server media automation (OrbStack). Plex, Seerr and Transmission run natively;
+# these three ship unsigned macOS builds, so they run as Linux containers instead.
+# The media disk is mounted at its macOS path so Transmission, Plex and the containers see identical paths.
+# Up/update: docker-compose -f ~/.config/media-stack/compose.yml pull && docker-compose -f ~/.config/media-stack/compose.yml up -d
+x-common: &common
+  restart: unless-stopped
+  environment:
+    PUID: "501"
+    PGID: "20"
+    TZ: America/Chicago
+
+services:
+  radarr:
+    <<: *common
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    ports: ["7878:7878"]
+    volumes:
+      - ${HOME}/.local/share/radarr/config:/config
+      - /Volumes/Plex_Disk_4:/Volumes/Plex_Disk_4
+
+  sonarr:
+    <<: *common
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    ports: ["8989:8989"]
+    volumes:
+      - ${HOME}/.local/share/sonarr/config:/config
+      - /Volumes/Plex_Disk_4:/Volumes/Plex_Disk_4
+
+  prowlarr:
+    <<: *common
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    ports: ["9696:9696"]
+    volumes:
+      - ${HOME}/.local/share/prowlarr/config:/config

@@ -105,6 +105,11 @@ if [[ -d "/opt/homebrew/opt/openjdk/bin" ]]; then
   export JAVA_HOME="/opt/homebrew/opt/openjdk"
 fi
 
+# OrbStack's docker CLI (Plex server media stack) - appended
+if [[ -d "/Applications/OrbStack.app/Contents/MacOS/xbin" ]]; then
+  export PATH="$PATH:/Applications/OrbStack.app/Contents/MacOS/xbin"
+fi
+
 # TeX/LaTeX (macOS only)
 if [[ "$(uname)" == "Darwin" ]]; then
   for tex_path in /usr/local/texlive/*/bin/universal-darwin(N); do
