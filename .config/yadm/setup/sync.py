@@ -21,6 +21,7 @@ from typing import Dict, List, Tuple
 STATE_DIR = '.local/state/dotfiles/sync'
 PHASES = [('layout', 'Directory layout'),
           ('dotfiles', 'Dotfiles (yadm)'),
+          ('keys', 'SSH keys'),
           ('packages', 'Packages'),
           ('repos', 'Repositories (grc)'),
           ('apps', 'Home-made apps'),
@@ -35,6 +36,7 @@ HINTS = {  # printed by --status under a warn/failed phase: how to clear it
     'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with converge adopt-extras',
     'dotfiles': 'yadm status, then yadm pull --rebase origin main',
     'repos': 'fix the repo named above, then converge sync',
+    'keys': 'ssh-keygen -t ed25519 creates this computer\'s key; the next sync publishes it in setup/ssh-keys.txt',
     'doctor': 'converge doctor reruns the checks',
 }
 GLYPHS = {'ok': ('✓', '32'), 'changed': ('✓', '36'), 'skipped': ('-', '2'), 'warn': ('!', '33'), 'failed': ('✗', '31')}  # calm first
@@ -73,6 +75,18 @@ def commit_message(label: str, files: List[str]) -> str:
     if len(files) > 25:
         body.append('… and %d more' % (len(files) - 25))
     return 'sync(%s): %d %s\n\n%s' % (label, len(files), noun, '\n'.join(body))
+
+
+def key_id(line: str) -> str:
+    """type and base64 of a public-key line (the comment may differ per copy); '' for blanks and comments."""
+    parts = line.split()
+    return ' '.join(parts[:2]) if len(parts) >= 2 and not line.lstrip().startswith('#') else ''
+
+
+def missing_keys(wanted: List[str], present: List[str]) -> List[str]:
+    """Lines of wanted whose key is not already among present."""
+    have = {key_id(p) for p in present}
+    return [w for w in wanted if key_id(w) and key_id(w) not in have]
 
 
 def count_findings(stdout: str) -> Dict[str, int]:
@@ -507,6 +521,31 @@ class Sync:
             status = 'warn'
         done = (['committed %d' % len(files)] if files else []) + (['pulled'] if pulled else []) + (['pushed'] if pushed else [])
         return PhaseResult(status, ', '.join(done) or 'nothing to commit, up to date with origin', details)
+
+    def keys(self) -> PhaseResult:
+        """Append every public key in setup/ssh-keys.txt to ~/.ssh/authorized_keys, and this computer's own
+        ~/.ssh/id_ed25519.pub to that tracked list (the next dotfiles phase commits and pushes it)."""
+        listed = self.setup.assets / 'ssh-keys.txt'
+        authorized = self.root / '.ssh/authorized_keys'
+        own = self.root / '.ssh/id_ed25519.pub'
+        wanted = listed.read_text().splitlines() if listed.exists() else []
+        present = authorized.read_text().splitlines() if authorized.exists() else []
+        publish = missing_keys([own.read_text().strip()], wanted) if own.exists() else []
+        add = missing_keys(wanted + publish, present)
+        details = ['authorize:' + k.split()[-1] for k in add] + ['publish:' + k.split()[-1] for k in publish]
+        if not own.exists():
+            details.append('no ~/.ssh/id_ed25519.pub on this computer: it cannot log into the others')
+        if not (add or publish):
+            return PhaseResult('ok', '%d keys authorized' % len([p for p in present if key_id(p)]), details)
+        if not self.setup.args.plan:
+            if add:
+                authorized.parent.mkdir(mode=0o700, exist_ok=True)
+                authorized.parent.chmod(0o700)
+                authorized.write_text(''.join(line + '\n' for line in present + add))
+                authorized.chmod(0o600)
+            if publish:
+                listed.write_text(''.join(line + '\n' for line in wanted + publish))
+        return PhaseResult('changed', '%d keys authorized, %d published' % (len(add), len(publish)), details)
 
     def packages(self) -> PhaseResult:
         """Brewfiles on Mac; the dedicated tool environment elsewhere."""

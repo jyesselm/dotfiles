@@ -426,6 +426,29 @@ class StateTests(Base):
 
 
 class PhaseTests(Base):
+    def test_keys_authorizes_listed_keys_and_publishes_own(self):
+        sync = self.make()
+        sync.setup.assets = self.root / 'assets'
+        sync.setup.assets.mkdir()
+        listed = sync.setup.assets / 'ssh-keys.txt'
+        listed.write_text('# comment\nssh-ed25519 AAAA1 laptop\nssh-ed25519 AAAA2 studio\n')
+        (self.root / '.ssh').mkdir(mode=0o700)
+        (self.root / '.ssh/authorized_keys').write_text('ssh-ed25519 AAAA1 old-comment\nssh-rsa BBBB nas\n')
+        (self.root / '.ssh/id_ed25519.pub').write_text('ssh-ed25519 AAAA3 linux\n')
+        result = sync.keys()
+        self.assertEqual((result.status, result.summary), ('changed', '2 keys authorized, 1 published'))
+        self.assertEqual((self.root / '.ssh/authorized_keys').read_text(),
+                         'ssh-ed25519 AAAA1 old-comment\nssh-rsa BBBB nas\nssh-ed25519 AAAA2 studio\nssh-ed25519 AAAA3 linux\n')
+        self.assertEqual(oct((self.root / '.ssh/authorized_keys').stat().st_mode & 0o777), '0o600')
+        self.assertTrue(listed.read_text().endswith('ssh-ed25519 AAAA2 studio\nssh-ed25519 AAAA3 linux\n'))
+        again = sync.keys()
+        self.assertEqual((again.status, again.summary, again.details), ('ok', '4 keys authorized', []))
+        plan = self.make('--plan', '--profile', 'linux')
+        plan.setup.assets = sync.setup.assets
+        (self.root / '.ssh/authorized_keys').unlink()
+        self.assertEqual(plan.keys().status, 'changed')
+        self.assertFalse((self.root / '.ssh/authorized_keys').exists())
+
     def test_hotkeys_counts_and_warns_on_clash(self):
         sync = self.make('--profile', 'mac')
         script = self.root / 'local/code/web/hotkeys/scripts/check.js'

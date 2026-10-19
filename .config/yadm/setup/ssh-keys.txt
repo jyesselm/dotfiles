@@ -1,0 +1,3 @@
+# One public key per computer; the keys phase of converge sync appends them all to ~/.ssh/authorized_keys
+# and adds this computer's ~/.ssh/id_ed25519.pub here. Public keys only, this repo is public.
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN3k7GDjw+25A36tz6lCBvXne+50WpfLb7LBb9vMHv/U jyesselman2@laptop
