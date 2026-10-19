@@ -26,6 +26,10 @@ export PATH
 # 1Password into the login Keychain (one Touch ID); every shell loads them from there with no prompt and no op call.
 # `keys` shows which are set, `keys add NAME op://…` adds one and syncs.
 _KEYS=~/.zsh/secrets.refs
+_op_id() {   # newest Personal item titled $1 (several can share a title), or nothing
+  op item list --vault Personal --format json | python3 -c "import json,sys
+m=sorted((i['created_at'],i['id']) for i in json.load(sys.stdin) if i['title']=='$1'); print(m[-1][1] if m else '')"
+}
 keys() {
   local n r v
   case $1 in
@@ -40,10 +44,9 @@ keys() {
       if [[ -z $r ]]; then   # paste the value (hidden, not in history): a new 1Password API Credential, or a new value for it
         read -rs "v?Paste $2 (hidden): "; print
         [[ -n $v ]] || return 1
-        local id=$(op item list --vault Personal --format json | python3 -c "import json,sys
-m=sorted((i['created_at'],i['id']) for i in json.load(sys.stdin) if i['title']=='$2'); print(m[-1][1] if m else '')")
-        if [[ -n $id ]]; then op item edit "$id" "credential=$v" >/dev/null || return 1
-        else op item create --category 'API Credential' --title "$2" --vault Personal "credential=$v" >/dev/null || return 1; fi
+        local id=$(_op_id "$2")
+        if [[ -n $id ]]; then op item edit "$id" "credential=$v" </dev/null >/dev/null || return 1
+        else op item create --category 'API Credential' --title "$2" --vault Personal "credential=$v" </dev/null >/dev/null || return 1; fi
         r="op://Personal/$2/credential"
       elif [[ $r != op://* ]]; then r="op://Personal/$r/credential"
       fi
@@ -53,6 +56,48 @@ m=sorted((i['created_at'],i['id']) for i in json.load(sys.stdin) if i['title']==
         [[ -n ${(P)n} ]] && v=set || v=missing
         print "$n  $v  $r"
       done < $_KEYS ;;
+  esac
+}
+# Logins: `pw add NAME [url] [username]` saves a 1Password Login (password typed hidden, or Enter for a generated one; an existing
+# NAME gets the new password), `pw NAME` copies its password for 45 s, `pw` lists your logins,
+# `pw new [length|words]` copies a fresh random password (24 characters) or a five-word passphrase without saving it. Logins never enter the shell.
+pw() {
+  local id v
+  case $1 in
+    '') op item list --vault Personal --categories Login --format json | python3 -c "import json,sys
+print('\n'.join(sorted(i['title'] for i in json.load(sys.stdin))))" ;;
+    add) [[ -n $2 ]] || { print -u2 'usage: pw add NAME [url] [username]'; return 1 }
+      read -rs "v?Password for $2 (hidden; Enter to generate): "; print
+      id=$(_op_id "$2")
+      if [[ -n $id ]]; then
+        if [[ -n $v ]]; then op item edit "$id" "password=$v" </dev/null >/dev/null; else op item edit "$id" --generate-password=letters,digits,symbols,24 </dev/null >/dev/null; fi || return 1
+        print "updated $2"
+      else
+        local u=$4 a=(--category Login --title "$2" --vault Personal)
+        [[ -n $3 ]] && a+=(--url "$3")
+        [[ -z $u ]] && read -r "u?Username for $2: "
+        [[ -n $u ]] && a+=("username=$u")
+        if [[ -n $v ]]; then a+=("password=$v"); else a+=(--generate-password=letters,digits,symbols,24); fi
+        op item create "${a[@]}" </dev/null >/dev/null || return 1
+        print "saved $2"
+      fi
+      [[ -z $v ]] && pw "$2" ;;
+    new) local g=${2:-24}
+      python3 -c "import secrets,string,sys
+g=sys.argv[1]; sym='!@#%^&*-_=+?'
+if g=='words':
+    w=[l.strip().lower() for l in open('/usr/share/dict/words') if 4<=len(l.strip())<=8 and l.strip().isalpha()]
+    print('-'.join(secrets.choice(w) for _ in range(5))+'-'+str(10+secrets.randbelow(90)))
+else:
+    while True:   # until it has lower, upper, digit and symbol
+        p=''.join(secrets.choice(string.ascii_letters+string.digits+sym) for _ in range(int(g)))
+        if all(any(c in k for c in p) for k in (string.ascii_lowercase, string.ascii_uppercase, string.digits, sym)): break
+    print(p)" "$g" | tr -d '\n' | pbcopy || return 1
+      [[ $g == words ]] && print "copied a five-word passphrase; clears in 45 s" || print "copied a $g-character password; clears in 45 s"
+      ( sleep 45; pbcopy < /dev/null ) &! ;;
+    *) id=$(_op_id "$1"); [[ -n $id ]] || { print -u2 "pw: no login named $1 (pw lists them)"; return 1 }
+      op read "op://Personal/$id/password" | tr -d '\n' | pbcopy && print "copied $1's password; clears in 45 s"
+      ( sleep 45; pbcopy < /dev/null ) &! ;;
   esac
 }
 if [[ -f $_KEYS ]]; then

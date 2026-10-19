@@ -86,6 +86,8 @@ Existing shell/plugin/private-repository checkouts are retained, including local
 - API keys: in 1Password turn on Settings → Developer → Integrate with 1Password CLI, then run `keys sync` (one Touch ID). It copies
   every key named in `~/.zsh/secrets.refs` from 1Password into the login Keychain, where each shell reads it without a prompt.
   `keys add NAME` pastes a new key (hidden) into 1Password, or replaces its value; `keys` lists which are set. Values never go in a file.
+  Logins: `pw add NAME [url]` saves a 1Password Login (password hidden, or Enter to generate), `pw NAME` copies its password for
+  45 s, `pw` lists them; `pw new [length|words]` copies a fresh password or passphrase.
 
 The pending search-cli ↔ Yazi integration is a separate feature; this bootstrap installs their current configurations and tools.
 
