@@ -23,8 +23,8 @@ maximize=@as []
 unmaximize=@as []
 
 [org/gnome/shell/keybindings]
-# <Super>Up is Mac Ctrl+Up (Mission Control).
-toggle-overview=['<Shift><Control>space', '<Shift><Control><Alt><Super>x', '<Super>Up']
+# <Super>Up is Mac Ctrl+Up (Mission Control); Hyper+Space is Spotlight (type to search).
+toggle-overview=['<Shift><Control>space', '<Shift><Control><Alt><Super>x', '<Super>Up', '<Shift><Control><Alt><Super>space']
 screenshot=['<Shift><Super>3']
 show-screenshot-ui=['<Shift><Super>4', 'Print']
 focus-active-notification=@as []
