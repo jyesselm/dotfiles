@@ -37,6 +37,16 @@ services:
     volumes:
       - ${DATA_ROOT}/prowlarr/config:/config
 
+  # Cloudflare challenge helper, reached by Prowlarr over the stack network.
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: info
+    expose: ["8191"]
+
   # NordVPN tunnel. qBittorrent shares this container's network, so it has no internet unless the tunnel is up.
   # Its web UI port is published here, not on qbittorrent.
   gluetun:
@@ -89,6 +99,19 @@ services:
       timeout: 3s
       interval: 15s
       retries: 3
+
+  # Audiobooks with per-user progress; iPhone apps. Accounts and libraries are set up in its web UI.
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    ports: ["13378:80"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${DATA_ROOT}/audiobookshelf/config:/config
+      - ${DATA_ROOT}/audiobookshelf/metadata:/metadata
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
   # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
   homepage:

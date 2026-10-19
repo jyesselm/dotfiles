@@ -20,6 +20,15 @@
           type: seerr
           url: http://seerr:5055
           key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
+    - Audiobookshelf:
+        icon: audiobookshelf.svg
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:13378
+        siteMonitor: http://audiobookshelf:80/healthcheck
+        description: Audiobooks and podcasts
+        widget:
+          type: audiobookshelf
+          url: http://audiobookshelf:80
+          key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}"
 
 - Automation:
     - Radarr:
@@ -51,6 +60,11 @@
           type: prowlarr
           url: http://prowlarr:9696
           key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+
+    - FlareSolverr:
+        icon: flaresolverr.svg
+        siteMonitor: http://flaresolverr:8191
+        description: Cloudflare helper for Prowlarr
 
 - Downloads:
     - qBittorrent:

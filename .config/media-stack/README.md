@@ -9,6 +9,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Seerr | 5055 | Requests from you and your wife |
 | Radarr / Sonarr | 7878 / 8989 | Movies / TV: find, grab, rename, file |
 | Prowlarr | 9696 | Indexers, synced to Radarr and Sonarr |
+| FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
 | Homepage | 3000 | Dashboard |
 | Uptime Kuma | 3001 | Up/down history and alerts |
@@ -80,3 +81,11 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 6. **Repoint Plex** in the other apps: set `HOST_ADDR` to the Linux host's LAN IP (Plex uses host networking),
    and in Seerr → Settings → Plex use that IP too.
 7. `docker-compose up -d`, open the dashboard, and check every tile is green. Request one movie to test the chain.
+
+## FlareSolverr
+
+Prowlarr reaches FlareSolverr at `http://flaresolverr:8191` over the Compose network.
+The API is internal only; no host port is published. In Prowlarr → Settings → Indexers →
+Indexer Proxies, the FlareSolverr proxy uses the `flaresolverr` tag. The existing indexers carry this tag so the helper is available when needed. Assign the same tag
+to new indexers that need it. Prowlarr uses the proxy when an applicable indexer encounters
+Cloudflare protection. No persistent data directory is needed.
