@@ -83,6 +83,9 @@ Existing shell/plugin/private-repository checkouts are retained, including local
 - Run `converge doctor`. Use `:checkhealth` in Neovim for language-server/parser details.
 - If Git still expects `cursor --wait` but you chose terminal-only setup, use `git config --global core.editor nvim`.
 - A local override in `~/.zsh/local.zsh` can configure host-specific paths. Bootstrap preserves it.
+- API keys: in 1Password turn on Settings → Developer → Integrate with 1Password CLI, then run `keys sync` (one Touch ID). It copies
+  every key named in `~/.zsh/secrets.refs` from 1Password into the login Keychain, where each shell reads it without a prompt.
+  `keys add NAME` pastes a new key (hidden) into 1Password, or replaces its value; `keys` lists which are set. Values never go in a file.
 
 The pending search-cli ↔ Yazi integration is a separate feature; this bootstrap installs their current configurations and tools.
 

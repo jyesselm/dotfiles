@@ -17,6 +17,7 @@ brew "lsd"
 brew "jq"
 brew "uv"
 brew "gh"
+cask "1password-cli"   # `op`, for `keys sync` (~/.zsh/tools.zsh)
 brew "lazygit"
 brew "node"
 cask "font-jetbrains-mono-nerd-font"

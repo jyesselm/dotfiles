@@ -19,8 +19,49 @@ done
 unset dotfiles_brew_prefix
 export PATH
 
-# Load secrets (API tokens, etc.) - not tracked by yadm
+# Load secrets (API tokens, etc.) - not tracked by yadm; the old way, kept until every key is in secrets.refs
 [[ -f ~/.zsh/secrets.zsh ]] && source ~/.zsh/secrets.zsh
+
+# API keys: ~/.zsh/secrets.refs (tracked, no values) lists `NAME  op://vault/item/field`. `keys sync` copies the values from
+# 1Password into the login Keychain (one Touch ID); every shell loads them from there with no prompt and no op call.
+# `keys` shows which are set, `keys add NAME op://…` adds one and syncs.
+_KEYS=~/.zsh/secrets.refs
+keys() {
+  local n r v
+  case $1 in
+    sync)
+      while read -r n r; do
+        [[ -z $n || $n == \#* ]] && continue
+        v=$(op read "$r") || { print -u2 "keys: cannot read $n from $r"; continue }
+        security add-generic-password -U -s zsh-keys -a "$n" -w "$v" && export "$n=$v" && print "synced $n"
+      done < $_KEYS ;;
+    add) [[ $2 =~ '^[A-Z_][A-Z0-9_]*$' ]] || { print -u2 'usage: keys add NAME [1Password item | op://vault/item/field]'; return 1 }
+      r=$3
+      if [[ -z $r ]]; then   # paste the value (hidden, not in history): a new 1Password API Credential, or a new value for it
+        read -rs "v?Paste $2 (hidden): "; print
+        [[ -n $v ]] || return 1
+        local id=$(op item list --vault Personal --format json | python3 -c "import json,sys
+m=sorted((i['created_at'],i['id']) for i in json.load(sys.stdin) if i['title']=='$2'); print(m[-1][1] if m else '')")
+        if [[ -n $id ]]; then op item edit "$id" "credential=$v" >/dev/null || return 1
+        else op item create --category 'API Credential' --title "$2" --vault Personal "credential=$v" >/dev/null || return 1; fi
+        r="op://Personal/$2/credential"
+      elif [[ $r != op://* ]]; then r="op://Personal/$r/credential"
+      fi
+      sed -i '' "/^$2 /d" $_KEYS; print -r -- "$2  $r" >> $_KEYS && keys sync ;;
+    *) while read -r n r; do
+        [[ -z $n || $n == \#* ]] && continue
+        [[ -n ${(P)n} ]] && v=set || v=missing
+        print "$n  $v  $r"
+      done < $_KEYS ;;
+  esac
+}
+if [[ -f $_KEYS ]]; then
+  while read -r n r; do
+    [[ -z $n || $n == \#* ]] && continue
+    v=$(security find-generic-password -s zsh-keys -a "$n" -w 2>/dev/null) && export "$n=$v"
+  done < $_KEYS
+  unset n r v
+fi
 
 # Locale & Language
 export LANG="en_US.UTF-8"
