@@ -45,3 +45,4 @@ brew "rust"
 brew "colima"
 brew "ollama"
 brew "pymol"
+cask "android-platform-tools"   # `adb`, for the Onn 4K Pro travel kit (~/.config/media-stack/travel-onn.md)
