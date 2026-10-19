@@ -196,6 +196,10 @@ repos:
   remote: https://github.com/jyesselm/tasks.git
   branch: main
   enabled: true
+- path: local/code/python/music_dl
+  remote: https://github.com/jyesselm/music-dl.git
+  branch: main
+  enabled: true
 ignored_repos: []
 approved_accounts:
 - jyesselm
