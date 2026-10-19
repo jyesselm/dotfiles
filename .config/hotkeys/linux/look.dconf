@@ -1,0 +1,90 @@
+# GNOME look and feel matched to the Macs (~/.config/yadm/macos/preferences.plist); keys are in gnome.dconf.
+# Loaded with `dconf load /` by `converge sync`; a leading ~/ in a value becomes $HOME.
+# Themes, fonts and extensions are installed by personal-computer-setup (docs/ubuntu.md).
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+accent-color='blue'
+gtk-theme='WhiteSur-Dark-blue'
+icon-theme='WhiteSur-dark'
+cursor-theme='WhiteSur-cursors'
+font-name='Inter 11'
+monospace-font-name='JetBrainsMono Nerd Font 11'
+enable-hot-corners=false
+clock-format='12h'
+clock-show-weekday=true
+
+# Mac: close/minimize/zoom on the left; double-clicking a title bar zooms.
+[org/gnome/desktop/wm/preferences]
+button-layout='close,minimize,maximize:'
+titlebar-font='Inter Bold 11'
+action-double-click-titlebar='toggle-maximize'
+
+# Mac: InitialKeyRepeat 15 (225 ms), KeyRepeat 2 (30 ms); no natural scrolling.
+[org/gnome/desktop/peripherals/keyboard]
+delay=uint32 225
+repeat-interval=uint32 30
+
+[org/gnome/desktop/peripherals/mouse]
+natural-scroll=false
+
+[org/gnome/desktop/peripherals/touchpad]
+natural-scroll=false
+
+[org/gnome/nautilus/preferences]
+default-folder-viewer='list-view'
+
+[org/gnome/nautilus/list-view]
+use-tree-view=true
+
+[org/gnome/shell]
+enabled-extensions=['ding@rastersoft.com', 'ubuntu-dock@ubuntu.com', 'tiling-assistant@ubuntu.com', 'user-theme@gnome-shell-extensions.gcampax.github.com', 'blur-my-shell@aunetx', 'advanced-alt-tab@G-dH.github.com', 'focused-window-dbus@flexagoon.com', 'ubuntu-appindicators@ubuntu.com', 'logomenu@aryan_k', 'search-light@icedman.github.com']
+
+[org/gnome/shell/extensions/user-theme]
+name='WhiteSur-Dark-blue'
+
+# Mac Dock: bottom, auto-hide, 62 px tiles, Trash at the end.
+[org/gnome/shell/extensions/dash-to-dock]
+dock-position='BOTTOM'
+dock-fixed=false
+autohide=true
+intellihide=false
+extend-height=false
+dash-max-icon-size=62
+show-trash=true
+show-mounts=false
+custom-background-color=true
+background-color='#202020'
+transparency-mode='FIXED'
+background-opacity=0.35
+click-action='focus-or-appspread'
+
+[org/gnome/shell/extensions/blur-my-shell/dash-to-dock]
+blur=true
+static-blur=true
+brightness=0.6
+sigma=30
+
+[org/gnome/shell/extensions/blur-my-shell/panel]
+brightness=0.6
+sigma=30
+
+# Mac desktop: external and removable drives only.
+[org/gnome/shell/extensions/ding]
+show-home=false
+show-trash=false
+show-volumes=true
+show-network-volumes=false
+
+# Apple menu: the WhiteSur Apple logo, no separate Activities button.
+[org/gnome/shell/extensions/logo-menu]
+use-custom-icon=true
+custom-icon-path='~/.themes/WhiteSur-Dark-blue/gnome-shell/assets/activities-white.svg'
+show-activities-button=false
+menu-button-terminal='ghostty'
+menu-button-system-monitor='gnome-system-monitor'
+
+# Spotlight: Hyper+Space (Cmd+Space stays the tmux leader, as on the Macs).
+[org/gnome/shell/extensions/search-light]
+shortcut-search=['<Shift><Control><Alt><Super>space']
+blur-background=true

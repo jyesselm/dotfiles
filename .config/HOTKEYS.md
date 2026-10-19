@@ -46,11 +46,13 @@ from Alfred with **Hyper+/** (keyword `hk`). This file is only the rules; Hotkey
 ## Linux (home-gpu)
 
 Same keys, same meanings. Toshy plays Karabiner, GNOME plays Magnet and `open -a`. Both are set from
-`~/.config/hotkeys/linux/` by `converge sync`, so edit those files, not the live configs.
+`~/.config/hotkeys/linux/` by `converge sync` (`look.dconf` sets the Mac-like theme, dock and desktop),
+so edit those files, not the live configs.
 
-- Physical keys on a PC keyboard: Alt is ⌘, Win is ⌥, Ctrl is ⌃, Caps is Hyper (tap = Esc).
+- The Keychron K1 is in Mac mode and set to the Apple type, so its keycaps hold: ⌘ is ⌘, ⌥ is ⌥, Caps is Hyper (tap = Esc).
+- ⌃←/→ switch workspaces and ⌃↑ opens the overview, as with Spaces. Hyper+Space opens Search Light (Spotlight).
 - Hyper+letter focuses or launches an app through the dock order in `gnome.dconf`, so keep the two lists aligned.
-- Not on Linux: Hyper+1-6, numpad sixths (no tiling-assistant keys), Hyper+S/M/W/H/D/N/Q/V/Space/`/`
+- Not on Linux: Hyper+1-6, numpad sixths (no tiling-assistant keys), Hyper+S/M/W/H/D/N/Q/V/`/`
   (the app isn't installed or there's no Linux equivalent), and ⌘, → `s gui`.
 
 ## Where things live

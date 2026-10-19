@@ -1,4 +1,4 @@
-"""Linux hotkeys for converge sync: Toshy slices + GNOME keybindings from ~/.config/hotkeys/linux/."""
+"""Linux hotkeys and look for converge sync: Toshy slices + GNOME dconf files from ~/.config/hotkeys/linux/."""
 from __future__ import annotations
 
 import configparser
@@ -30,9 +30,17 @@ def splice(config: str, slices: Dict[str, str]) -> str:
     return config
 
 
+def dconf_same(current: str, wanted: str) -> bool:
+    """dconf prints 0.35 as 0.34999999999999998, so compare floats by value."""
+    try:
+        return current == wanted or abs(float(current) - float(wanted)) < 1e-9
+    except ValueError:
+        return False
+
+
 def dconf_keys(text: str) -> Dict[str, str]:
-    """{'/org/x/key': 'value'} from a `dconf load /` keyfile."""
-    parser = configparser.ConfigParser(interpolation=None, delimiters=('=',), comment_prefixes=('#',))
+    """{'/org/x/key': 'value'} from `dconf load /` keyfiles; a section may repeat across files."""
+    parser = configparser.ConfigParser(interpolation=None, delimiters=('=',), comment_prefixes=('#',), strict=False)
     parser.optionxform = str
     parser.read_string(text)
     return {'/%s/%s' % (section, key): value for section in parser.sections() for key, value in parser[section].items()}
@@ -56,8 +64,9 @@ def hotkeys(setup) -> Tuple[str, str, List[str]]:
             config.write_text(wanted)
             setup.run(['systemctl', '--user', 'restart', SERVICE])
 
-    keys = dconf_keys((source / 'gnome.dconf').read_text())
-    stale = [key for key, value in keys.items() if setup.read(['dconf', 'read', key]).stdout.strip() != value]
+    dconf = ''.join(f.read_text() + '\n' for f in sorted(source.glob('*.dconf'))).replace("'~/", "'%s/" % setup.root)
+    keys = dconf_keys(dconf)
+    stale = [key for key, value in keys.items() if not dconf_same(setup.read(['dconf', 'read', key]).stdout.strip(), value)]
     if stale:
         changed.append('%d GNOME keys' % len(stale))
         details += ['dconf: ' + key for key in stale[:10]]
@@ -65,7 +74,7 @@ def hotkeys(setup) -> Tuple[str, str, List[str]]:
             backup = setup.root / ('.local/state/dotfiles/dconf-%s.ini' % stamp)
             backup.parent.mkdir(parents=True, exist_ok=True)
             backup.write_text(setup.read_ok(['dconf', 'dump', '/'], 'dconf dump failed'))
-            setup.run(['dconf', 'load', '/'], input=(source / 'gnome.dconf').read_text(), text=True)
+            setup.run(['dconf', 'load', '/'], input=dconf, text=True)
 
     if plan:
         return 'ok', ('would update ' + ', '.join(changed)) if changed else 'up to date', details

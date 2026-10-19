@@ -36,6 +36,7 @@ class FakeSetup:
     def run(self, argv, **kwargs):
         if not self.args.plan:
             self.runs.append(argv)
+            self.loaded = kwargs.get('input')
 
 
 class PureTests(unittest.TestCase):
@@ -54,6 +55,11 @@ class PureTests(unittest.TestCase):
     def test_dconf_keys_keep_case_and_values(self):
         self.assertEqual(sl.dconf_keys(DCONF), {'/org/gnome/mutter/overlay-key': "''",
                                                 '/org/gnome/desktop/wm/keybindings/switch-windows': "['<Super>Tab']"})
+
+    def test_dconf_same_compares_floats_by_value(self):
+        self.assertTrue(sl.dconf_same('0.34999999999999998', '0.35'))
+        self.assertTrue(sl.dconf_same("'12h'", "'12h'"))
+        self.assertFalse(sl.dconf_same("'24h'", "'12h'"))
 
 
 class HotkeysTests(unittest.TestCase):
@@ -91,6 +97,13 @@ class HotkeysTests(unittest.TestCase):
         setup = FakeSetup(self.root, False, sl.dconf_keys(DCONF))
         self.assertEqual(sl.hotkeys(setup)[:2], ('ok', 'Toshy running, keys match'))
         self.assertEqual(setup.runs, [])
+
+    def test_every_dconf_file_loads_with_home_expanded(self):
+        (self.root / sl.HOTKEYS / 'look.dconf').write_text("[org/gnome/mutter]\ncenter-new-windows=true\n[x]\nicon='~/a.svg'\n")
+        setup = FakeSetup(self.root, False, sl.dconf_keys(DCONF))
+        self.assertEqual(sl.hotkeys(setup)[:2], ('changed', 'updated Toshy slices, 2 GNOME keys'))
+        self.assertEqual(setup.loaded.count('[org/gnome/mutter]'), 2)
+        self.assertIn("icon='%s/a.svg'" % self.root, setup.loaded)
 
     def test_toshy_down_warns_with_log(self):
         setup = FakeSetup(self.root, False, {}, active='failed')

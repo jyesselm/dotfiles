@@ -38,6 +38,9 @@ keymap("home-gpu terminals (Karabiner terminal rules)", {
     C("RC-j"):                  C("LC-j"),
     C("RC-k"):                  C("LC-k"),
     C("RC-l"):                  C("LC-l"),
+    C("LC-Left"):               C("Super-Left"),        # Ctrl+Left/Right/Up -> Spaces / Mission Control, as in GUI apps
+    C("LC-Right"):              C("Super-Right"),
+    C("LC-Up"):                 C("Super-Up"),
 }, when=lambda ctx: cnfg.screen_has_focus and ctx_app_is_terminal)
 
 keymap("home-gpu Cursor/VS Code", {
