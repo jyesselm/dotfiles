@@ -42,6 +42,10 @@ Approve **Always allow from this computer** if the TV asks.
 - Snappier menus: `adb shell settings put global window_animation_scale 0.5` (same for
   `transition_animation_scale`, `animator_duration_scale`).
 - Save every command that worked as `onn-setup.sh` next to this file, so a reset Onn is one run.
+- Projectivy, by remote (its settings open with
+  `adb shell am start -n com.spocky.projengmenu/.ui.sidePanels.settings.SettingsActivity`): Edit categories →
+  TV Apps → Grid on, Size XS, Advanced settings → Cards per row 5, Row count 2. Home button goes to Projectivy once
+  `onn-setup.sh` has disabled the Google TV launcher; the Onn reboots and wireless debugging must be re-enabled.
 
 ## 5. You: sign-ins (Claude never enters passwords)
 
