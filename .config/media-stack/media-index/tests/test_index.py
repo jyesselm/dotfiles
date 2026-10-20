@@ -62,3 +62,19 @@ def test_swap_candidate_needs_english_1080p_and_real_saving() -> None:
     assert not arr.is_swap_candidate({**release, "rejections": ["Hardcode subs found"]}, on_disk, two_hours)
     assert not arr.is_swap_candidate({**release, "size": 10**9}, on_disk, two_hours)  # micro-encode
     assert not arr.is_swap_candidate(release, 7 * 10**9, two_hours)  # under 30% smaller
+
+
+def test_shrink_queue_lists_only_worthwhile_files_of_shrink_titles() -> None:
+    import server
+
+    server.conn.execute("delete from files")
+    server.conn.execute("delete from decisions")
+    row = "insert into files (path, item, category, kind, size, mtime, nlink, duration_s, height, codec, probed)"
+    big = (7200.0, 1080, "h264", 1)
+    server.conn.execute(row + " values ('TV/A/1.mkv', 'TV/A', 'TV', 'video', 10e9, 0, 1, ?, ?, ?, ?)", big)
+    server.conn.execute(row + " values ('TV/A/2.mkv', 'TV/A', 'TV', 'video', 10e9, 0, 1, 7200, 1080, 'hevc', 1)")
+    server.conn.execute(row + " values ('TV/B/1.mkv', 'TV/B', 'TV', 'video', 10e9, 0, 1, ?, ?, ?, ?)", big)
+    server.set_decision("TV/A", "shrink")
+    server.set_decision("TV/B", "keep")
+    queue = server.shrink_queue()
+    assert [(t["item"], [f["path"] for f in t["files"]]) for t in queue] == [("TV/A", ["TV/A/1.mkv"])]

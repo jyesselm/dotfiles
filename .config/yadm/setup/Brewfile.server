@@ -3,3 +3,6 @@ cask "karabiner-elements"
 cask "iterm2"
 
 cask "orbstack"
+
+# Re-encoding shrink-marked titles with the hardware HEVC encoder (media-stack/media-index/shrink.py).
+brew "ffmpeg"

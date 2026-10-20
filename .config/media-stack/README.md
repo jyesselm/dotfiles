@@ -60,6 +60,21 @@ permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/Ple
 a torrent in `downloading/` free space only once the torrent is removed in qBittorrent too. Its database is
 `$DATA_ROOT/media-index/media-index.db`; don't open it from macOS while the container runs (use `docker exec`).
 
+**Shrink** titles are re-encoded on the Mac itself by `media-index/shrink.py` (Docker can't reach the hardware encoder).
+It reads `GET /api/shrink-queue`, encodes one file at a time with `hevc_videotoolbox` at quality 75 (scored VMAF ≥ 95,
+i.e. looks the same, on Blu-ray and DVD-rip samples), copies audio/subtitles, and writes `.mkv`. A result replaces the
+original only if its duration matches within 1 s and it is at least 20% smaller; the original moves to
+`_trash/<same path>`. Old SD and low-bitrate rips usually don't get 20% smaller at that quality, so they're kept as-is.
+After each title it asks Radarr/Sonarr to rescan and sets the title to Keep with a "shrunk" note. Torrent-hardlinked
+files are skipped (`--include-hardlinked` to override). Files that failed or weren't worth it are remembered in
+`~/.local/share/media-index/encode-skip.json` (delete a line to retry). Log: `~/.local/share/media-index/encode.log`.
+
+```sh
+python3 media-index/shrink.py run --dry-run                 # what's queued
+python3 media-index/shrink.py run --match "S02E05" --limit 1  # one file now
+python3 media-index/shrink.py install                       # nightly at 01:00; no new file starts after 08:00
+```
+
 ## Moving to Linux
 
 1. **Disk format.** `Plex_Disk_4` is journaled HFS+. Linux mounts it read-only unless journaling is turned off, so
