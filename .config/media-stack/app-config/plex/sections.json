@@ -1,0 +1,47 @@
+[
+  {
+    "key": "1",
+    "title": "Movies",
+    "type": "movie",
+    "agent": "tv.plex.agents.movie",
+    "paths": [
+      "/Volumes/Plex_Disk_4/Movies"
+    ]
+  },
+  {
+    "key": "4",
+    "title": "Anime",
+    "type": "show",
+    "agent": "tv.plex.agents.series",
+    "paths": [
+      "/Volumes/Plex_Disk_4/Anime"
+    ]
+  },
+  {
+    "key": "2",
+    "title": "TV Shows",
+    "type": "show",
+    "agent": "tv.plex.agents.series",
+    "paths": [
+      "/Volumes/Plex_Disk_4/TV Shows"
+    ]
+  },
+  {
+    "key": "3",
+    "title": "Music",
+    "type": "artist",
+    "agent": "tv.plex.agents.music",
+    "paths": [
+      "/Volumes/Plex_Disk_4/music"
+    ]
+  },
+  {
+    "key": "5",
+    "title": "Other Videos",
+    "type": "movie",
+    "agent": "com.plexapp.agents.none",
+    "paths": [
+      "/Volumes/Plex_Disk_4/Youtube"
+    ]
+  }
+]

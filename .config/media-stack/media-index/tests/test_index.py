@@ -14,6 +14,7 @@ def test_item_for_groups_one_level_below_category() -> None:
     assert index.item_for("Movies/Heat (1995)/Heat.mkv") == ("Movies/Heat (1995)", "Movies")
     assert index.item_for("Movies/loose.mkv") == ("Movies/loose.mkv", "Movies")
     assert index.item_for("log.tsv") == ("log.tsv", "(root)")
+    assert index.item_for("music/Ratatat/LP3/Shempi.mp3") == ("music/Ratatat/LP3/Shempi.mp3", "music")
 
 
 def test_title_key_ignores_year_and_quality() -> None:

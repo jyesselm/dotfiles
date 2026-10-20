@@ -6,11 +6,10 @@
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:32400/web
         siteMonitor: http://{{HOMEPAGE_VAR_HOST_ADDR}}:32400/identity
         description: Streaming
-        # Live streams/library counts: set HOMEPAGE_VAR_PLEX_TOKEN in .env, then uncomment.
-        # widget:
-        #   type: plex
-        #   url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:32400
-        #   key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+        widget:
+          type: plex
+          url: http://{{HOMEPAGE_VAR_HOST_ADDR}}:32400
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
     - Seerr:
         icon: overseerr.svg
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:5055

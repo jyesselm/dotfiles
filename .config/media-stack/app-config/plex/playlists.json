@@ -1,0 +1,139 @@
+[
+  {
+    "title": "2000s",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26album%2Edecade%3D2000"
+  },
+  {
+    "title": "2010s",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26album%2Edecade%3D2010"
+  },
+  {
+    "title": "90s",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26album%2Edecade%3D1990"
+  },
+  {
+    "title": "All Music",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10"
+  },
+  {
+    "title": "Anime & J-Rock",
+    "playlistType": "audio",
+    "smart": false,
+    "content": null,
+    "items": [
+      "〖 AnimeSongsLуrics 〗 — [FULL] Naruto OP 3 -『Kanashimi wo Yasashisa ni』- Original/English",
+      "9mm Parabellum Bullet — Sacrifice",
+      "9mm Parabellum Bullet — インフェルノ",
+      "Akatsuki Records — 愉快な墓場でごきげんよう - Another Lovely Day for this Lively Graveyard",
+      "ASIAN KUNG-FU GENERATION — Blood Circulator",
+      "ASIAN KUNG-FU GENERATION — A Flower Named You",
+      "ASIAN KUNG-FU GENERATION — Far and Beyond",
+      "ASIAN KUNG-FU GENERATION — Rewrite",
+      "ASIAN KUNG-FU GENERATION — After Dark",
+      "ASIAN KUNG-FU GENERATION — リライト",
+      "ASIAN KUNG-FU GENERATION — ブラッドサーキュレーター (Anime Size)",
+      "bobuloo200 — Numa Numa Naruto",
+      "Come — Hero's come back - Naruto Shippuuden 1st Opening song-_ukGQdvTYto",
+      "dancegaabriel — 祭 Japan (Matsuri Japan) - Re-Venge",
+      "emomarianiitah — Naruto Shippuden Opening 1",
+      "Frederic — オドループ",
+      "Give Heart Records — Erased Opening - Re:Re: 【English Dub Cover】Song by NateWantsToBattle",
+      "HIGH and MIGHTY COLOR — Ichirin no Hana",
+      "Kairô — 【鋼の錬金術師】オープニング  4「リライト」4k",
+      "KANA-BOON — ないものねだり",
+      "Kappashiro — 【東方Medieval Folk】 Bad Apple 「Idisi」",
+      "Kappashiro — 【東方Vocal／Irish Folk】 Adieu, to this Lively Graveyard 「Akatsuki Records」 【Subbed】",
+      "Kappashiro — 【東方Vocal／Rock】 酔生夢死 -Hedonism- 「Akatsuki Records」",
+      "little by little — 悲しみをやさしさに - Kanashimi wo Yasashisani ni",
+      "little by little — Kanashimi wo yasashisa ni",
+      "Maximum the Hormone — What's Up People",
+      "Mono no Aware — かむかもしかもにどもかも！ - Kamukamo-Shikamo-Nidomokamo!!",
+      "Multi-languages songs — Sailor Moon Opening Full (Catalán)",
+      "Nana Kitade — Kesenai Tsumi",
+      "NightCoreStar — Nightcore - Golden Time Lover (FMA: Brotherhood OP 3)",
+      "THE ORAL CIGARETTES — 狂乱 Hey Kids!!",
+      "THE ORAL CIGARETTES — 狂乱 Hey Kids!!",
+      "Reol — LUVORATORRRRRY!",
+      "REOL — LUVORATORRRRRY!",
+      "SCANDAL — 瞬間センチメンタル",
+      "Sukima Switch — ゴールデンタイムラバー - Golden Time Rubber",
+      "Sukima Switch — ゴールデンタイムラバー",
+      "Various Artists — 祭 JAPAN",
+      "Various Artists — Hitohira no Hanabira",
+      "Various Artists — Newsong",
+      "Various Artists — 【東方Vocal／Rock】 酔生夢死 -Hedonism- 「Akatsuki Records」-il8YoDYh2Do",
+      "Various Artists — 愉快な墓場でごきげんよう",
+      "Wagakki Band — 六兆年と一夜物語 (Re-Recording) - Rokuchounen-To-Ichiyamonogatari (Re-Recording)",
+      "六三四プロジェクト — Greatest Battle Music Of All Times- Need To Be Strong.mp3",
+      "六三四プロジェクト — Greatest Battle Music Of All Times- Strong and Strike.mp3",
+      "六三四プロジェクト — 激と撃",
+      "吉川慶 — Greatest Battle Music Of All Times- Stimulant.mp3",
+      "Frederic — Oddloop"
+    ]
+  },
+  {
+    "title": "Anime hits",
+    "playlistType": "audio",
+    "smart": false,
+    "content": null,
+    "items": [
+      "FLOW — GO!!!"
+    ]
+  },
+  {
+    "title": "Electronic",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26artist%2Egenre%3D114892"
+  },
+  {
+    "title": "Fresh ❤️",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26track.lastViewedAt%253C%253C%3D-1mon%26track.userRating%253E%253E%3D4%26group%3Dguid%26having%3Dmin(album.originallyAvailableAt)%26sort%3DlastViewedAt"
+  },
+  {
+    "title": "Hip-Hop & R&B",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26artist%2Egenre%3D115905%2C115119"
+  },
+  {
+    "title": "Not Played Yet",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26track%2EviewCount%3D0"
+  },
+  {
+    "title": "Pop & Rock",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26artist%2Egenre%3D114893"
+  },
+  {
+    "title": "Recently Added",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26album.addedAt%253E%253E%3D-1mon%26sort%3Dalbum.addedAt%3Adesc"
+  },
+  {
+    "title": "Recently Played",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26track.lastViewedAt%253E%253E%3D-2w%26group%3Dguid%26having%3Dmin(album.originallyAvailableAt)%26sort%3Dtrack.lastViewedAt%3Adesc"
+  },
+  {
+    "title": "❤️ Tracks",
+    "playlistType": "audio",
+    "smart": true,
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26track.userRating%253E%253E%3D4%26group%3Dguid%26having%3Dmin(album.originallyAvailableAt)%26sort%3Dtrack.lastRatedAt"
+  }
+]

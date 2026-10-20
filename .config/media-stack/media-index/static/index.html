@@ -86,6 +86,8 @@ input[type=search], select { font: inherit; color: var(--text); background: var(
 input[type=search] { flex: 1 1 220px; min-width: 0; }
 .chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 5px 11px; font-size: 13px; }
 .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.types { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.types b { font-weight: 500; opacity: .6; margin-left: 4px; }
 .count { color: var(--muted); font-size: 13px; margin-left: auto; }
 
 .list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
@@ -173,6 +175,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   <div class="tiles" id="tiles"></div>
 
   <div class="filters">
+    <div class="types" id="types" aria-label="Media type"></div>
     <input type="search" id="q" placeholder="Search titles…  ( / )">
     <select id="sort" aria-label="Sort">
       <option value="size">Biggest first</option>
@@ -181,7 +184,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
       <option value="new">Recently added</option>
       <option value="name">Name</option>
     </select>
-    <button class="chip" data-flag="unwatched">Never watched</button>
+    <button class="chip" data-flag="unwatched">Never watched/played</button>
     <button class="chip" data-flag="shrink">Can shrink</button>
     <button class="chip" data-flag="dupe">Possible duplicate</button>
     <button class="chip" data-flag="old">Old format</button>
@@ -190,7 +193,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   </div>
 
   <div class="list" id="list"><div class="empty">Loading…</div></div>
-  <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>Enter</kbd> files</div>
+  <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>p</kbd> play song · <kbd>Enter</kbd> files</div>
 </div>
 
 <div class="dock" id="dock"><span id="docktext"></span><button class="btn primary" id="trashbtn">Review &amp; move to trash</button></div>
@@ -235,7 +238,9 @@ const ago = (t) => {
 const hours = (s) => s >= 3600 ? (s / 3600).toFixed(1) + " h" : Math.round(s / 60) + " min";
 const res = (h) => !h ? "" : h >= 1500 ? "4K" : h >= 1000 ? "1080p" : h >= 700 ? "720p" : "SD " + h + "p";
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const inPlex = (it) => it.video_files > 0 && (state.summary?.plex_folders || []).includes(it.category);
+const inPlex = (it) => (it.video_files > 0 || it.audio_files > 0) && (state.summary?.plex_folders || []).includes(it.category);
+const isSong = (it) => it.category === "music" && it.audio_files > 0;
+const player = new Audio();
 const status = (it) => it.trashed_at ? "trashed" : it.decision || "undecided";
 
 async function api(path, body) {
@@ -257,6 +262,7 @@ function renderSummary() {
   $("diskline").textContent = `${gb(d.used)} of ${gb(d.total)} used · ${gb(d.free)} free`;
   $("diskpct").textContent = Math.round(d.used / d.total * 100) + "% full";
   renderScan(s.scan, s.plex_backup);
+  renderTypes(s.categories);
 
   const top = s.categories.slice(0, SERIES);
   const rest = s.categories.slice(SERIES).reduce((a, [, v]) => a + v, 0);
@@ -288,6 +294,15 @@ function renderSummary() {
   const del = t.delete;
   $("dock").classList.toggle("show", del.items > 0);
   $("docktext").textContent = `${del.items} title${del.items === 1 ? "" : "s"} · ${gb(del.size)} marked to delete`;
+}
+
+// One chip per top-level folder, so small ones (Music, Podcasts) are as easy to pick as Movies.
+const TYPE_ICONS = { Movies: "🎬", "TV Shows": "📺", Anime: "🍥", music: "♪", "Audio Books": "📚", Podcasts: "🎙", Youtube: "▶" };
+function renderTypes(categories) {
+  const label = (name) => (TYPE_ICONS[name] ? TYPE_ICONS[name] + " " : "") + name.charAt(0).toUpperCase() + name.slice(1);
+  $("types").innerHTML = `<button class="chip ${state.category ? "" : "on"}" data-cat="">All</button>` +
+    categories.map(([name, size]) => `<button class="chip ${state.category === name ? "on" : ""}" data-cat="${esc(name)}">${esc(label(name))}<b>${gb(size)}</b></button>`).join("");
+  for (const el of $("types").children) el.onclick = () => { state.category = el.dataset.cat || null; reset(); renderSummary(); };
 }
 
 function renderScan(scan, backup) {
@@ -361,7 +376,8 @@ function rowHtml(it, i, max) {
   if (it.height) meta.push(res(it.height));
   if (it.codecs) meta.push(it.codecs.replace(/,/g, ", "));
   if (it.duration_s) meta.push(hours(it.duration_s));
-  if (inPlex(it)) meta.push(it.last_viewed ? `watched ${ago(it.last_viewed)}${it.video_files > 1 ? ` (${it.watched_files}/${it.video_files})` : ""}` : "never watched in Plex");
+  if (inPlex(it) && isSong(it)) meta.push(it.plays ? `played ${it.plays}× · last ${ago(it.last_viewed)}` : "never played in Plex");
+  else if (inPlex(it)) meta.push(it.last_viewed ? `watched ${ago(it.last_viewed)}${it.video_files > 1 ? ` (${it.watched_files}/${it.video_files})` : ""}` : "never watched in Plex");
   if (it.trashed_at) meta.push(`moved to trash ${ago(it.trashed_at)}`);
   const badges = [];
   if (it.shrink_saving > 0) badges.push(`<span class="badge shrink">⇣ ~${gb(it.shrink_saving)} smaller as HEVC</span>`);
@@ -370,20 +386,39 @@ function rowHtml(it, i, max) {
   if (isBig(it)) badges.push(`<button class="linkbtn" data-swap>⇄ Find smaller 1080p</button>`);
   if (it.swap) badges.push(`<span class="badge swap" title="${esc(it.swap.release)}">⇄ Swapped ${ago(it.swap.swapped_at)}: ${gb(it.swap.original_size)} → ${gb(it.swap.release_size)} (original in _trash)</span>`);
   if (it.freeable < it.size && !it.trashed_at) badges.push(`<span class="badge" title="Hardlinked with a torrent in downloading/; deleting frees space only once the torrent is removed too">Shared with torrent · frees ${gb(it.freeable)}</span>`);
+  if (isSong(it) && !it.trashed_at) badges.push(`<button class="linkbtn" data-play>${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
   if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
   const d = status(it);
   const actions = it.trashed_at
     ? `<div class="seg"><button data-restore>↺ Restore</button></div>`
     : `<div class="seg">
         <button class="keep ${d === "keep" ? "on" : ""}" data-d="keep">✓ Keep</button>
-        <button class="shrink ${d === "shrink" ? "on" : ""}" data-d="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient' style='opacity:.45;cursor:default'"}>⇣ Shrink</button>
+        ${isSong(it) ? "" : `<button class="shrink ${d === "shrink" ? "on" : ""}" data-d="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient' style='opacity:.45;cursor:default'"}>⇣ Shrink</button>`}
         <button class="delete ${d === "delete" ? "on" : ""}" data-d="delete">✕ Delete</button></div>`;
   return `<div class="row d-${d} ${i === state.sel ? "sel" : ""}" data-i="${i}">
-    <div><div class="title"><small>${esc(cat)}</small>${esc(name.join("/") || cat)}</div>
+    <div><div class="title">${isSong(it) ? songTitle(name) : `<small>${esc(cat)}</small>${esc(name.join("/") || cat)}`}</div>
       <div class="meta">${meta.map(esc).join(" · ")}</div>${badges.length ? `<div class="badges">${badges.join("")}</div>` : ""}</div>
     <div class="size">${gb(it.size)}<div class="track"><div class="fill" style="width:${it.size / max * 100}%"></div></div></div>
     ${actions}</div>`;
 }
+
+// music/<Artist>/<Album>/<Song>.mp3 → "Song" with "Artist · Album" above it.
+function songTitle([artist, ...rest]) {
+  const song = rest.pop() || artist;
+  const album = rest.join("/");
+  return `<small>${esc(artist)}${album && album !== "Unknown Album" ? " · " + esc(album) : ""}</small>${esc(song.replace(/\.[^.]+$/, ""))}`;
+}
+
+const playing = (it) => it && player.dataset.item === it.item && !player.paused;
+function play(it) {
+  if (!isSong(it) || it.trashed_at) return;
+  if (playing(it)) player.pause();
+  else {
+    if (player.dataset.item !== it.item) { player.src = "/api/audio?item=" + encodeURIComponent(it.item); player.dataset.item = it.item; }
+    player.play();
+  }
+}
+player.onplay = player.onpause = () => renderList();
 
 function bindRows(shown) {
   for (const row of document.querySelectorAll(".row")) {
@@ -391,6 +426,8 @@ function bindRows(shown) {
     row.querySelector(".title").onclick = () => toggleDetail(i);
     row.onclick = () => select(i);
     for (const b of row.querySelectorAll("[data-d]")) b.onclick = () => decide(it, it.decision === b.dataset.d ? null : b.dataset.d);
+    const pl = row.querySelector("[data-play]");
+    if (pl) pl.onclick = (e) => { e.stopPropagation(); play(it); };
     const sw = row.querySelector("[data-swap]");
     if (sw) sw.onclick = (e) => { e.stopPropagation(); openSwap(it); };
     const r = row.querySelector("[data-restore]");
@@ -486,16 +523,21 @@ async function openSwap(it) {
 }
 $("scancel").onclick = () => $("swapdlg").close();
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", async (e) => {
   if (e.target.matches("input, select") || $("confirm").open || $("swapdlg").open) return;
   const rows = visible().slice(0, state.shown);
   const keys = { j: () => select(Math.min(state.sel + 1, rows.length - 1)), k: () => select(Math.max(state.sel - 1, 0)),
     1: () => decide(rows[state.sel], "keep"), 2: () => decide(rows[state.sel], "shrink"), 3: () => decide(rows[state.sel], "delete"),
-    0: () => decide(rows[state.sel], null), Enter: () => toggleDetail(state.sel), "/": () => $("q").focus() };
+    0: () => decide(rows[state.sel], null), Enter: () => toggleDetail(state.sel), "/": () => $("q").focus(),
+    p: () => play(rows[state.sel]) };
   const fn = keys[e.key];
   if (!fn) return;
   e.preventDefault();
-  fn();
+  const wasPlaying = !player.paused;
+  await fn();
+  // While a song plays, moving or deciding plays whichever song is now selected, so triage is hands-on-keys.
+  const now = visible().slice(0, state.shown)[state.sel];
+  if (wasPlaying && e.key !== "p" && isSong(now) && !playing(now)) play(now);
   document.querySelector(".row.sel")?.scrollIntoView({ block: "nearest" });
 });
 

@@ -26,7 +26,7 @@ without Seerr: add artists in Lidarr, which files albums into `music/` (Plex Mus
 - `.env`: untracked, this machine's paths and keys. Template: `env.example`.
 - `$DATA_ROOT/<app>/config` (and `$DATA_ROOT/uptime-kuma`): each app's settings and database. Not tracked; this is
   what you copy to move the stack.
-- `app-config/`: tracked, secret-free JSON of each app's settings (custom formats, quality profiles, naming, root
+- `app-config/`: tracked, secret-free JSON of each app's settings (Plex libraries and playlists, custom formats, quality profiles, naming, root
   folders, download clients, Prowlarr apps, Seerr settings). Refresh with `./export-config.sh` after changing
   settings, then commit. It's the reference for rebuilding an app by hand if `$DATA_ROOT` is lost; API keys,
   passwords and indexers are left out, so re-enter those.
@@ -59,7 +59,9 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 `media-index/` indexes the disk daily (sizes, ffprobe video info, watch history from Plex's dated database backups) and
 serves a review page on 8686. Mark each title Keep, Shrink (worth re-encoding to HEVC) or Delete. "Move to trash"
 renames Delete items into `Plex_Disk_4/_trash/` and unmonitors them in Radarr/Sonarr; restore from the page. Nothing is
-permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/Plex_Disk_4/_trash/*`. Items hardlinked with
+permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/Plex_Disk_4/_trash/*`. Music is reviewed per song:
+pick ♪ Music in the type chips, press `p` (or ▶) to listen, and `1`/`3` keep or delete; while a song plays, moving or deciding plays
+the next one. Plex's automatic scan drops trashed songs from the library. Items hardlinked with
 a torrent in `downloading/` free space only once the torrent is removed in qBittorrent too. Its database is
 `$DATA_ROOT/media-index/media-index.db`; don't open it from macOS while the container runs (use `docker exec`).
 

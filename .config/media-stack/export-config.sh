@@ -36,4 +36,21 @@ dump lidarr 8687 v1 "$(env_val HOMEPAGE_VAR_LIDARR_KEY)" qualityprofile metadata
 dump prowlarr 9696 v1 "$(env_val HOMEPAGE_VAR_PROWLARR_KEY)" applications appprofile tag indexerproxy
 mkdir -p "$out/seerr"
 clean <"$(env_val DATA_ROOT)/seerr/config/settings.json" >"$out/seerr/settings.json"
+# Plex (native, not in compose): library settings and playlists. Smart playlists keep their filter; regular ones
+# list "artist — title" so they can be rebuilt by hand.
+plex() { curl -fsS -H "Accept: application/json" "http://localhost:32400$1?X-Plex-Token=$(env_val HOMEPAGE_VAR_PLEX_TOKEN)"; }
+mkdir -p "$out/plex"
+plex /library/sections | jq '[.MediaContainer.Directory[] | {key, title, type, agent, paths: [.Location[].path]}]' \
+  >"$out/plex/sections.json"
+for key in $(jq -r '.[].key' "$out/plex/sections.json"); do
+  plex "/library/sections/$key/prefs" | jq '[.MediaContainer.Setting[] | {(.id): .value}] | add'
+done | jq -s 'map(.)' >"$out/plex/section-prefs.json"
+plex /playlists | jq -r '.MediaContainer.Metadata[] | .ratingKey' | while read -r id; do
+  pl=$(plex "/playlists/$id" | jq '.MediaContainer.Metadata[0] | {title, playlistType, smart, content}')
+  if [ "$(jq .smart <<<"$pl")" = false ]; then
+    plex "/playlists/$id/items" | jq --argjson pl "$pl" \
+      '$pl + {content: null, items: [.MediaContainer.Metadata[]? | "\(.grandparentTitle // .parentTitle // "") — \(.title)"]}'
+  else echo "$pl"; fi
+done | jq -s 'sort_by(.title)' >"$out/plex/playlists.json"
+
 echo "Wrote $out/. Check 'git diff' before committing."

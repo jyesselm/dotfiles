@@ -76,7 +76,7 @@ select f.item, f.category, sum(f.size) as size, count(*) as files,
        sum(f.duration_s) as duration_s, max(f.height) as height,
        group_concat(distinct f.codec) as codecs, max(f.mtime) as mtime,
        max(f.last_viewed) as last_viewed, sum(f.view_count > 0) as watched_files,
-       sum(f.kind = 'video') as video_files,
+       sum(f.kind = 'video') as video_files, sum(f.kind = 'audio') as audio_files, sum(f.view_count) as plays,
        d.decision, d.note, d.trashed_at
 from files f left join decisions d on d.item = f.item
 group by f.item
@@ -109,6 +109,10 @@ def _flag_duplicates(items: dict[str, dict]) -> None:
     for name, item in items.items():
         if item["video_files"]:
             by_title.setdefault(index.title_key(name), []).append(name)
+        elif item["audio_files"] and item["category"] == index.MUSIC_CATEGORY:
+            # Same artist and song in any album: music/<Artist>/<Album>/<Song>.mp3
+            parts = name.split("/")
+            by_title.setdefault("♪" + index.title_key(f"{parts[1]} {Path(parts[-1]).stem}"), []).append(name)
     for title, names in by_title.items():
         for name in names:
             items[name]["duplicates"] = [n for n in names if n != name] if title else []
@@ -384,6 +388,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(swap_options(parse_qs(url.query).get("item", [""])[0]))
         elif url.path == "/api/shrink-queue":
             self._json(shrink_queue())
+        elif url.path == "/api/audio":
+            self._audio(parse_qs(url.query).get("item", [""])[0])
         else:
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
 
@@ -406,6 +412,29 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": True})
         else:
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
+
+    def _audio(self, item: str) -> None:
+        """Stream a song for the page's preview player, with Range support so the browser can seek."""
+        path = (index.MEDIA_ROOT / item).resolve()
+        if not item or index.kind_for(path.name) != "audio" or index.MEDIA_ROOT.resolve() not in path.parents:
+            self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
+            return
+        size = path.stat().st_size
+        start, end = 0, size - 1
+        ranged = (self.headers.get("Range") or "").removeprefix("bytes=")
+        if ranged:
+            first, _, last = ranged.partition("-")
+            start, end = int(first or 0), min(int(last or end), end)
+        self.send_response(HTTPStatus.PARTIAL_CONTENT if ranged else HTTPStatus.OK)
+        self.send_header("Content-Type", "audio/mpeg" if path.suffix.lower() == ".mp3" else "audio/" + path.suffix[1:])
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(end - start + 1))
+        if ranged:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.end_headers()
+        with path.open("rb") as f:
+            f.seek(start)
+            self.wfile.write(f.read(end - start + 1))
 
     def _json(self, value: object) -> None:
         self._send(HTTPStatus.OK, json.dumps(value).encode(), "application/json")

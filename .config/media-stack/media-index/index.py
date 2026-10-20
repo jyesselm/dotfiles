@@ -1,7 +1,8 @@
 """Scan the media disk into a SQLite index: one row per file, grouped into reviewable items.
 
 An item is a title-sized unit: the folder (or loose file) one level under a top-level folder,
-e.g. "Movies/Heat (1995)" or "TV Shows/The Wire". Decisions are made per item.
+e.g. "Movies/Heat (1995)" or "TV Shows/The Wire". Music is reviewed song by song, so each file under
+"music/" is its own item. Decisions are made per item.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", "/Volumes/Plex_Disk_4"))
 DB_PATH = Path(os.environ.get("INDEX_DB", "/data/media-index.db"))
 PLEX_DB_DIR = Path(os.environ.get("PLEX_DB_DIR", "/plex-db"))
 TRASH_NAME = "_trash"
+MUSIC_CATEGORY = "music"
 
 VIDEO_EXTS = {"mkv", "mp4", "avi", "m4v", "mpg", "mpeg", "mov", "wmv", "ts", "webm", "flv"}
 AUDIO_EXTS = {"mp3", "m4b", "m4a", "flac", "aac", "ogg", "wav", "opus"}
@@ -129,11 +131,14 @@ def item_for(rel_path: str) -> tuple[str, str]:
         rel_path: e.g. "Movies/Heat (1995)/Heat.mkv".
 
     Returns:
-        ("Movies/Heat (1995)", "Movies"); loose files at the root are their own item in "(root)".
+        ("Movies/Heat (1995)", "Movies"); loose files at the root are their own item in "(root)",
+        and each music file is its own item.
     """
     parts = rel_path.split("/")
     if len(parts) == 1:
         return rel_path, "(root)"
+    if parts[0] == MUSIC_CATEGORY:
+        return rel_path, parts[0]
     return "/".join(parts[:2]), parts[0]
 
 
@@ -241,7 +246,11 @@ def _upsert_walk(conn: sqlite3.Connection, root: Path) -> set[str]:
     for f in walk(root):
         seen.add(f.path)
         if known.get(f.path) == (f.size, f.mtime):
-            conn.execute("update files set nlink = ? where path = ?", (f.nlink, f.path))
+            # item/category too, so a change to how items are grouped applies without re-probing.
+            conn.execute(
+                "update files set nlink = ?, item = ?, category = ? where path = ?",
+                (f.nlink, f.item, f.category, f.path),
+            )
             continue
         conn.execute(
             "insert or replace into files (path, item, category, kind, size, mtime, nlink, probed)"
