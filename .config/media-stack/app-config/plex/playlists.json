@@ -110,7 +110,7 @@
     "title": "Low Quality (under 160 kbps)",
     "playlistType": "audio",
     "smart": true,
-    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26track%2EmediaBitrate%253C%253C%3D160"
+    "content": "library://x/directory/%2Flibrary%2Fsections%2F3%2Fall%3Ftype%3D10%26track%2EmediaBitrate%3C%3C%3D160000"
   },
   {
     "title": "Not Played Yet",
