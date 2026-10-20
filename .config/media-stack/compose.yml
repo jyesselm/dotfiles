@@ -38,6 +38,24 @@ services:
       - ${DATA_ROOT}/lidarr/config:/config
       - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
+  # Single songs: paste a Spotify song/album/playlist link; audio comes from YouTube Music, tags from Spotify,
+  # saved as music/<Artist>/<Album>/<Song>.mp3 for Plex. For whole albums in better quality, use Lidarr.
+  spotdl:
+    build: ./spotdl
+    container_name: spotdl
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    ports: ["8800:8800"]
+    environment:
+      HOME: /config
+    command: >-
+      web --host 0.0.0.0 --port 8800 --keep-alive --web-use-output-dir --allowed-origins "*"
+      --format mp3 --bitrate auto --overwrite skip
+      --output "/Volumes/Plex_Disk_4/music/{album-artist}/{album}/{title}.{output-ext}"
+    volumes:
+      - ${DATA_ROOT}/spotdl:/config
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+
   # Music discovery: Last.fm artists similar to the ones in Lidarr; one click adds an artist to Lidarr.
   # Host port 8688 because macOS's AirPlay Receiver holds 5000. Login: admin + SONOBARR_ADMIN_PASSWORD.
   sonobarr:

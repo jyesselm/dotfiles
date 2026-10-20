@@ -1,5 +1,5 @@
 {
-  "autoUnmonitorPreviouslyDownloadedTracks": false,
+  "autoUnmonitorPreviouslyDownloadedTracks": true,
   "recycleBin": "",
   "recycleBinCleanupDays": 7,
   "downloadPropersAndRepacks": "preferAndUpgrade",

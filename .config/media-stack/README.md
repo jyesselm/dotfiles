@@ -8,6 +8,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Plex (native on the Mac) | 32400 | Streaming |
 | Seerr | 5055 | Requests from you and your wife |
 | Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
+| spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
@@ -20,7 +21,9 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `Movies` / `TV Shows` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
-Music library, Plexamp app).
+Music library, Plexamp app). Lidarr only fetches whole albums, so for one song paste its Spotify link into spotDL instead;
+if spotDL fails with YouTube 403/429 errors, `docker-compose build --pull spotdl && docker-compose up -d spotdl`.
+Lidarr unmonitors tracks you delete, so trimming an album in Media Index doesn't re-download it.
 
 ## Files
 

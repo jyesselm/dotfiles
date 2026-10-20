@@ -87,6 +87,11 @@
           type: lidarr
           url: http://lidarr:8686
           key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
+    - spotDL:
+        icon: mdi-music-note-plus
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8800
+        siteMonitor: http://spotdl:8800
+        description: Single songs from a Spotify link
     - Sonobarr:
         icon: mdi-music-circle-outline
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8688
