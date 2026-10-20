@@ -71,7 +71,9 @@ files are skipped (`--include-hardlinked` to override). Files that failed or wer
 `~/.local/share/media-index/encode-skip.json` (delete a line to retry). Log: `~/.local/share/media-index/encode.log`.
 Run from launchd, Homebrew's `ffmpeg`/`ffprobe` need macOS's Removable Volumes permission, which is tied to the exact
 binary: allow both once at the Mac and keep them with `brew pin ffmpeg` (re-allow after any upgrade). Without it the
-nightly run logs "ffprobe can't read" and stops.
+nightly run logs "ffprobe can't read" and stops. macOS won't let launchd's Python change the disk at all, so the
+final swap (original to `_trash`, encode into place) is done by the container via `POST /api/shrink-finish`; the
+media-index container must be up for a run to finish a file.
 
 ```sh
 python3 media-index/shrink.py run --dry-run                 # what's queued

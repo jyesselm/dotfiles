@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, urlparse
 
 import arr
 import index
+import shrink
 
 PORT = int(os.environ.get("PORT", "8686"))
 RESCAN_EVERY_S = 24 * 3600
@@ -275,6 +276,22 @@ def restore(item: str) -> dict:
     return {"item": item, "ok": True, "message": "restored (re-monitor it in Radarr/Sonarr if you want upgrades)"}
 
 
+def shrink_finish(rel: str, replace: bool) -> dict:
+    """Finish a host re-encode for shrink.py, which macOS doesn't let change the disk under launchd.
+
+    Args:
+        rel: The original file, relative to MEDIA_ROOT.
+        replace: Original to _trash and encode into its place; otherwise delete the encode.
+
+    Returns:
+        {"ok", "message"}.
+    """
+    src = (index.MEDIA_ROOT / rel).resolve()
+    if index.MEDIA_ROOT not in src.parents or TRASH in src.parents:
+        return {"ok": False, "message": "path outside the library"}
+    return shrink.swap_in_encode(index.MEDIA_ROOT, rel, replace)
+
+
 def swap_options(item: str) -> dict:
     """Smaller English 1080p releases Radarr can find for a movie.
 
@@ -382,6 +399,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(restore(body["item"]))
         elif path == "/api/swap":
             self._json(swap(body["item"], body["release"]))
+        elif path == "/api/shrink-finish":
+            self._json(shrink_finish(body["path"], bool(body.get("replace"))))
         elif path == "/api/scan":
             threading.Thread(target=run_scan, daemon=True).start()
             self._json({"ok": True})

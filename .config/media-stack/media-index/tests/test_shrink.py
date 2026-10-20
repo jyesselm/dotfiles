@@ -33,7 +33,7 @@ def test_deadline_is_the_next_occurrence() -> None:
 @pytest.fixture
 def media(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(shrink, "MEDIA_ROOT", tmp_path)
-    monkeypatch.setattr(shrink, "TRASH", tmp_path / "_trash")
+    monkeypatch.setattr(shrink, "finish", lambda rel, replace: shrink.swap_in_encode(tmp_path, rel, replace))
     (tmp_path / "TV Shows" / "Show").mkdir(parents=True)
     return tmp_path
 

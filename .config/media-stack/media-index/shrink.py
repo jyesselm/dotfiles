@@ -27,7 +27,6 @@ from pathlib import Path
 import arr  # Radarr/Sonarr client shared with the container; only its request() is used here
 
 MEDIA_ROOT = Path("/Volumes/Plex_Disk_4")
-TRASH = MEDIA_ROOT / "_trash"
 API = "http://localhost:8686/api"
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 STATE_DIR = Path.home() / ".local/share/media-index"
@@ -124,6 +123,50 @@ def gb(size: float) -> str:
     return f"{size / 1e9:.2f} GB"
 
 
+def encode_paths(root: Path, rel: str) -> tuple[Path, Path, Path, Path]:
+    """Paths for re-encoding one file.
+
+    Args:
+        root: Media root.
+        rel: Original file, relative to root.
+
+    Returns:
+        (original, final .mkv, hidden encode output, place in _trash). Plex and the index skip dotfiles.
+    """
+    src = root / rel
+    final = src.with_suffix(".mkv")
+    return src, final, src.with_name(f".{final.stem}.shrinking.mkv"), root / "_trash" / rel
+
+
+def swap_in_encode(root: Path, rel: str, replace: bool) -> dict:
+    """Move the original to _trash and the encode into its place, or delete the encode. Runs in the container.
+
+    Args:
+        root: Media root.
+        rel: Original file, relative to root.
+        replace: Swap the encode in; otherwise discard it.
+
+    Returns:
+        {"ok", "message"}.
+    """
+    src, final, tmp, trash = encode_paths(root, rel)
+    if not tmp.exists():
+        return {"ok": False, "message": "no encode output"}
+    if not replace:
+        tmp.unlink()  # our own encode, never an original
+        return {"ok": True, "message": "encode discarded"}
+    if not src.exists() or trash.exists() or (final != src and final.exists()):
+        return {"ok": False, "message": "original missing, or something is already at the .mkv path or in _trash"}
+    trash.parent.mkdir(parents=True, exist_ok=True)
+    src.rename(trash)
+    try:
+        tmp.rename(final)
+    except OSError:
+        trash.rename(src)
+        raise
+    return {"ok": True, "message": "replaced"}
+
+
 def shrink_file(rel: str, include_hardlinked: bool, dry_run: bool) -> tuple[str, int, int]:
     """Re-encode one file in place (original to _trash).
 
@@ -136,10 +179,7 @@ def shrink_file(rel: str, include_hardlinked: bool, dry_run: bool) -> tuple[str,
         (outcome, bytes before, bytes after). Outcome is "done", "already", "kept" (encode not worth it),
         "skipped" (hardlinked) or "failed: <reason>".
     """
-    src = MEDIA_ROOT / rel
-    final = src.with_suffix(".mkv")
-    tmp = src.with_name(f".{final.stem}.shrinking.mkv")  # hidden: the index and Plex skip dotfiles
-    trash = TRASH / rel
+    src, final, tmp, trash = encode_paths(MEDIA_ROOT, rel)
     if not src.exists():
         return ("already" if final.exists() else "failed: missing"), 0, 0
     size = src.stat().st_size
@@ -155,26 +195,39 @@ def shrink_file(rel: str, include_hardlinked: bool, dry_run: bool) -> tuple[str,
     if dry_run:
         log.info("  would encode (%s)", gb(size))
         return "dry run", size, size
-    tmp.unlink(missing_ok=True)  # our own partial output from an interrupted run
     started = time.time()
     proc = subprocess.run(encode_cmd(src, tmp, info), capture_output=True, text=True, check=False)
     if proc.returncode != 0:
-        tmp.unlink(missing_ok=True)
+        finish(rel, replace=False)
         return f"failed: ffmpeg: {proc.stderr.strip()[-300:]}", size, size
     reason = check_output(info, tmp, size)
     new_size = tmp.stat().st_size
     if reason:
-        tmp.unlink()
+        finish(rel, replace=False)
         return ("kept" if reason.startswith("not worth") else f"failed: {reason}"), size, new_size
-    trash.parent.mkdir(parents=True, exist_ok=True)
-    src.rename(trash)
-    try:
-        tmp.rename(final)
-    except OSError:
-        trash.rename(src)
-        raise
+    done = finish(rel, replace=True)
+    if not done["ok"]:
+        return f"failed: {done['message']}", size, new_size
     log.info("  %s -> %s in %.0f min", gb(size), gb(new_size), (time.time() - started) / 60)
     return "done", size, new_size
+
+
+def finish(rel: str, replace: bool) -> dict:
+    """Have the media-index container swap in or discard the encode of rel.
+
+    macOS blocks Python (but not ffmpeg) from changing the external disk under launchd; the container can.
+
+    Args:
+        rel: Original file, relative to MEDIA_ROOT.
+        replace: Original to _trash and encode into place; otherwise delete the encode.
+
+    Returns:
+        The API's {"ok", "message"}.
+    """
+    try:
+        return arr.request(f"{API}/shrink-finish", "", {"path": rel, "replace": replace}, "POST")
+    except OSError as err:
+        return {"ok": False, "message": f"media-index unreachable ({err})"}
 
 
 def read_env(path: Path = ENV_FILE) -> dict[str, str]:
