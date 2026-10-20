@@ -100,6 +100,15 @@ input[type=search] { flex: 1 1 220px; min-width: 0; }
 .badge { font-size: 11.5px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); }
 .badge.shrink { background: var(--shrink-bg); color: var(--shrink); }
 .badge.warn { background: var(--warn-bg); color: var(--warn); }
+.badge.swap { background: var(--keep-bg); color: var(--keep); }
+.linkbtn { border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 6px; padding: 1px 8px; font-size: 11.5px; font-weight: 600; }
+.linkbtn:hover { background: var(--shrink-bg); }
+.opt { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; cursor: pointer; }
+.opt:hover, .opt:has(input:checked) { border-color: var(--accent); background: var(--surface-2); }
+.opt .t { overflow-wrap: anywhere; font-size: 13px; }
+.opt .m { color: var(--muted); font-size: 12px; }
+.opt .z { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.opt .z small { display: block; color: var(--keep); font-weight: 500; }
 .size { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .size .track { height: 4px; background: var(--free); border-radius: 2px; margin-top: 6px; }
 .size .fill { height: 100%; background: var(--accent); border-radius: 2px; }
@@ -176,6 +185,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
     <button class="chip" data-flag="shrink">Can shrink</button>
     <button class="chip" data-flag="dupe">Possible duplicate</button>
     <button class="chip" data-flag="old">Old format</button>
+    <button class="chip" data-flag="big">Oversized movies</button>
     <span class="count" id="count"></span>
   </div>
 
@@ -191,6 +201,14 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   <div class="sub">These folders move to <code>Plex_Disk_4/_trash</code>, which is on the same disk, so it's instant and you can restore them from the Trash tile. Radarr/Sonarr stop monitoring them so they aren't downloaded again. Nothing is permanently deleted until you empty <code>_trash</code> yourself.</div>
   <ul id="clist"></ul>
   <div class="actions"><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="go">Move to trash</button></div>
+</dialog>
+
+<dialog id="swapdlg">
+  <h2 id="stitle"></h2>
+  <div class="sub" id="ssub"></div>
+  <div id="sopts"></div>
+  <div class="sub" style="margin-top:12px;font-size:12.5px">On Swap, the current file moves to <code>_trash</code> (restore it by hand if needed), Radarr notices it's gone and downloads the release you picked. Plex shows the movie again once the download finishes.</div>
+  <div class="actions"><button class="btn" id="scancel">Cancel</button><button class="btn primary" id="sgo" disabled>Swap</button></div>
 </dialog>
 
 <script>
@@ -215,7 +233,7 @@ const ago = (t) => {
   return Math.round(days / 365) + " years ago";
 };
 const hours = (s) => s >= 3600 ? (s / 3600).toFixed(1) + " h" : Math.round(s / 60) + " min";
-const res = (h) => !h ? "" : h >= 2000 ? "4K" : h >= 1000 ? "1080p" : h >= 700 ? "720p" : "SD " + h + "p";
+const res = (h) => !h ? "" : h >= 1500 ? "4K" : h >= 1000 ? "1080p" : h >= 700 ? "720p" : "SD " + h + "p";
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const inPlex = (it) => it.video_files > 0 && (state.summary?.plex_folders || []).includes(it.category);
 const status = (it) => it.trashed_at ? "trashed" : it.decision || "undecided";
@@ -292,12 +310,16 @@ function tip(e, text) {
   el.style.top = e.clientY + 14 + "px";
 }
 
+const GB_PER_HOUR_OVERSIZED = 6e9; // a good 1080p movie encode is ~2-4 GB/hour
+const isBig = (it) => it.category === "Movies" && it.video_files > 0 && !it.trashed_at && !it.swap &&
+  ((it.height || 0) >= 1600 || (it.duration_s && it.size / (it.duration_s / 3600) > GB_PER_HOUR_OVERSIZED));
 const isOld = (it) => (it.codecs || "").split(",").some((c) => OLD_CODECS.includes(c));
 const FLAGS = {
   unwatched: (it) => inPlex(it) && !it.watched_files,
   shrink: (it) => it.shrink_saving > 0,
   dupe: (it) => (it.duplicates || []).length > 0,
   old: isOld,
+  big: isBig,
 };
 const SORTS = {
   size: (a, b) => b.size - a.size,
@@ -345,6 +367,8 @@ function rowHtml(it, i, max) {
   if (it.shrink_saving > 0) badges.push(`<span class="badge shrink">⇣ ~${gb(it.shrink_saving)} smaller as HEVC</span>`);
   if ((it.duplicates || []).length) badges.push(`<span class="badge warn" title="${esc(it.duplicates.join("\n"))}">Possible duplicate: ${esc(it.duplicates[0])}${it.duplicates.length > 1 ? ` +${it.duplicates.length - 1}` : ""}</span>`);
   if (isOld(it)) badges.push(`<span class="badge warn">Old format</span>`);
+  if (isBig(it)) badges.push(`<button class="linkbtn" data-swap>⇄ Find smaller 1080p</button>`);
+  if (it.swap) badges.push(`<span class="badge swap" title="${esc(it.swap.release)}">⇄ Swapped ${ago(it.swap.swapped_at)}: ${gb(it.swap.original_size)} → ${gb(it.swap.release_size)} (original in _trash)</span>`);
   if (it.freeable < it.size && !it.trashed_at) badges.push(`<span class="badge" title="Hardlinked with a torrent in downloading/; deleting frees space only once the torrent is removed too">Shared with torrent · frees ${gb(it.freeable)}</span>`);
   if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
   const d = status(it);
@@ -367,6 +391,8 @@ function bindRows(shown) {
     row.querySelector(".title").onclick = () => toggleDetail(i);
     row.onclick = () => select(i);
     for (const b of row.querySelectorAll("[data-d]")) b.onclick = () => decide(it, it.decision === b.dataset.d ? null : b.dataset.d);
+    const sw = row.querySelector("[data-swap]");
+    if (sw) sw.onclick = (e) => { e.stopPropagation(); openSwap(it); };
     const r = row.querySelector("[data-restore]");
     if (r) r.onclick = async () => { const out = await api("/api/restore", { item: it.item }); alert(out.message); load(); };
   }
@@ -433,8 +459,35 @@ $("go").onclick = async () => {
   load();
 };
 
+async function openSwap(it) {
+  const name = it.item.split("/").slice(1).join("/");
+  $("stitle").textContent = `Smaller 1080p for ${name}`;
+  $("ssub").textContent = `Now ${gb(it.size)}${it.height ? " · " + res(it.height) : ""}. Searching your indexers through Radarr (can take up to a minute)…`;
+  $("sopts").innerHTML = "";
+  $("sgo").disabled = true;
+  $("swapdlg").showModal();
+  const out = await api("/api/swap-options?item=" + encodeURIComponent(it.item));
+  if (!out.options?.length) { $("ssub").textContent = out.message || "Nothing found."; return; }
+  $("ssub").textContent = `Now ${gb(out.current_size)}. English 1080p releases, HEVC first, then most seeders:`;
+  $("sopts").innerHTML = out.options.map((o, i) => `<label class="opt"><input type="radio" name="rel" value="${i}" ${i ? "" : "checked"}>
+    <div><div class="t">${esc(o.title)}</div><div class="m">${esc(o.quality)} · ${o.seeders} seeders · ${esc(o.indexer)}</div></div>
+    <div class="z">${gb(o.size)}<small>saves ${gb(out.current_size - o.size)}</small></div></label>`).join("");
+  $("sgo").disabled = false;
+  $("sgo").onclick = async () => {
+    const pick = out.options[+document.querySelector("input[name=rel]:checked").value];
+    $("sgo").disabled = true;
+    $("sgo").textContent = "Swapping…";
+    const res = await api("/api/swap", { item: it.item, release: pick });
+    $("sgo").textContent = "Swap";
+    $("swapdlg").close();
+    alert(res.message);
+    load();
+  };
+}
+$("scancel").onclick = () => $("swapdlg").close();
+
 document.addEventListener("keydown", (e) => {
-  if (e.target.matches("input, select") || $("confirm").open) return;
+  if (e.target.matches("input, select") || $("confirm").open || $("swapdlg").open) return;
   const rows = visible().slice(0, state.shown);
   const keys = { j: () => select(Math.min(state.sel + 1, rows.length - 1)), k: () => select(Math.max(state.sel - 1, 0)),
     1: () => decide(rows[state.sel], "keep"), 2: () => decide(rows[state.sel], "shrink"), 3: () => decide(rows[state.sel], "delete"),

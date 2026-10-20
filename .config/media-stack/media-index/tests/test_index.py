@@ -42,3 +42,23 @@ def test_shrink_saving_skips_hevc_and_estimates_h264() -> None:
     assert server.shrink_saving(h264) == 10 * 10**9 - int(two_hours * 4_000_000 / 8)
     assert server.shrink_saving({**h264, "codec": "hevc"}) == 0
     assert server.shrink_saving({**h264, "size": 4 * 10**9}) == 0  # saving under 30%
+
+
+def test_swap_candidate_needs_english_1080p_and_real_saving() -> None:
+    import arr
+
+    two_hours = 2.0
+    release = {
+        "title": "Movie.2019.1080p.BluRay.x265-GRP",
+        "quality": {"quality": {"name": "Bluray-1080p"}},
+        "seeders": 50,
+        "languages": [{"name": "English"}],
+        "size": 6 * 10**9,
+        "rejections": ["Existing file and the Quality profile does not allow upgrades"],
+    }
+    on_disk = 30 * 10**9
+    assert arr.is_swap_candidate(release, on_disk, two_hours)
+    assert not arr.is_swap_candidate({**release, "title": "Movie 2019 1080p ITA x265"}, on_disk, two_hours)
+    assert not arr.is_swap_candidate({**release, "rejections": ["Hardcode subs found"]}, on_disk, two_hours)
+    assert not arr.is_swap_candidate({**release, "size": 10**9}, on_disk, two_hours)  # micro-encode
+    assert not arr.is_swap_candidate(release, 7 * 10**9, two_hours)  # under 30% smaller

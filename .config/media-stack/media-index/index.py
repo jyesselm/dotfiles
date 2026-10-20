@@ -52,6 +52,14 @@ create table if not exists decisions (
     trashed_at real,
     size integer                -- bytes, recorded when moved to _trash
 );
+create table if not exists swaps (      -- movies replaced by a smaller release; original kept in _trash
+    item text primary key,
+    original text not null,
+    original_size integer not null,
+    release text not null,
+    release_size integer not null,
+    swapped_at real not null
+);
 create table if not exists state (key text primary key, value text not null);
 """
 

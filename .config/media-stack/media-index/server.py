@@ -1,8 +1,8 @@
 """Review server: browse the index, record keep/delete/shrink decisions, move deletions to _trash.
 
 Nothing is deleted here. "Move to trash" renames items into MEDIA_ROOT/_trash (same disk, instant,
-reversible) and unmonitors them in Radarr/Sonarr so they aren't downloaded again. Emptying the
-trash is done by hand.
+reversible) and unmonitors them in Radarr/Sonarr so they aren't downloaded again. "Swap for 1080p"
+moves a movie's file to _trash and has Radarr grab a smaller release. Emptying the trash is done by hand.
 """
 
 from __future__ import annotations
@@ -12,12 +12,12 @@ import os
 import shutil
 import threading
 import time
-import urllib.request
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+import arr
 import index
 
 PORT = int(os.environ.get("PORT", "8686"))
@@ -31,11 +31,6 @@ DECISIONS = {"keep", "delete", "shrink"}
 HEVC_TARGET_BPS = [(2000, 15_000_000), (1000, 4_000_000), (700, 2_500_000), (0, 1_200_000)]
 EFFICIENT_CODECS = ("hevc", "h265", "av1", "vp9")
 MIN_SHRINK_SAVING = 0.3  # only suggest re-encoding when it saves at least 30%
-
-ARR = {
-    "radarr": ("http://radarr:7878/api/v3", "movie", os.environ.get("RADARR_KEY", "")),
-    "sonarr": ("http://sonarr:8989/api/v3", "series", os.environ.get("SONARR_KEY", "")),
-}
 
 conn = index.connect()
 db_lock = threading.Lock()
@@ -97,8 +92,10 @@ def load_items() -> list[dict]:
         items = {r["item"]: dict(r) for r in conn.execute(ITEMS_SQL)}
         files = [dict(r) for r in conn.execute("select item, kind, size, codec, duration_s, height from files")]
         trashed = [dict(r) for r in conn.execute("select * from decisions where trashed_at is not null")]
-    for item in items.values():
+        swaps = {r["item"]: dict(r) for r in conn.execute("select * from swaps")}
+    for name, item in items.items():
         item["shrink_saving"] = 0
+        item["swap"] = swaps.get(name)
     for f in files:
         items[f["item"]]["shrink_saving"] += shrink_saving(f)
     _flag_duplicates(items)
@@ -157,6 +154,32 @@ def summary() -> dict:
         "plex_backup": plex_backup,
         "plex_folders": plex_folders,
     }
+
+
+SHRINK_QUEUE_SQL = """
+select d.item, d.note, f.path, f.kind, f.size, f.nlink, f.codec, f.duration_s, f.height
+from decisions d join files f on f.item = d.item
+where d.decision = 'shrink' and d.trashed_at is null
+order by d.item, f.path
+"""
+
+
+def shrink_queue() -> list[dict]:
+    """Titles marked shrink with the files worth re-encoding, for the host-side encoder (shrink.py).
+
+    Returns:
+        One dict per title: item, note, files (path, size, nlink, codec, duration_s, height, saving).
+    """
+    with db_lock:
+        rows = [dict(r) for r in conn.execute(SHRINK_QUEUE_SQL)]
+    titles: dict[str, dict] = {}
+    for row in rows:
+        saving = shrink_saving(row)
+        if saving > 0:
+            title = titles.setdefault(row["item"], {"item": row["item"], "note": row["note"], "files": []})
+            keep = ("path", "size", "nlink", "codec", "duration_s", "height")
+            title["files"].append({**{k: row[k] for k in keep}, "saving": saving})
+    return list(titles.values())
 
 
 def _decision_totals(items: list[dict]) -> dict:
@@ -222,7 +245,7 @@ def _trash_one(item: str) -> dict:
     if not src.exists():
         return {"item": item, "ok": False, "message": "not found on disk"}
     size = sum(f.stat().st_size for f in src.rglob("*") if f.is_file()) if src.is_dir() else src.stat().st_size
-    unmonitored = unmonitor(src)
+    unmonitored = arr.unmonitor(src)
     dest = TRASH / item
     dest.parent.mkdir(parents=True, exist_ok=True)
     src.rename(dest)
@@ -252,36 +275,59 @@ def restore(item: str) -> dict:
     return {"item": item, "ok": True, "message": "restored (re-monitor it in Radarr/Sonarr if you want upgrades)"}
 
 
-def unmonitor(path: Path) -> str:
-    """Unmonitor the Radarr movie or Sonarr series stored at path, so it isn't downloaded again.
+def swap_options(item: str) -> dict:
+    """Smaller English 1080p releases Radarr can find for a movie.
 
     Args:
-        path: Absolute item path (the same inside every container).
+        item: Item key, e.g. "Movies/First Man (2018)".
 
     Returns:
-        A short message, or "" when no app manages the path.
+        {"ok", "message", "current_size", "options"}.
     """
-    for app, (base, kind, key) in ARR.items():
-        if not key:
-            continue
-        try:
-            entries = _arr(f"{base}/{kind}", key)
-            match = next((e for e in entries if e.get("path") == str(path)), None)
-            if match:
-                _arr(f"{base}/{kind}/editor", key, {f"{kind}Ids": [match["id"]], "monitored": False})
-                return f"moved; unmonitored in {app}"
-        except OSError as err:
-            return f"moved; {app} unreachable ({err})"
-    return ""
+    movie = arr.find_by_path("radarr", index.MEDIA_ROOT / item)
+    if not movie or not movie.get("movieFile"):
+        return {"ok": False, "message": "Radarr doesn't manage a file for this title", "options": []}
+    with db_lock:
+        duration_s = conn.execute("select sum(duration_s) from files where item = ?", (item,)).fetchone()[0]
+    hours = (duration_s or movie.get("runtime", 0) * 60) / 3600
+    options = arr.swap_options(movie, hours)
+    message = "" if options else "No smaller English 1080p release with enough seeders right now"
+    return {"ok": True, "message": message, "current_size": movie["movieFile"]["size"], "options": options}
 
 
-def _arr(url: str, key: str, body: dict | None = None) -> list[dict]:
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method="PUT" if body else "GET")
-    req.add_header("X-Api-Key", key)
-    req.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read() or b"[]")
+def swap(item: str, release: dict) -> dict:
+    """Move a movie's file to _trash, let Radarr notice it's missing, then grab the chosen release.
+
+    Args:
+        item: Item key.
+        release: One entry from swap_options (guid, indexerId, title, size).
+
+    Returns:
+        Result dict: ok, message.
+    """
+    movie = arr.find_by_path("radarr", index.MEDIA_ROOT / item)
+    if not movie or not movie.get("movieFile"):
+        return {"ok": False, "message": "Radarr doesn't manage a file for this title"}
+    original = index.MEDIA_ROOT / item / movie["movieFile"]["relativePath"]
+    shared = original.stat().st_nlink > 1
+    dest = TRASH / item / original.name
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    original.rename(dest)
+    arr.rescan_movie(movie["id"])
+    arr.grab(release["guid"], release["indexerId"])
+    _record_swap(item, dest, release)
+    threading.Thread(target=run_scan, daemon=True).start()
+    note = " The old file is still seeding in qBittorrent; remove that torrent to free its space." if shared else ""
+    return {"ok": True, "message": f"Original moved to _trash; Radarr is downloading {release['title']}.{note}"}
+
+
+def _record_swap(item: str, original: Path, release: dict) -> None:
+    with db_lock:
+        conn.execute(
+            "insert or replace into swaps values (?, ?, ?, ?, ?, ?)",
+            (item, str(original), original.stat().st_size, release["title"], release["size"], time.time()),
+        )
+        conn.commit()
 
 
 scan_lock = threading.Lock()
@@ -317,6 +363,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(load_items())
         elif url.path == "/api/files":
             self._json(_files(parse_qs(url.query).get("item", [""])[0]))
+        elif url.path == "/api/swap-options":
+            self._json(swap_options(parse_qs(url.query).get("item", [""])[0]))
+        elif url.path == "/api/shrink-queue":
+            self._json(shrink_queue())
         else:
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
 
@@ -330,6 +380,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(move_to_trash())
         elif path == "/api/restore":
             self._json(restore(body["item"]))
+        elif path == "/api/swap":
+            self._json(swap(body["item"], body["release"]))
         elif path == "/api/scan":
             threading.Thread(target=run_scan, daemon=True).start()
             self._json({"ok": True})
