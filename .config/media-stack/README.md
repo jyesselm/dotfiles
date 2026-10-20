@@ -68,6 +68,9 @@ original only if its duration matches within 1 s and it is at least 20% smaller;
 After each title it asks Radarr/Sonarr to rescan and sets the title to Keep with a "shrunk" note. Torrent-hardlinked
 files are skipped (`--include-hardlinked` to override). Files that failed or weren't worth it are remembered in
 `~/.local/share/media-index/encode-skip.json` (delete a line to retry). Log: `~/.local/share/media-index/encode.log`.
+Run from launchd, Homebrew's `ffmpeg`/`ffprobe` need macOS's Removable Volumes permission, which is tied to the exact
+binary: allow both once at the Mac and keep them with `brew pin ffmpeg` (re-allow after any upgrade). Without it the
+nightly run logs "ffprobe can't read" and stops.
 
 ```sh
 python3 media-index/shrink.py run --dry-run                 # what's queued

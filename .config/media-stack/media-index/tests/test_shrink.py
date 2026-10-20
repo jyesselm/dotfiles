@@ -82,3 +82,15 @@ def test_shrink_title_marks_keep_when_every_file_is_done(monkeypatch: pytest.Mon
     assert calls[0] == ("rescan", "TV Shows/Show")
     assert calls[1][1]["decision"] == "keep" and "0.00 GB" in calls[1][1]["note"]
     assert budget["left"] == 8
+
+
+def test_can_read_disk_fails_when_probe_is_blocked(media: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (media / "TV Shows" / "Show" / "ep.avi").write_bytes(b"x")
+    queue = [
+        {"item": "TV Shows/Show", "files": [{"path": "TV Shows/Show/missing.avi"}, {"path": "TV Shows/Show/ep.avi"}]}
+    ]
+    monkeypatch.setattr(shrink, "ffprobe", lambda path: {})
+    assert not shrink.can_read_disk(queue)
+    monkeypatch.setattr(shrink, "ffprobe", lambda path: {"format": {"duration": "1"}})
+    assert shrink.can_read_disk(queue)
+    assert shrink.can_read_disk([])

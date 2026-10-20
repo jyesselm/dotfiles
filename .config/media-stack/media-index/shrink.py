@@ -39,6 +39,7 @@ LOCK = STATE_DIR / "encode.lock"
 QUALITY = 75
 MIN_SAVING = 0.2  # keep the original unless the encode is at least 20% smaller
 DURATION_TOLERANCE_S = 1.0
+PROBE_TIMEOUT_S = 120  # a probe blocked by a macOS privacy prompt nobody answers would otherwise hang for hours
 ARR = {
     "Movies": ("http://localhost:7878/api/v3", "movie", "HOMEPAGE_VAR_RADARR_KEY", "RescanMovie"),
     "TV Shows": ("http://localhost:8989/api/v3", "series", "HOMEPAGE_VAR_SONARR_KEY", "RescanSeries"),
@@ -59,7 +60,10 @@ def ffprobe(path: Path) -> dict:
         ffprobe's JSON (keys "streams" and "format"); empty dict when unreadable.
     """
     cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name", "-of", "json"]
-    out = subprocess.run([*cmd, str(path)], capture_output=True, check=False).stdout
+    try:
+        out = subprocess.run([*cmd, str(path)], capture_output=True, timeout=PROBE_TIMEOUT_S, check=False).stdout
+    except subprocess.TimeoutExpired:
+        return {}
     return json.loads(out or b"{}")
 
 
@@ -142,6 +146,8 @@ def shrink_file(rel: str, include_hardlinked: bool, dry_run: bool) -> tuple[str,
     if src.stat().st_nlink > 1 and not include_hardlinked:
         return "skipped", size, size
     info = ffprobe(src)
+    if not info:
+        return "failed: ffprobe can't read it", size, size
     if video_codec(info) in ("hevc", "av1"):
         return "already", size, size
     if (final != src and final.exists()) or trash.exists():
@@ -269,6 +275,23 @@ def deadline(until: int | None) -> float:
     return cutoff if cutoff > time.time() else cutoff + 24 * 3600
 
 
+def can_read_disk(queue: list[dict]) -> bool:
+    """Whether ffprobe can read the media disk from this process.
+
+    Launched by launchd, macOS asks before Homebrew's ffmpeg may read a removable volume, and nobody is there at night
+    to click Allow. Probe one queued file up front so a blocked run stops at once instead of failing every file.
+
+    Args:
+        queue: The shrink queue.
+
+    Returns:
+        True when a queued file could be probed (or none exists to try).
+    """
+    existing = (MEDIA_ROOT / f["path"] for t in queue for f in t["files"])
+    sample = next((p for p in existing if p.exists()), None)
+    return sample is None or bool(ffprobe(sample))
+
+
 def run(args: argparse.Namespace) -> None:
     """Work through the shrink queue, one file at a time, until it's empty or the limit/deadline is hit."""
     lock = open(LOCK, "w")  # noqa: SIM115 - held for the whole run
@@ -279,6 +302,12 @@ def run(args: argparse.Namespace) -> None:
         return
     queue = arr.request(f"{API}/shrink-queue", "")
     log.info("run started: %d titles, %d files queued", len(queue), sum(len(t["files"]) for t in queue))
+    if not can_read_disk(queue):
+        log.error(
+            "ffprobe can't read %s: give ffmpeg and ffprobe Removable Volumes access (README, Media Index). Stopping.",
+            MEDIA_ROOT,
+        )
+        return
     skip, budget = load_skip(), {"left": args.limit or float("inf"), "deadline": deadline(args.until)}
     for title in queue:
         if not shrink_title(title, args, skip, budget):
