@@ -113,6 +113,59 @@ services:
       - ${DATA_ROOT}/audiobookshelf/metadata:/metadata
       - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
+  # Retro game library with in-browser play (EmulatorJS) and per-user saves. ROMs live in
+  # Plex_Disk_4/Games/roms/<platform>/ (folder names: docs.romm.app → Supported Platforms). Accounts are made in its web UI.
+  romm:
+    image: rommapp/romm:latest
+    container_name: romm
+    restart: unless-stopped
+    ports: ["8090:8080"]
+    environment:
+      TZ: ${TZ}
+      DB_HOST: romm-db
+      DB_NAME: romm
+      DB_USER: romm-user
+      DB_PASSWD: ${ROMM_DB_PASSWORD}
+      ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY}
+      # Keyless metadata sources; IGDB and ScreenScraper add more when their keys are set in .env.
+      HASHEOUS_API_ENABLED: "true"
+      LAUNCHBOX_API_ENABLED: "true"
+      PLAYMATCH_API_ENABLED: "true"
+      HLTB_API_ENABLED: "true"
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+      SCREENSCRAPER_USER: ${SCREENSCRAPER_USER:-}
+      SCREENSCRAPER_PASSWORD: ${SCREENSCRAPER_PASSWORD:-}
+    volumes:
+      - ${MEDIA_ROOT}/Games:/romm/library
+      - ${DATA_ROOT}/romm/resources:/romm/resources
+      - ${DATA_ROOT}/romm/assets:/romm/assets
+      - ${DATA_ROOT}/romm/config:/romm/config
+      - ${DATA_ROOT}/romm/redis:/redis-data
+    depends_on:
+      romm-db:
+        condition: service_healthy
+        restart: true
+
+  romm-db:
+    image: mariadb:11
+    container_name: romm-db
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      MARIADB_ROOT_PASSWORD: ${ROMM_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: romm
+      MARIADB_USER: romm-user
+      MARIADB_PASSWORD: ${ROMM_DB_PASSWORD}
+    volumes:
+      - ${DATA_ROOT}/romm/db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Media index: what's using the disk, Plex watch history, keep/delete/shrink review. See media-index/.
   # "Delete" only moves items into Plex_Disk_4/_trash (emptied by hand) and unmonitors them in Radarr/Sonarr.
   media-index:

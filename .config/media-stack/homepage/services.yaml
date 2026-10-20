@@ -29,6 +29,11 @@
           type: audiobookshelf
           url: http://audiobookshelf:80
           key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}"
+    - RomM:
+        icon: romm.svg
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8090
+        siteMonitor: http://romm:8080/api/heartbeat
+        description: Retro games, play in the browser
 
 - Automation:
     - Media Index:
