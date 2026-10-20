@@ -3,7 +3,6 @@
     "editor.inlayHints.enabled": "off",
     "window.commandCenter": 1,
     "terminal.integrated.inheritEnv": false,
-    "window.newWindowProfile": "default_cursor",
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
