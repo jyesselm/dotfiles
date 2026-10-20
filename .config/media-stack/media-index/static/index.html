@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Media Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7; --surface: #ffffff; --surface-2: #f0f1f4; --border: #e2e4e9;
+  --text: #0f1115; --text-2: #4a4f5a; --muted: #80858f;
+  --accent: #2a78d6;
+  --keep: #0f8a3c; --keep-bg: #e3f4e9;
+  --delete: #c9302c; --delete-bg: #fbe7e6;
+  --shrink: #2a78d6; --shrink-bg: #e3eefb;
+  --warn: #9a6400; --warn-bg: #fdf1d8;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #9aa0aa;
+  --free: #e6e8ec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --border: #262c36;
+    --text: #eef0f3; --text-2: #b4bac4; --muted: #7d8591;
+    --accent: #5b9ef0;
+    --keep: #4cc97a; --keep-bg: #13301f;
+    --delete: #f06a66; --delete-bg: #3a1716;
+    --shrink: #6aa8f2; --shrink-bg: #132741;
+    --warn: #e2b04a; --warn-bg: #352812;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #5d6470;
+    --free: #232934;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --border: #262c36;
+  --text: #eef0f3; --text-2: #b4bac4; --muted: #7d8591;
+  --accent: #5b9ef0;
+  --keep: #4cc97a; --keep-bg: #13301f;
+  --delete: #f06a66; --delete-bg: #3a1716;
+  --shrink: #6aa8f2; --shrink-bg: #132741;
+  --warn: #e2b04a; --warn-bg: #352812;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #5d6470;
+  --free: #232934;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 16px 120px; }
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.sub { color: var(--text-2); margin-top: 4px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); font-size: 13px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--keep); }
+.dot.busy { background: var(--warn); animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+button { font: inherit; cursor: pointer; }
+.btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--delete); border-color: var(--delete); color: #fff; font-weight: 600; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.bar { display: flex; height: 22px; gap: 2px; border-radius: 6px; overflow: hidden; margin: 12px 0 14px; }
+.bar > div { height: 100%; min-width: 2px; cursor: pointer; transition: opacity .15s; }
+.bar:hover > div { opacity: .55; }
+.bar > div:hover { opacity: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.legend button { display: flex; align-items: center; gap: 7px; border: 0; background: none; padding: 2px 0; color: var(--text-2); }
+.legend button:hover, .legend button.on { color: var(--text); }
+.legend button.on { font-weight: 600; }
+.sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.legend b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.tip { position: fixed; pointer-events: none; background: var(--text); color: var(--bg); padding: 6px 10px; border-radius: 6px; font-size: 12px; display: none; z-index: 20; white-space: nowrap; }
+
+.tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 14px 0 22px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: left; color: inherit; }
+.tile:hover { border-color: var(--muted); }
+.tile.on { outline: 2px solid var(--accent); outline-offset: -1px; }
+.tile .k { color: var(--text-2); font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.tile .v { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile .n { color: var(--muted); font-size: 12px; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 5; }
+input[type=search], select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+input[type=search] { flex: 1 1 220px; min-width: 0; }
+.chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 5px 11px; font-size: 13px; }
+.chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.count { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+.list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 1fr 150px auto; gap: 16px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); }
+.row:first-child { border-top: 0; }
+.row.sel { background: var(--surface-2); box-shadow: inset 3px 0 var(--accent); }
+.row.d-delete .title { text-decoration: line-through; text-decoration-color: var(--delete); }
+.title { font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
+.title small { color: var(--muted); font-weight: 400; margin-right: 6px; }
+.meta { color: var(--text-2); font-size: 12.5px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.badge { font-size: 11.5px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); }
+.badge.shrink { background: var(--shrink-bg); color: var(--shrink); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); }
+.size { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.size .track { height: 4px; background: var(--free); border-radius: 2px; margin-top: 6px; }
+.size .fill { height: 100%; background: var(--accent); border-radius: 2px; }
+.size small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); color: var(--text-2); padding: 6px 11px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button:hover { background: var(--surface-2); }
+.seg .keep.on { background: var(--keep-bg); color: var(--keep); font-weight: 600; }
+.seg .shrink.on { background: var(--shrink-bg); color: var(--shrink); font-weight: 600; }
+.seg .delete.on { background: var(--delete-bg); color: var(--delete); font-weight: 600; }
+.detail { grid-column: 1 / -1; background: var(--surface-2); border-radius: 10px; padding: 12px; font-size: 12.5px; }
+.detail table { width: 100%; border-collapse: collapse; }
+.detail td { padding: 4px 6px; border-top: 1px solid var(--border); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.detail td:first-child { color: var(--text); overflow-wrap: anywhere; }
+.detail input { width: 100%; margin-top: 10px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+.more { display: block; width: 100%; padding: 12px; border: 0; border-top: 1px solid var(--border); background: var(--surface); color: var(--accent); font-weight: 600; }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+
+.dock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(760px, calc(100% - 32px)); background: var(--text); color: var(--bg); border-radius: 14px; padding: 12px 14px 12px 18px; display: none; align-items: center; gap: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.25); z-index: 10; }
+.dock.show { display: flex; }
+.dock span { flex: 1; }
+.keys { color: var(--muted); font-size: 12px; margin-top: 14px; text-align: center; }
+kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface); }
+
+dialog { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); width: min(620px, calc(100% - 32px)); padding: 22px; }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog h2 { margin: 0 0 6px; font-size: 18px; }
+dialog ul { max-height: 300px; overflow: auto; padding-left: 18px; color: var(--text-2); }
+dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .row { grid-template-columns: 1fr auto; }
+  .row .seg { grid-column: 1 / -1; }
+  .seg button { flex: 1; justify-content: center; }
+  .seg { display: flex; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Media Index</h1>
+      <div class="sub" id="diskline">Loading…</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="pill" id="scan"><span class="dot"></span>…</span>
+      <button class="btn" id="rescan">Rescan</button>
+    </div>
+  </header>
+
+  <section class="card" aria-label="Disk usage by folder">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <strong>Plex_Disk_4</strong><span class="sub" id="diskpct"></span>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="filters">
+    <input type="search" id="q" placeholder="Search titles…  ( / )">
+    <select id="sort" aria-label="Sort">
+      <option value="size">Biggest first</option>
+      <option value="shrink">Most saved by re-encoding</option>
+      <option value="stale">Longest since watched</option>
+      <option value="new">Recently added</option>
+      <option value="name">Name</option>
+    </select>
+    <button class="chip" data-flag="unwatched">Never watched</button>
+    <button class="chip" data-flag="shrink">Can shrink</button>
+    <button class="chip" data-flag="dupe">Possible duplicate</button>
+    <button class="chip" data-flag="old">Old format</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="list" id="list"><div class="empty">Loading…</div></div>
+  <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>Enter</kbd> files</div>
+</div>
+
+<div class="dock" id="dock"><span id="docktext"></span><button class="btn primary" id="trashbtn">Review &amp; move to trash</button></div>
+<div class="tip" id="tip"></div>
+
+<dialog id="confirm">
+  <h2 id="ctitle"></h2>
+  <div class="sub">These folders move to <code>Plex_Disk_4/_trash</code>, which is on the same disk, so it's instant and you can restore them from the Trash tile. Radarr/Sonarr stop monitoring them so they aren't downloaded again. Nothing is permanently deleted until you empty <code>_trash</code> yourself.</div>
+  <ul id="clist"></ul>
+  <div class="actions"><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="go">Move to trash</button></div>
+</dialog>
+
+<script>
+const PAGE = 150;
+const OLD_CODECS = ["mpeg4", "msmpeg4v3", "mpeg2video", "mpeg1video", "wmv3", "vc1", "h263", "msmpeg4v2"];
+const SERIES = 7; // categorical slots; the rest fold into "Other folders"
+const state = { items: [], summary: null, view: "undecided", category: null, flags: new Set(), q: "", sort: "size", shown: PAGE, sel: 0, open: null };
+const $ = (id) => document.getElementById(id);
+
+const gb = (b) => {
+  if (!b) return "0 GB";
+  if (b >= 1e12) return (b / 1e12).toFixed(2) + " TB";
+  if (b >= 1e10) return Math.round(b / 1e9) + " GB";
+  if (b >= 1e9) return (b / 1e9).toFixed(1) + " GB";
+  return Math.max(1, Math.round(b / 1e6)) + " MB";
+};
+const ago = (t) => {
+  const days = (Date.now() / 1000 - t) / 86400;
+  if (days < 1) return "today";
+  if (days < 60) return Math.round(days) + " days ago";
+  if (days < 730) return Math.round(days / 30) + " months ago";
+  return Math.round(days / 365) + " years ago";
+};
+const hours = (s) => s >= 3600 ? (s / 3600).toFixed(1) + " h" : Math.round(s / 60) + " min";
+const res = (h) => !h ? "" : h >= 2000 ? "4K" : h >= 1000 ? "1080p" : h >= 700 ? "720p" : "SD " + h + "p";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const inPlex = (it) => it.video_files > 0 && (state.summary?.plex_folders || []).includes(it.category);
+const status = (it) => it.trashed_at ? "trashed" : it.decision || "undecided";
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
+
+async function load() {
+  const [summary, items] = await Promise.all([api("/api/summary"), api("/api/items")]);
+  state.summary = summary;
+  state.items = items;
+  renderSummary();
+  renderList();
+}
+
+function renderSummary() {
+  const s = state.summary;
+  const d = s.disk;
+  $("diskline").textContent = `${gb(d.used)} of ${gb(d.total)} used · ${gb(d.free)} free`;
+  $("diskpct").textContent = Math.round(d.used / d.total * 100) + "% full";
+  renderScan(s.scan, s.plex_backup);
+
+  const top = s.categories.slice(0, SERIES);
+  const rest = s.categories.slice(SERIES).reduce((a, [, v]) => a + v, 0);
+  const segs = top.map(([name, size], i) => ({ name, size, color: `var(--s${i + 1})` }));
+  if (rest) segs.push({ name: "Other folders", size: rest, color: "var(--s8)", group: true });
+  segs.push({ name: "Free", size: d.free, color: "var(--free)", free: true });
+  const total = segs.reduce((a, x) => a + x.size, 0);
+  $("bar").innerHTML = segs.map((x, i) => `<div data-i="${i}" style="flex:${x.size / total};background:${x.color}"></div>`).join("");
+  $("legend").innerHTML = segs.map((x, i) => `<button data-i="${i}" class="${state.category === x.name ? "on" : ""}"><span class="sw" style="background:${x.color}"></span>${esc(x.name)} <b>${gb(x.size)}</b></button>`).join("");
+  const pick = (x) => { if (x.free || x.group) return; state.category = state.category === x.name ? null : x.name; reset(); renderSummary(); };
+  for (const el of document.querySelectorAll("#bar > div, #legend button")) {
+    const x = segs[el.dataset.i];
+    el.onclick = () => pick(x);
+    el.onmousemove = (e) => tip(e, `${x.name} · ${gb(x.size)} · ${(x.size / d.total * 100).toFixed(1)}%`);
+    el.onmouseleave = () => tip(null);
+  }
+
+  const t = s.decided;
+  const tiles = [
+    ["undecided", "To review", t.undecided.items + " titles", gb(t.undecided.size)],
+    ["keep", "✓ Keep", t.keep.items + " titles", gb(t.keep.size)],
+    ["shrink", "⇣ Shrink", `${t.shrink.items} titles · ${gb(s.shrinkable)} possible overall`, "~" + gb(t.shrink.size) + " saved"],
+    ["delete", "✕ Marked to delete", t.delete.items + " titles", gb(t.delete.size)],
+    ["trashed", "🗑 In _trash", t.trashed.items + " titles · restore any", gb(s.trash)],
+  ];
+  $("tiles").innerHTML = tiles.map(([key, label, n, v]) => `<button class="tile ${state.view === key ? "on" : ""}" data-view="${key}"><div class="k">${label}</div><div class="v">${v}</div><div class="n">${n}</div></button>`).join("");
+  for (const el of document.querySelectorAll(".tile")) el.onclick = () => { state.view = state.view === el.dataset.view ? null : el.dataset.view; reset(); renderSummary(); };
+
+  const del = t.delete;
+  $("dock").classList.toggle("show", del.items > 0);
+  $("docktext").textContent = `${del.items} title${del.items === 1 ? "" : "s"} · ${gb(del.size)} marked to delete`;
+}
+
+function renderScan(scan, backup) {
+  const busy = scan.phase && scan.phase !== "done";
+  let text = "Not scanned yet";
+  if (scan.phase === "walking") text = `Scanning folders… ${(scan.files || 0).toLocaleString()} files`;
+  if (scan.phase === "probing") text = `Reading video info… ${scan.done.toLocaleString()} / ${scan.total.toLocaleString()}`;
+  if (scan.phase === "done") text = `Scanned ${ago(scan.finished)} · ${scan.files.toLocaleString()} files` + (backup ? "" : " · no Plex history");
+  $("scan").innerHTML = `<span class="dot ${busy ? "busy" : ""}"></span>${text}`;
+  clearTimeout(renderScan.timer);
+  if (busy) renderScan.timer = setTimeout(load, 5000);
+}
+
+function tip(e, text) {
+  const el = $("tip");
+  if (!e) { el.style.display = "none"; return; }
+  el.textContent = text;
+  el.style.display = "block";
+  el.style.left = Math.min(e.clientX + 12, innerWidth - el.offsetWidth - 8) + "px";
+  el.style.top = e.clientY + 14 + "px";
+}
+
+const isOld = (it) => (it.codecs || "").split(",").some((c) => OLD_CODECS.includes(c));
+const FLAGS = {
+  unwatched: (it) => inPlex(it) && !it.watched_files,
+  shrink: (it) => it.shrink_saving > 0,
+  dupe: (it) => (it.duplicates || []).length > 0,
+  old: isOld,
+};
+const SORTS = {
+  size: (a, b) => b.size - a.size,
+  shrink: (a, b) => b.shrink_saving - a.shrink_saving,
+  stale: (a, b) => (a.last_viewed || 0) - (b.last_viewed || 0) || b.size - a.size,
+  new: (a, b) => (b.mtime || 0) - (a.mtime || 0),
+  name: (a, b) => a.item.localeCompare(b.item),
+};
+
+function visible() {
+  const q = state.q.toLowerCase();
+  const rows = state.items.filter((it) =>
+    (!state.view || status(it) === state.view) &&
+    (!state.category || it.category === state.category) &&
+    (!q || it.item.toLowerCase().includes(q)) &&
+    [...state.flags].every((f) => FLAGS[f](it)));
+  return rows.sort(SORTS[state.sort]);
+}
+
+function reset() { state.shown = PAGE; state.sel = 0; state.open = null; renderList(); }
+
+function renderList() {
+  const rows = visible();
+  const shown = rows.slice(0, state.shown);
+  const max = Math.max(1, ...shown.map((r) => r.size));
+  const total = rows.reduce((a, r) => a + r.size, 0);
+  $("count").textContent = `${rows.length.toLocaleString()} titles · ${gb(total)}`;
+  if (!rows.length) { $("list").innerHTML = `<div class="empty">Nothing here. Try clearing a filter.</div>`; return; }
+  $("list").innerHTML = shown.map((it, i) => rowHtml(it, i, max)).join("") +
+    (rows.length > shown.length ? `<button class="more" id="more">Show ${Math.min(PAGE, rows.length - shown.length)} more of ${rows.length - shown.length}</button>` : "");
+  bindRows(shown);
+  if (state.open !== null) openDetail(shown[state.open], state.open);
+}
+
+function rowHtml(it, i, max) {
+  const [cat, ...name] = it.item.split("/");
+  const meta = [];
+  if (it.files) meta.push(`${it.files} file${it.files === 1 ? "" : "s"}`);
+  if (it.height) meta.push(res(it.height));
+  if (it.codecs) meta.push(it.codecs.replace(/,/g, ", "));
+  if (it.duration_s) meta.push(hours(it.duration_s));
+  if (inPlex(it)) meta.push(it.last_viewed ? `watched ${ago(it.last_viewed)}${it.video_files > 1 ? ` (${it.watched_files}/${it.video_files})` : ""}` : "never watched in Plex");
+  if (it.trashed_at) meta.push(`moved to trash ${ago(it.trashed_at)}`);
+  const badges = [];
+  if (it.shrink_saving > 0) badges.push(`<span class="badge shrink">⇣ ~${gb(it.shrink_saving)} smaller as HEVC</span>`);
+  if ((it.duplicates || []).length) badges.push(`<span class="badge warn" title="${esc(it.duplicates.join("\n"))}">Possible duplicate: ${esc(it.duplicates[0])}${it.duplicates.length > 1 ? ` +${it.duplicates.length - 1}` : ""}</span>`);
+  if (isOld(it)) badges.push(`<span class="badge warn">Old format</span>`);
+  if (it.freeable < it.size && !it.trashed_at) badges.push(`<span class="badge" title="Hardlinked with a torrent in downloading/; deleting frees space only once the torrent is removed too">Shared with torrent · frees ${gb(it.freeable)}</span>`);
+  if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
+  const d = status(it);
+  const actions = it.trashed_at
+    ? `<div class="seg"><button data-restore>↺ Restore</button></div>`
+    : `<div class="seg">
+        <button class="keep ${d === "keep" ? "on" : ""}" data-d="keep">✓ Keep</button>
+        <button class="shrink ${d === "shrink" ? "on" : ""}" data-d="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient' style='opacity:.45;cursor:default'"}>⇣ Shrink</button>
+        <button class="delete ${d === "delete" ? "on" : ""}" data-d="delete">✕ Delete</button></div>`;
+  return `<div class="row d-${d} ${i === state.sel ? "sel" : ""}" data-i="${i}">
+    <div><div class="title"><small>${esc(cat)}</small>${esc(name.join("/") || cat)}</div>
+      <div class="meta">${meta.map(esc).join(" · ")}</div>${badges.length ? `<div class="badges">${badges.join("")}</div>` : ""}</div>
+    <div class="size">${gb(it.size)}<div class="track"><div class="fill" style="width:${it.size / max * 100}%"></div></div></div>
+    ${actions}</div>`;
+}
+
+function bindRows(shown) {
+  for (const row of document.querySelectorAll(".row")) {
+    const i = +row.dataset.i, it = shown[i];
+    row.querySelector(".title").onclick = () => toggleDetail(i);
+    row.onclick = () => select(i);
+    for (const b of row.querySelectorAll("[data-d]")) b.onclick = () => decide(it, it.decision === b.dataset.d ? null : b.dataset.d);
+    const r = row.querySelector("[data-restore]");
+    if (r) r.onclick = async () => { const out = await api("/api/restore", { item: it.item }); alert(out.message); load(); };
+  }
+  const more = $("more");
+  if (more) more.onclick = () => { state.shown += PAGE; renderList(); };
+}
+
+function select(i) {
+  state.sel = i;
+  document.querySelectorAll(".row").forEach((r) => r.classList.toggle("sel", +r.dataset.i === i));
+}
+
+async function decide(it, decision) {
+  if (!it || it.trashed_at || (decision === "shrink" && !(it.shrink_saving > 0))) return;
+  it.decision = decision;
+  await api("/api/decision", { item: it.item, decision, note: it.note || "" });
+  state.summary = await api("/api/summary");
+  renderSummary();
+  renderList();
+}
+
+function toggleDetail(i) {
+  state.open = state.open === i ? null : i;
+  renderList();
+}
+
+async function openDetail(it, i) {
+  const row = document.querySelector(`.row[data-i="${i}"]`);
+  if (!row || !it) return;
+  const files = it.trashed_at ? [] : await api("/api/files?item=" + encodeURIComponent(it.item));
+  const det = document.createElement("div");
+  det.className = "detail";
+  det.innerHTML = `<table>${files.map((f) => `<tr><td>${esc(f.path.slice(it.item.length + 1) || f.path)}</td><td>${gb(f.size)}</td><td>${res(f.height)} ${esc(f.codec || "")}</td><td>${f.duration_s ? hours(f.duration_s) : ""}</td><td>${f.shrink_saving ? "⇣ " + gb(f.shrink_saving) : ""}</td><td>${f.last_viewed ? "watched " + ago(f.last_viewed) : ""}</td></tr>`).join("")}</table>
+    ${it.trashed_at ? "" : `<input placeholder="Note (saved with your decision)" value="${esc(it.note || "")}">`}`;
+  row.appendChild(det);
+  const note = det.querySelector("input");
+  if (note) note.onchange = async () => { it.note = note.value; await api("/api/decision", { item: it.item, decision: it.decision || "keep", note: it.note }); load(); };
+}
+
+$("q").oninput = (e) => { state.q = e.target.value; reset(); };
+$("sort").onchange = (e) => { state.sort = e.target.value; reset(); };
+for (const chip of document.querySelectorAll(".chip")) chip.onclick = () => {
+  const f = chip.dataset.flag;
+  state.flags.has(f) ? state.flags.delete(f) : state.flags.add(f);
+  chip.classList.toggle("on");
+  reset();
+};
+$("rescan").onclick = async () => { await api("/api/scan", {}); setTimeout(load, 1000); };
+
+$("trashbtn").onclick = () => {
+  const marked = state.items.filter((it) => status(it) === "delete");
+  $("ctitle").textContent = `Move ${marked.length} title${marked.length === 1 ? "" : "s"} (${gb(state.summary.decided.delete.size)}) to trash?`;
+  $("clist").innerHTML = marked.map((it) => `<li>${esc(it.item)} — ${gb(it.size)}</li>`).join("");
+  $("confirm").showModal();
+};
+$("cancel").onclick = () => $("confirm").close();
+$("go").onclick = async () => {
+  $("go").disabled = true;
+  const results = await api("/api/trash", {});
+  $("go").disabled = false;
+  $("confirm").close();
+  const failed = results.filter((r) => !r.ok);
+  if (failed.length) alert("Not moved:\n" + failed.map((r) => `${r.item}: ${r.message}`).join("\n"));
+  load();
+};
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, select") || $("confirm").open) return;
+  const rows = visible().slice(0, state.shown);
+  const keys = { j: () => select(Math.min(state.sel + 1, rows.length - 1)), k: () => select(Math.max(state.sel - 1, 0)),
+    1: () => decide(rows[state.sel], "keep"), 2: () => decide(rows[state.sel], "shrink"), 3: () => decide(rows[state.sel], "delete"),
+    0: () => decide(rows[state.sel], null), Enter: () => toggleDetail(state.sel), "/": () => $("q").focus() };
+  const fn = keys[e.key];
+  if (!fn) return;
+  e.preventDefault();
+  fn();
+  document.querySelector(".row.sel")?.scrollIntoView({ block: "nearest" });
+});
+
+load();
+</script>
+</body>
+</html>

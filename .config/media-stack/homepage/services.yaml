@@ -31,6 +31,24 @@
           key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}"
 
 - Automation:
+    - Media Index:
+        icon: mdi-harddisk
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8686
+        siteMonitor: http://media-index:8686/api/summary
+        description: Disk use, keep/delete/shrink review
+        widget:
+          type: customapi
+          url: http://media-index:8686/api/summary
+          mappings:
+            - field: {decided: {undecided: items}}
+              label: To review
+              format: number
+            - field: {decided: {delete: size}}
+              label: Marked delete
+              format: bytes
+            - field: shrinkable
+              label: Can shrink
+              format: bytes
     - Radarr:
         icon: radarr.svg
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:7878

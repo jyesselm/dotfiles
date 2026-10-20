@@ -113,6 +113,23 @@ services:
       - ${DATA_ROOT}/audiobookshelf/metadata:/metadata
       - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
+  # Media index: what's using the disk, Plex watch history, keep/delete/shrink review. See media-index/.
+  # "Delete" only moves items into Plex_Disk_4/_trash (emptied by hand) and unmonitors them in Radarr/Sonarr.
+  media-index:
+    build: ./media-index
+    container_name: media-index
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    ports: ["8686:8686"]
+    environment:
+      TZ: ${TZ}
+      RADARR_KEY: ${HOMEPAGE_VAR_RADARR_KEY}
+      SONARR_KEY: ${HOMEPAGE_VAR_SONARR_KEY}
+    volumes:
+      - ${DATA_ROOT}/media-index:/data
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${PLEX_DB_DIR}:/plex-db:ro
+
   # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
   homepage:
     image: ghcr.io/gethomepage/homepage:latest

@@ -13,6 +13,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
 | Homepage | 3000 | Dashboard |
 | Uptime Kuma | 3001 | Up/down history and alerts |
+| Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review (`media-index/`) |
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `Movies` / `TV Shows` → Plex.
 
@@ -49,6 +50,15 @@ gluetun needs your NordVPN WireGuard private key in `.env` as `NORDVPN_WIREGUARD
 Nord Account → NordVPN → Set up NordVPN manually, then turn it into the key as described at
 https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/nordvpn.md. Then `docker-compose up -d`
 and check `docker-compose logs gluetun` shows the public IP of a Nord server.
+
+## Media Index (cleanup)
+
+`media-index/` indexes the disk daily (sizes, ffprobe video info, watch history from Plex's dated database backups) and
+serves a review page on 8686. Mark each title Keep, Shrink (worth re-encoding to HEVC) or Delete. "Move to trash"
+renames Delete items into `Plex_Disk_4/_trash/` and unmonitors them in Radarr/Sonarr; restore from the page. Nothing is
+permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/Plex_Disk_4/_trash/*`. Items hardlinked with
+a torrent in `downloading/` free space only once the torrent is removed in qBittorrent too. Its database is
+`$DATA_ROOT/media-index/media-index.db`; don't open it from macOS while the container runs (use `docker exec`).
 
 ## Moving to Linux
 
