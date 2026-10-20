@@ -7,16 +7,18 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 |---|---|---|
 | Plex (native on the Mac) | 32400 | Streaming |
 | Seerr | 5055 | Requests from you and your wife |
-| Radarr / Sonarr | 7878 / 8989 | Movies / TV: find, grab, rename, file |
-| Prowlarr | 9696 | Indexers, synced to Radarr and Sonarr |
+| Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
+| Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
 | Homepage | 3000 | Dashboard |
 | Uptime Kuma | 3001 | Up/down history and alerts |
+| Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `Games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`Plex_Disk_4/Games`) |
 | Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review (`media-index/`) |
 
-A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `Movies` / `TV Shows` → Plex.
+A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `Movies` / `TV Shows` → Plex. Music is the same
+without Seerr: add artists in Lidarr, which files albums into `music/` (Plex Music library, Plexamp app).
 
 ## Files
 
@@ -89,7 +91,7 @@ python3 media-index/shrink.py install                       # nightly at 01:00; 
 2. **Install** Docker Engine with the compose plugin, clone the dotfiles (`yadm` linux class), and copy
    `env.example` to `.env`.
 3. **Stop the Mac stack** (`docker-compose down`, quit Plex), then copy the app data across:
-   `rsync -a ~/.local/share/{radarr,sonarr,prowlarr,seerr,qbittorrent,uptime-kuma,audiobookshelf,romm} newhost:~/.local/share/`.
+   `rsync -a ~/.local/share/{radarr,sonarr,lidarr,prowlarr,seerr,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
 4. **Edit `.env`**: `MEDIA_ROOT=/mnt/plex`, `DATA_ROOT=/home/<you>/.local/share`, `PUID`/`PGID` from `id`
    (usually 1000), `HOMEPAGE_ALLOWED_HOSTS` for the new address, keys unchanged.
    Seerr runs as uid 1000: `sudo chown -R 1000:1000 $DATA_ROOT/seerr/config`.
@@ -122,6 +124,10 @@ Library → Scan in the web UI. The first visit creates the admin account; add o
 Covers come from keyless sources (Hasheous, LaunchBox, Playmatch); for better matches set the IGDB and ScreenScraper
 values in `.env` and `docker-compose up -d romm`. Its data and MariaDB database are in `$DATA_ROOT/romm/`. On a TV,
 RetroArch on the Onn plays the same files with a controller.
+
+Gamarr (port 5001) is the *arr for games: search a title, pick a result, and it downloads through qBittorrent
+(category `games`) and hardlinks ROMs into `Games/roms/<platform>/` (PC games into `Games/pc/`). It is a small,
+young project; check what a release contains before opening it, and never run `.exe` files from a ROM download.
 
 ## FlareSolverr
 

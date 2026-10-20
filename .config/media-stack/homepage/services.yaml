@@ -54,6 +54,11 @@
             - field: shrinkable
               label: Can shrink
               format: bytes
+    - Gamarr:
+        icon: mdi-gamepad-variant
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:5001
+        siteMonitor: http://gamarr:5001/api/health
+        description: Games, files ROMs for RomM
     - Radarr:
         icon: radarr.svg
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:7878
@@ -74,6 +79,15 @@
           url: http://sonarr:8989
           key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
           enableQueue: true
+    - Lidarr:
+        icon: lidarr.svg
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8687
+        siteMonitor: http://lidarr:8686/ping
+        description: Music
+        widget:
+          type: lidarr
+          url: http://lidarr:8686
+          key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
     - Prowlarr:
         icon: prowlarr.svg
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:9696

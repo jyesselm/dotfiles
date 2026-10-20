@@ -29,6 +29,15 @@ services:
       - ${DATA_ROOT}/sonarr/config:/config
       - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
+  lidarr:
+    <<: *common
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    ports: ["8687:8686"]
+    volumes:
+      - ${DATA_ROOT}/lidarr/config:/config
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+
   prowlarr:
     <<: *common
     image: lscr.io/linuxserver/prowlarr:latest
@@ -146,6 +155,30 @@ services:
       romm-db:
         condition: service_healthy
         restart: true
+
+  # Game/ROM search and download (the *arr for games): searches Prowlarr's game indexers, downloads via qBittorrent,
+  # hardlinks ROMs into Games/roms/<platform>/ for RomM. The disk is mounted at the same path as in qBittorrent
+  # because Gamarr has no remote path mapping.
+  gamarr:
+    image: ghcr.io/jeremiahm37/gamarr:latest
+    container_name: gamarr
+    restart: unless-stopped
+    ports: ["5001:5001"]
+    environment:
+      TZ: ${TZ}
+      DATA_DIR: /data
+      PROWLARR_URL: http://prowlarr:9696
+      PROWLARR_API_KEY: ${HOMEPAGE_VAR_PROWLARR_KEY}
+      QB_URL: http://gluetun:8080
+      QB_CATEGORY: games
+      QB_SAVE_PATH: /Volumes/Plex_Disk_4/downloading/games
+      GAMES_ROMS_PATH: /Volumes/Plex_Disk_4/Games/roms
+      GAMES_VAULT_PATH: /Volumes/Plex_Disk_4/Games/pc
+      IMPORT_MODE: hardlink
+      ROMM_URL: http://romm:8080
+    volumes:
+      - ${DATA_ROOT}/gamarr:/data
+      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
   romm-db:
     image: mariadb:11

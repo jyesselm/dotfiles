@@ -31,6 +31,8 @@ arr=(customformat qualityprofile delayprofile tag rootfolder downloadclient remo
      config/naming config/mediamanagement config/downloadclient)
 dump radarr 7878 v3 "$(env_val HOMEPAGE_VAR_RADARR_KEY)" "${arr[@]}"
 dump sonarr 8989 v3 "$(env_val HOMEPAGE_VAR_SONARR_KEY)" "${arr[@]}"
+dump lidarr 8687 v1 "$(env_val HOMEPAGE_VAR_LIDARR_KEY)" qualityprofile metadataprofile delayprofile tag rootfolder \
+  downloadclient remotepathmapping config/naming config/mediamanagement config/downloadclient
 dump prowlarr 9696 v1 "$(env_val HOMEPAGE_VAR_PROWLARR_KEY)" applications appprofile tag indexerproxy
 mkdir -p "$out/seerr"
 clean <"$(env_val DATA_ROOT)/seerr/config/settings.json" >"$out/seerr/settings.json"
