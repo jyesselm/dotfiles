@@ -90,6 +90,18 @@ python3 media-index/shrink.py run --match "S02E05" --limit 1  # one file now
 python3 media-index/shrink.py install                       # nightly at 01:00; no new file starts after 08:00
 ```
 
+**Music upgrades** to 320 kbps go through Lidarr, run by `media-index/music_upgrade.py` (daily at 03:00). Lidarr only
+grabs whole albums, so the script monitors up to 10 albums holding your lowest-bitrate songs under an "Upgrade to 320"
+profile and searches them again each day. Once every song you had is at 320, it deletes the album's other tracks and
+unmonitors it. Albums with no 320 release after 14 days are dropped. Replaced and removed files go to
+`Plex_Disk_4/_trash/lidarr` (Lidarr's recycle bin, never emptied automatically). Songs Lidarr doesn't know (most
+YouTube rips) are skipped; re-get those with spotDL.
+
+```sh
+python3 media-index/music_upgrade.py status
+python3 media-index/music_upgrade.py run --dry-run          # what would start or finish
+```
+
 ## Moving to Linux
 
 1. **Disk format.** `Plex_Disk_4` is journaled HFS+. Linux mounts it read-only unless journaling is turned off, so
