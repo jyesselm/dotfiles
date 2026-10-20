@@ -38,6 +38,30 @@ services:
       - ${DATA_ROOT}/lidarr/config:/config
       - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
 
+  # Music discovery: Last.fm artists similar to the ones in Lidarr; one click adds an artist to Lidarr.
+  # Host port 8688 because macOS's AirPlay Receiver holds 5000. Login: admin + SONOBARR_ADMIN_PASSWORD.
+  sonobarr:
+    image: ghcr.io/dodelidoo-labs/sonobarr:latest
+    container_name: sonobarr
+    restart: unless-stopped
+    ports: ["8688:5000"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+      secret_key: ${SONOBARR_SECRET_KEY}
+      lidarr_address: http://lidarr:8686
+      lidarr_api_key: ${HOMEPAGE_VAR_LIDARR_KEY}
+      root_folder_path: /Volumes/Plex_Disk_4/music/
+      quality_profile_id: 3   # Standard, like the existing artists
+      metadata_profile_id: 1  # Standard
+      last_fm_api_key: ${LASTFM_API_KEY}
+      last_fm_api_secret: ${LASTFM_API_SECRET}
+      sonobarr_superadmin_username: admin
+      sonobarr_superadmin_password: ${SONOBARR_ADMIN_PASSWORD}
+    volumes:
+      - ${DATA_ROOT}/sonobarr/config:/sonobarr/config
+
   prowlarr:
     <<: *common
     image: lscr.io/linuxserver/prowlarr:latest

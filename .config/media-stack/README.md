@@ -8,6 +8,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Plex (native on the Mac) | 32400 | Streaming |
 | Seerr | 5055 | Requests from you and your wife |
 | Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
+| Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
@@ -18,7 +19,8 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review (`media-index/`) |
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `Movies` / `TV Shows` → Plex. Music is the same
-without Seerr: add artists in Lidarr, which files albums into `music/` (Plex Music library, Plexamp app).
+without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
+Music library, Plexamp app).
 
 ## Files
 
