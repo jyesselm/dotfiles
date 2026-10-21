@@ -6,3 +6,6 @@
 # snapshot but don't re-register its chpwd hook. Setting this in .zshrc only fixed
 # interactive shells; .zshenv covers the rest.
 export _ZO_DOCTOR=0
+
+# Home-made commands (converge, grc, s) and Homebrew for non-interactive shells too, e.g. `ssh host converge sync`.
+path=(~/.local/bin /opt/homebrew/bin $path)
