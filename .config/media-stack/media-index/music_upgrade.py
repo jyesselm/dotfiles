@@ -4,9 +4,11 @@ Lidarr only grabs whole albums, so each run: (1) finishes albums started earlier
 320 kbps, the album's other tracks are deleted and the album is unmonitored again; (2) starts a few more: picks the
 albums holding your lowest-bitrate songs, gives the artist the "Upgrade to 320" profile, monitors the album and
 searches.
-Lidarr replaces the old files itself. Everything removed goes to Lidarr's recycle bin, Plex_Disk_4/_trash/lidarr, which
-is never emptied automatically. Albums with no 320 release after GIVE_UP_DAYS are unmonitored and not tried again.
-Songs Lidarr doesn't know (most YouTube rips) can't be upgraded this way.
+Albums are pinned to their current release so Lidarr can't swap editions and drop songs; songs are matched by title,
+and nothing is deleted while any song you had lacks a file. Lidarr replaces the old files itself. Everything removed
+goes to Lidarr's recycle bin, Plex_Disk_4/_trash/lidarr, which is never emptied automatically. Albums with no 320
+release after GIVE_UP_DAYS are unmonitored and not tried again. Songs Lidarr doesn't know
+(most YouTube rips) can't be upgraded this way.
 
     python3 music_upgrade.py run [--albums N] [--dry-run]
     python3 music_upgrade.py status
@@ -29,6 +31,7 @@ from functools import cache
 from pathlib import Path
 
 import arr
+from index import title_key
 from shrink import STATE_DIR, read_env
 
 API = "http://localhost:8687/api/v1"
@@ -113,18 +116,25 @@ def album_files(album: str) -> tuple[list[dict], dict[int, dict]]:
 
 
 def finish(state: dict, groups: dict[int, str], dry_run: bool) -> None:
-    """Close out started albums whose songs are all at 320 now (or that waited too long)."""
+    """Close out started albums whose songs are all at 320 now (or that waited too long).
+
+    Songs are matched by title (track ids change when Lidarr picks another release). If a song you had has no file,
+    nothing is deleted and the album is left for a look.
+    """
     for album, info in list(state["pending"].items()):
         tracks, files = album_files(album)
         had = set(info["had"])
-        kept = [files.get(t["trackFileId"]) for t in tracks if t["id"] in had]
-        upgraded = all(f and groups.get(f["quality"]["quality"]["id"]) == TARGET_GROUP for f in kept)
+        by_title = {title_key(t["title"]): files[t["trackFileId"]] for t in tracks if t["trackFileId"] in files}
+        missing = had - set(by_title)
+        upgraded = not missing and all(groups.get(by_title[k]["quality"]["quality"]["id"]) == TARGET_GROUP for k in had)
         expired = time.time() - info["started"] > GIVE_UP_DAYS * 86400
         if not (upgraded or expired):
             if not dry_run:  # search again daily: indexers rate-limit, and new releases appear
                 lidarr("/command", {"name": "AlbumSearch", "albumIds": [int(album)]}, "POST")
             continue
-        extra = [t["trackFileId"] for t in tracks if t["id"] not in had and t["trackFileId"] in files]
+        extra = [f["id"] for k, f in by_title.items() if k not in had] if had and not missing else []
+        if missing:
+            log.warning("%s: no file for %s, deleting nothing; check it by hand", info["title"], sorted(missing))
         log.info("%s: %s, removing %d extra tracks", info["title"], "upgraded" if upgraded else "gave up", len(extra))
         if dry_run:
             continue
@@ -148,9 +158,10 @@ def start(state: dict, groups: dict[int, str], profile: int, limit: int, dry_run
         artist = lidarr(f"/artist/{entry['artistId']}")
         if artist["qualityProfileId"] != profile:
             lidarr(f"/artist/{artist['id']}", {**artist, "qualityProfileId": profile})
+        lidarr(f"/album/{album['id']}", {**album, "anyReleaseOk": False})  # pin the release: no edition swaps
         lidarr("/album/monitor", {"albumIds": [album["id"]], "monitored": True})
         lidarr("/command", {"name": "AlbumSearch", "albumIds": [album["id"]]}, "POST")
-        had = [t["id"] for t in tracks if t["hasFile"]]
+        had = sorted({title_key(t["title"]) for t in tracks if t["hasFile"]})
         state["pending"][entry["albumId"]] = {"title": title, "started": time.time(), "had": had}
 
 
