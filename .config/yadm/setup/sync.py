@@ -36,11 +36,12 @@ HINTS = {  # printed by --status under a warn/failed phase: how to clear it
     'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with converge adopt-extras',
     'dotfiles': 'yadm status, then yadm pull --rebase origin main',
     'repos': 'fix the repo named above, then converge sync',
-    'keys': 'ssh-keygen -t ed25519 creates this computer\'s key; the next sync publishes it in setup/ssh-keys.txt',
+    'keys': 'ssh-keygen -t ed25519 and ssh-keygen -t ecdsa -b 256 create this computer\'s keys; the next sync publishes them',
     'doctor': 'converge doctor reruns the checks',
 }
 GLYPHS = {'ok': ('✓', '32'), 'changed': ('✓', '36'), 'skipped': ('-', '2'), 'warn': ('!', '33'), 'failed': ('✗', '31')}  # calm first
 DETAIL_LIMIT = 12  # detail lines per group in converge status; --all lifts it
+OWN_KEYS = ('id_ed25519.pub', 'id_ecdsa.pub')  # both: MDM-managed Macs accept only ECDSA P-256 keys
 STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
 
 
@@ -524,17 +525,18 @@ class Sync:
 
     def keys(self) -> PhaseResult:
         """Append every public key in setup/ssh-keys.txt to ~/.ssh/authorized_keys, and this computer's own
-        ~/.ssh/id_ed25519.pub to that tracked list (the next dotfiles phase commits and pushes it)."""
+        public keys to that tracked list (the next dotfiles phase commits and pushes it)."""
         listed = self.setup.assets / 'ssh-keys.txt'
         authorized = self.root / '.ssh/authorized_keys'
-        own = self.root / '.ssh/id_ed25519.pub'
+        own = [p for p in (self.root / '.ssh' / n for n in OWN_KEYS) if p.exists()]
         wanted = listed.read_text().splitlines() if listed.exists() else []
         present = authorized.read_text().splitlines() if authorized.exists() else []
-        publish = missing_keys([own.read_text().strip()], wanted) if own.exists() else []
+        publish = missing_keys([p.read_text().strip() for p in own], wanted)
         add = missing_keys(wanted + publish, present)
         details = ['authorize:' + k.split()[-1] for k in add] + ['publish:' + k.split()[-1] for k in publish]
-        if not own.exists():
-            details.append('no ~/.ssh/id_ed25519.pub on this computer: it cannot log into the others')
+        if len(own) < len(OWN_KEYS):
+            details.append('missing %s: ssh-keygen -t ed25519 and -t ecdsa -b 256 (managed Macs accept only ECDSA)'
+                           % ', '.join(n for n in OWN_KEYS if not (self.root / '.ssh' / n).exists()))
         if not (add or publish):
             return PhaseResult('ok', '%d keys authorized' % len([p for p in present if key_id(p)]), details)
         if not self.setup.args.plan:

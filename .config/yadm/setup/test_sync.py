@@ -437,12 +437,15 @@ class PhaseTests(Base):
         (self.root / '.ssh/id_ed25519.pub').write_text('ssh-ed25519 AAAA3 linux\n')
         result = sync.keys()
         self.assertEqual((result.status, result.summary), ('changed', '2 keys authorized, 1 published'))
+        self.assertTrue(result.details[-1].startswith('missing id_ecdsa.pub'))
+        (self.root / '.ssh/id_ecdsa.pub').write_text('ecdsa-sha2-nistp256 AAAA4 linux\n')
         self.assertEqual((self.root / '.ssh/authorized_keys').read_text(),
                          'ssh-ed25519 AAAA1 old-comment\nssh-rsa BBBB nas\nssh-ed25519 AAAA2 studio\nssh-ed25519 AAAA3 linux\n')
         self.assertEqual(oct((self.root / '.ssh/authorized_keys').stat().st_mode & 0o777), '0o600')
         self.assertTrue(listed.read_text().endswith('ssh-ed25519 AAAA2 studio\nssh-ed25519 AAAA3 linux\n'))
+        self.assertEqual(sync.keys().summary, '1 keys authorized, 1 published')
         again = sync.keys()
-        self.assertEqual((again.status, again.summary, again.details), ('ok', '4 keys authorized', []))
+        self.assertEqual((again.status, again.summary, again.details), ('ok', '5 keys authorized', []))
         plan = self.make('--plan', '--profile', 'linux')
         plan.setup.assets = sync.setup.assets
         (self.root / '.ssh/authorized_keys').unlink()
