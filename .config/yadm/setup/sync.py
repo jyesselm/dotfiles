@@ -81,7 +81,7 @@ def commit_message(label: str, files: List[str]) -> str:
 def key_id(line: str) -> str:
     """type and base64 of a public-key line (the comment may differ per copy); '' for blanks and comments."""
     parts = line.split()
-    return ' '.join(parts[:2]) if len(parts) >= 2 and not line.lstrip().startswith('#') else ''
+    return ' '.join(parts[:2]) if len(parts) >= 2 and parts[1].startswith('AAAA') else ''  # also skips conflict markers
 
 
 def missing_keys(wanted: List[str], present: List[str]) -> List[str]:
