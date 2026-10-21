@@ -168,7 +168,8 @@ def is_skipped(name: str) -> bool:
     Returns:
         Whether to skip it.
     """
-    return name.startswith(".") or name in {TRASH_NAME, "$RECYCLE.BIN", "System Volume Information"}
+    # "Icon\r" is Finder's custom folder icon; the \r also breaks TSV manifests.
+    return name.startswith(".") or name in {TRASH_NAME, "$RECYCLE.BIN", "System Volume Information", "Icon\r"}
 
 
 def walk(root: Path = MEDIA_ROOT) -> Iterator[FileStat]:

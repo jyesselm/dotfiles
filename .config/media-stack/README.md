@@ -103,6 +103,18 @@ python3 media-index/music_upgrade.py status
 python3 media-index/music_upgrade.py run --dry-run          # what would start or finish
 ```
 
+**Drive manifests** record what is on each media drive, so you can see which drive holds a title while it's
+unplugged. `media-index/drives.py catalog` writes one row per file (path, size, mtime) to
+`~/.local/share/media-index/drives/<drive>.tsv` and to `.media-manifest.tsv` on the drive itself. Re-run it
+after changing a drive. A file counts as copied when another drive has the same name and size (or the same size for
+files over 50 MB, which catches renames).
+
+```sh
+python3 media-index/drives.py catalog "/Volumes/Plex Disk 1"   # after plugging a drive in
+python3 media-index/drives.py where supernatural               # which drives hold it
+python3 media-index/drives.py missing "Plex Disk 1" Plex_Disk_4  # titles not yet copied
+```
+
 ## Moving to Linux
 
 1. **Disk format.** `Plex_Disk_4` is journaled HFS+. Linux mounts it read-only unless journaling is turned off, so
