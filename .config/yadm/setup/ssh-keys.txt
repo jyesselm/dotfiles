@@ -2,3 +2,5 @@
 # and adds this computer's ~/.ssh/id_ed25519.pub here. Public keys only, this repo is public.
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN3k7GDjw+25A36tz6lCBvXne+50WpfLb7LBb9vMHv/U jyesselman2@laptop
 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBA8JZHY1aXX9tA0bZCXTBOLIpuuzuLakix34w0LjZSFGVmjSKBQVeYrpga5rwEfZqKrwpqGOnZafjynbDFsyPeY= jyesselman2@laptop
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM+eeC3vW/D9UH/XyHreDxMc2JJfd139TQMbZvEag1ow jyesselm@unl.edu
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBL1Hivrxckt1LidPkoF2UDz5V5fHLJ2ktabHhr5CHYKajIHYV08F2ERWWuotTokvD09aDuNi7z1l/R+MbkhbVPg= jyesselman2@studio
