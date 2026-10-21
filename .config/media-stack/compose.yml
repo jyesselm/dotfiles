@@ -241,6 +241,13 @@ services:
       timeout: 5s
       retries: 5
 
+  # AirDrop-style file drop in the browser between any devices on the tailnet or LAN. Nothing is stored.
+  pairdrop:
+    <<: *common
+    image: lscr.io/linuxserver/pairdrop:latest
+    container_name: pairdrop
+    ports: ["3010:3000"]
+
   # Media index: what's using the disk, Plex watch history, keep/delete/shrink review. See media-index/.
   # "Delete" only moves items into Plex_Disk_4/_trash (emptied by hand) and unmonitors them in Radarr/Sonarr.
   media-index:

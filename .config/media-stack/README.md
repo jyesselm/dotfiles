@@ -13,6 +13,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
+| PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
 | Homepage | 3000 | Dashboard |
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `Games/roms` for RomM |

@@ -33,6 +33,11 @@
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8090
         siteMonitor: http://romm:8080/api/heartbeat
         description: Retro games, play in the browser
+    - PairDrop:
+        icon: pairdrop.svg
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:3010
+        siteMonitor: http://pairdrop:3000
+        description: Drop files between devices
 
 - Automation:
     - Media Index:
@@ -134,3 +139,48 @@
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:3001
         siteMonitor: http://uptime-kuma:3001
         description: Up/down history and alerts
+
+- Lab:
+    - NAS portal:
+        icon: mdi-nas
+        href: http://yesselmanbackup:8765
+        siteMonitor: http://100.88.15.86:8765/status.json
+        description: Yesselman Backup · status, storage, trash
+        widget:
+          type: customapi
+          url: http://100.88.15.86:8765/status.json
+          refreshInterval: 60000
+          mappings:
+            - field: {summary: volume1_pct}
+              label: Volume 1
+              suffix: "%"
+            - field: {summary: volume2_pct}
+              label: Volume 2
+              suffix: "%"
+            - field: {summary: raid}
+              label: RAID
+            - field: {summary: disk_max_temp_c}
+              label: Hottest drive
+              suffix: " °C"
+    - Data Index:
+        icon: mdi-database-search
+        href: http://100.73.70.25:8768
+        siteMonitor: http://100.73.70.25:8768/api/summary
+        description: Studio, backup disks, cloud, NAS, swan · what exists nowhere else
+        widget:
+          type: customapi
+          url: http://100.73.70.25:8768/api/summary
+          refreshInterval: 60000
+          mappings:
+            - field: indexed_bytes
+              label: Indexed
+              format: bytes
+            - field: not_backed_up_bytes
+              label: Nowhere else
+              format: bytes
+            - field: undecided_items
+              label: To review
+              format: number
+            - field: delete_bytes
+              label: Marked delete
+              format: bytes
