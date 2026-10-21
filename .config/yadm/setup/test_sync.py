@@ -433,14 +433,14 @@ class PhaseTests(Base):
         listed = sync.setup.assets / 'ssh-keys.txt'
         listed.write_text('# comment\n<<<<<<< HEAD\nssh-ed25519 AAAA1 laptop\n=======\nssh-ed25519 AAAA2 studio\n>>>>>>> 1033d29 (sync: keys)\n')
         (self.root / '.ssh').mkdir(mode=0o700)
-        (self.root / '.ssh/authorized_keys').write_text('ssh-ed25519 AAAA1 old-comment\nssh-rsa BBBB nas\n')
+        (self.root / '.ssh/authorized_keys').write_text('ssh-ed25519 AAAA1 old-comment\nssh-rsa AAAAB nas\n')
         (self.root / '.ssh/id_ed25519.pub').write_text('ssh-ed25519 AAAA3 linux\n')
         result = sync.keys()
         self.assertEqual((result.status, result.summary), ('changed', '2 keys authorized, 1 published'))
         self.assertTrue(result.details[-1].startswith('missing id_ecdsa.pub'))
         (self.root / '.ssh/id_ecdsa.pub').write_text('ecdsa-sha2-nistp256 AAAA4 linux\n')
         self.assertEqual((self.root / '.ssh/authorized_keys').read_text(),
-                         'ssh-ed25519 AAAA1 old-comment\nssh-rsa BBBB nas\nssh-ed25519 AAAA2 studio\nssh-ed25519 AAAA3 linux\n')
+                         'ssh-ed25519 AAAA1 old-comment\nssh-rsa AAAAB nas\nssh-ed25519 AAAA2 studio\nssh-ed25519 AAAA3 linux\n')
         self.assertEqual(oct((self.root / '.ssh/authorized_keys').stat().st_mode & 0o777), '0o600')
         self.assertTrue(listed.read_text().endswith('(sync: keys)\nssh-ed25519 AAAA3 linux\n'))
         self.assertEqual(sync.keys().summary, '1 keys authorized, 1 published')
