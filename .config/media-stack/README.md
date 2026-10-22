@@ -121,21 +121,36 @@ python3 media-index/drives.py missing plex-backup-1 plex-media  # titles not yet
 
 `backup.sh` (launchd, nightly at 04:00) archives every app's settings and databases, Plex's library database and
 `.env` into `settings-YYYY-MM-DD.tar.gz` (~400 MB) in `~/backups/media-stack/` and `plex-media/_backups/settings/`,
-keeping 7 in each. Cover art and Plex artwork are left out; they re-download. To restore an app, stop it and copy
-its folder from the archive back to `$DATA_ROOT` (Plex: its two `.db` files into `Plug-in Support/Databases/`).
+keeping 7 in each, and uploads an encrypted copy to Google Drive (`media-stack-backups/`, newest 4) through the
+rclone remote `gcrypt`. Cover art and Plex artwork are left out; they re-download. To restore an app, stop it and
+copy its folder from the archive back to `$DATA_ROOT` (Plex: its two `.db` files into `Plug-in Support/Databases/`).
+Database copies are made from a container inside OrbStack's VM: never open a running app's SQLite database from
+macOS (with `sqlite3` or a GUI), which breaks its locking and can corrupt it.
 
-Movies are mirrored in full on `plex-movie-backups`. Every Sunday at 10:00 `backup.sh remind` re-catalogs
-`plex-media` and shows a notification with how much is not yet copied; with the drive plugged in, catch up with:
+The Drive copy can only be decrypted with `gcrypt`'s passwords, so keep the output of `rclone config show gcrypt`
+in a password manager. On a new machine: `rclone config create gdrive drive scope=drive.file`, paste that
+`[gcrypt]` block into `~/.config/rclone/rclone.conf`, then `rclone copy gcrypt:settings-<date>.tar.gz .`. If
+uploads fail (a notification says so), run `rclone config reconnect gdrive:`.
+
+Everything except `downloads/` and `games/` is mirrored on three backup drives (`BACKUPS` in
+`media-index/drives.py`), and each also gets a copy of the settings archives:
+
+| Drive | Holds |
+|---|---|
+| `plex-movie-backups` (3 TB) | `movies` |
+| `plex-tv-backups` (3 TB) | `tv` shows starting 0–9 or A–S, `audiobooks` |
+| `plex-misc-backups` (2 TB) | `tv` shows starting T–Z, `anime`, `other`, `youtube`, `music`, `podcasts`; also `MaP2D_Data` (lab data, second copy; the other is on Plex Disk 3) |
+
+Every Sunday at 10:00 `backup.sh remind` re-catalogs `plex-media` and shows a notification with how much each
+drive is behind. Plug the drive in and run `sync`; it mirrors deletions too and re-catalogs the drive:
 
 ```sh
-rsync -a --delete /Volumes/plex-media/movies/ /Volumes/plex-movie-backups/movies/
-python3 media-index/drives.py catalog /Volumes/plex-movie-backups
-python3 media-index/drives.py status               # what the reminder checks
-./backup.sh install                                # (re)install both launchd jobs
+python3 media-index/drives.py sync plex-tv-backups   # or plex-movie-backups / plex-misc-backups
+python3 media-index/drives.py status                 # what the reminder checks
+./backup.sh install                                  # (re)install both launchd jobs
 ```
 
-Add a drive that mirrors more folders to `BACKUPS` in `media-index/drives.py`. `plex-backup-1` and `plex-backup-3`
-hold older partial copies and are only catalogued.
+`Plex Disk 1` and `Plex Disk 3` hold older partial copies and are only catalogued.
 
 ## Moving to Linux
 

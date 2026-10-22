@@ -6,3 +6,6 @@ cask "orbstack"
 
 # Re-encoding shrink-marked titles with the hardware HEVC encoder (media-stack/media-index/shrink.py).
 brew "ffmpeg"
+
+# Drive health checks for the media and backup drives (smartctl).
+brew "smartmontools"

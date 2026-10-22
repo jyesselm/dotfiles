@@ -18,11 +18,15 @@ def test_catalog_round_trips_and_writes_to_drive(tmp_path: Path, monkeypatch) ->
     (mount / "_trash").mkdir()
     (mount / "_trash" / "gone.mkv").write_bytes(b"x")
     (mount / "movies" / "Icon\r").write_bytes(b"")  # Finder folder icon
+    (mount / "movies" / "Heat (1995)" / "_extras.txt").write_bytes(b"x")  # underscores only skip at the top
     drives.catalog(mount, "Disk")
-    assert [(e.path, e.size) for e in drives.load("Disk")] == [("movies/Heat (1995)/Heat.mkv", 10)]
+    assert sorted((e.path, e.size) for e in drives.load("Disk")) == [
+        ("movies/Heat (1995)/Heat.mkv", 10),
+        ("movies/Heat (1995)/_extras.txt", 1),
+    ]
     assert (mount / drives.ON_DRIVE_NAME).exists()
     drives.catalog(mount, "Disk")  # the on-drive manifest is hidden, so it never lists itself
-    assert len(drives.load("Disk")) == 1
+    assert len(drives.load("Disk")) == 2
 
 
 def test_missing_matches_name_and_size_or_large_renames() -> None:
@@ -42,3 +46,20 @@ def test_backup_status_counts_only_the_mirrored_folders(tmp_path: Path, monkeypa
     drives.save(main, drives.catalog_path(drives.MAIN_DRIVE))
     drives.save([drives.Entry("movies/a.mkv", 7, 0)], drives.catalog_path("backup"))
     assert [row[:3] for row in drives.backup_status()] == [("backup", "movies", 9)]
+
+
+def test_tv_is_split_between_two_drives_by_first_letter() -> None:
+    def owners(path: str) -> list[str]:
+        return [d for d, scopes in drives.BACKUPS.items() if any(drives.in_scope(path, s) for s in scopes)]
+
+    assert owners("tv/Alias/S01E01.mkv") == ["plex-tv-backups"]
+    assert owners("tv/3rd Rock/S01E01.mkv") == ["plex-tv-backups"]
+    assert owners("tv/The Wire/S01E01.mkv") == ["plex-misc-backups"]
+    assert owners("movies/Heat (1995)/Heat.mkv") == ["plex-movie-backups"]
+    assert owners("downloads/x.mkv") == []
+
+
+def test_sync_commands_filter_tv_and_copy_settings() -> None:
+    commands = drives.sync_commands("plex-misc-backups")
+    assert commands[0][:6] == ["rsync", "-a", "--delete", "--include", "/[!0-9A-Sa-s]*", "--exclude"]
+    assert commands[-1][-1] == "/Volumes/plex-misc-backups/_backups/settings/"

@@ -12,12 +12,14 @@ RENAMED_MIN_BYTES) just the same size, which catches renames such as Radarr's "T
     python3 drives.py where supernatural                    # which drives hold matching titles
     python3 drives.py missing plex-backup-1 plex-media       # titles on the first drive with no copy on the second
     python3 drives.py status --notify                       # how far behind each full backup is (weekly reminder)
+    python3 drives.py sync plex-tv-backups                  # bring one backup up to date, then re-catalog it
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import fnmatch
 import os
 import shutil
 import subprocess
@@ -33,7 +35,15 @@ ON_DRIVE_NAME = ".media-manifest.tsv"  # hidden, so index.walk never lists it
 RENAMED_MIN_BYTES = 50_000_000  # below this, equal sizes are too common to mean "same file"
 FIELDS = ["path", "size", "mtime"]
 MAIN_DRIVE = "plex-media"
-BACKUPS = {"plex-movie-backups": ["movies"]}  # drive -> folders of MAIN_DRIVE it mirrors in full
+# Drive -> what of MAIN_DRIVE it mirrors: a whole top-level folder, or "folder/<glob>" for the entries in it whose
+# name matches (rsync filter syntax). tv is split by first letter so it fits on two drives.
+TV_FIRST_HALF = "0-9A-Sa-s"  # first letters of the tv shows on plex-tv-backups
+BACKUPS = {
+    "plex-movie-backups": ["movies"],
+    "plex-tv-backups": [f"tv/[{TV_FIRST_HALF}]*", "audiobooks"],
+    "plex-misc-backups": [f"tv/[!{TV_FIRST_HALF}]*", "anime", "other", "youtube", "music", "podcasts"],
+}
+SETTINGS_DIR = "_backups/settings"  # backup.sh's nightly archives; every backup drive gets a copy when synced
 
 
 @dataclass(frozen=True)
@@ -151,26 +161,65 @@ def backup_status(main: str = MAIN_DRIVE) -> list[tuple[str, str, int, float]]:
     """
     source = load(main)
     rows = []
-    for drive, folders in BACKUPS.items():
+    for drive, scopes in BACKUPS.items():
         if not catalog_path(drive).exists():
             continue
         target = load(drive)
         stamp = catalog_path(drive).stat().st_mtime
-        for folder in folders:
-            scoped = [e for e in source if e.path.startswith(f"{folder}/")]
-            rows.append((drive, folder, sum(missing(scoped, target).values()), stamp))
+        for scope in scopes:
+            scoped = [e for e in source if in_scope(e.path, scope)]
+            rows.append((drive, scope, sum(missing(scoped, target).values()), stamp))
     return rows
+
+
+def in_scope(path: str, scope: str) -> bool:
+    """True when a path relative to the drive falls under a BACKUPS scope ("tv" or "tv/[0-9A-Sa-s]*")."""
+    folder, _, pattern = scope.partition("/")
+    top, _, rest = path.partition("/")
+    return top == folder and (not pattern or fnmatch.fnmatchcase(rest.split("/", 1)[0], pattern))
+
+
+def sync_commands(drive: str) -> list[list[str]]:
+    """The rsync runs that make a drive match its BACKUPS scopes, plus a copy of the settings archives.
+
+    --delete removes what was deleted from MAIN_DRIVE; with a name filter it only touches matching entries.
+    """
+    commands = []
+    for scope in BACKUPS[drive]:
+        folder, _, pattern = scope.partition("/")
+        filters = ["--include", f"/{pattern}", "--exclude", "/*"] if pattern else []
+        commands.append(rsync_command(drive, folder, filters))
+    commands.append(rsync_command(drive, SETTINGS_DIR, []))
+    return commands
+
+
+def rsync_command(drive: str, folder: str, filters: list[str]) -> list[str]:
+    """rsync that mirrors MAIN_DRIVE's folder onto the same folder of drive."""
+    return ["rsync", "-a", "--delete", *filters, f"/Volumes/{MAIN_DRIVE}/{folder}/", f"/Volumes/{drive}/{folder}/"]
+
+
+def sync(drive: str) -> None:
+    """Run sync_commands for a mounted drive, then re-catalog it."""
+    mount = Path("/Volumes") / drive
+    if not mount.is_dir():
+        raise SystemExit(f"{mount} is not mounted")
+    for command in sync_commands(drive):
+        print(" ".join(command))
+        Path(command[-1]).mkdir(parents=True, exist_ok=True)
+        subprocess.run(command, check=True)
+    entries = catalog(mount, drive)
+    print(f"{len(entries)} files, {gb(sum(e.size for e in entries)).strip()} on {drive}")
 
 
 def print_status(show_notification: bool) -> None:
     """Print how far each backup is behind, with the command that catches it up."""
     lines = []
-    for drive, folder, behind, stamp in backup_status():
+    for drive, scope, behind, stamp in backup_status():
         days = (time.time() - stamp) / 86400
-        lines.append(f"{drive}/{folder}: {gb(behind).strip()} not copied, last catalogued {days:.0f} days ago")
+        lines.append(f"{drive} {scope}: {gb(behind).strip()} not copied, last synced {days:.0f} days ago")
         print(lines[-1])
-        print(f"   rsync -a --delete /Volumes/{MAIN_DRIVE}/{folder}/ /Volumes/{drive}/{folder}/")
-        print(f"   python3 drives.py catalog /Volumes/{drive}")
+    if lines:
+        print("plug a drive in and run: python3 media-index/drives.py sync <drive>")
     if show_notification and lines:
         notify("Back up the media drives", "; ".join(lines))
 
@@ -205,6 +254,8 @@ def main() -> None:
     m.add_argument("target")
     s = sub.add_parser("status", help=f"how far each full backup is behind {MAIN_DRIVE}")
     s.add_argument("--notify", action="store_true", help="also show a macOS notification")
+    y = sub.add_parser("sync", help="bring a backup drive up to date and re-catalog it")
+    y.add_argument("drive", choices=sorted(BACKUPS))
     args = parser.parse_args()
 
     if args.command == "catalog":
@@ -223,6 +274,8 @@ def main() -> None:
                 print(f"   {gb(size)}  {drive}")
     elif args.command == "status":
         print_status(args.notify)
+    elif args.command == "sync":
+        sync(args.drive)
     else:
         for item, size in missing(load(args.source), load(args.target)).items():
             print(f"{gb(size)}  {item}")

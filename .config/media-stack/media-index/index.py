@@ -159,17 +159,22 @@ def kind_for(name: str) -> str:
     return "other"
 
 
-def is_skipped(name: str) -> bool:
-    """True for hidden/system entries and underscore folders (_trash, _backups, _meta), which are not indexed.
+def is_skipped(name: str, top_level: bool = False) -> bool:
+    """True for hidden/system entries, and at the top level for underscore entries (_trash, _backups, _meta).
+
+    Underscores count only at the top: inside a title they are ordinary names ("_Summary.txt").
 
     Args:
         name: A file or folder name.
+        top_level: Whether it sits directly under the media root.
 
     Returns:
         Whether to skip it.
     """
     # "Icon\r" is Finder's custom folder icon; the \r also breaks TSV manifests.
-    return name.startswith((".", "_")) or name in {"$RECYCLE.BIN", "System Volume Information", "Icon\r"}
+    if top_level and name.startswith("_"):
+        return True
+    return name.startswith(".") or name in {"$RECYCLE.BIN", "System Volume Information", "Icon\r"}
 
 
 def walk(root: Path = MEDIA_ROOT) -> Iterator[FileStat]:
@@ -182,9 +187,10 @@ def walk(root: Path = MEDIA_ROOT) -> Iterator[FileStat]:
         One FileStat per file.
     """
     for dirpath, dirnames, filenames in os.walk(root, onerror=lambda _err: None):
-        dirnames[:] = [d for d in dirnames if not is_skipped(d)]
+        top_level = Path(dirpath) == Path(root)
+        dirnames[:] = [d for d in dirnames if not is_skipped(d, top_level)]
         for name in filenames:
-            if is_skipped(name):
+            if is_skipped(name, top_level):
                 continue
             yield _stat(root, Path(dirpath) / name)
 
