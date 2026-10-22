@@ -282,6 +282,24 @@ services:
       - ${DATA_ROOT}/plextraktsync:/app/config
       - ./plextraktsync:/patches:ro
 
+  # Plex collections (franchises, IMDb lists) and resolution/HDR poster badges, rebuilt daily at 05:00; changes
+  # show on every Plex client. Tracked config in kometa/, logs and cache in $DATA_ROOT/kometa.
+  kometa:
+    image: kometateam/kometa:latest
+    container_name: kometa
+    restart: unless-stopped
+    # Kometa rewrites its config on load, so copy the tracked one in fresh each start instead of mounting it.
+    entrypoint: ["sh", "-c", "cp /kometa-src/config.yml /config/config.yml && exec /tini -s /.venv/bin/python3 kometa.py -- \"$$@\"", "kometa"]
+    environment:
+      TZ: ${TZ}
+      KOMETA_TIMES: "05:00"
+      KOMETA_PLEXURL: http://${HOST_ADDR}:32400
+      KOMETA_PLEXTOKEN: ${HOMEPAGE_VAR_PLEX_TOKEN}
+      KOMETA_TMDBKEY: ${TMDB_API_KEY}
+    volumes:
+      - ${DATA_ROOT}/kometa:/config
+      - ./kometa:/kometa-src:ro
+
   # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
   homepage:
     image: ghcr.io/gethomepage/homepage:latest

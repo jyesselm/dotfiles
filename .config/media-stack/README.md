@@ -11,6 +11,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
 | PlexTraktSync | — | Plex ⇄ Trakt ratings and watched status every 6 h (see Movie recommendations) |
+| Kometa | — | Plex collections (franchises, IMDb lists, networks) and resolution/HDR poster badges, daily at 05:00; settings in `kometa/config.yml`, TMDb key `TMDB_API_KEY` in `.env` |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
