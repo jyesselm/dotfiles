@@ -266,6 +266,22 @@ services:
       - ${MEDIA_ROOT}:/Volumes/plex-media
       - ${PLEX_DB_DIR}:/plex-db:ro
 
+  # Plex ⇄ Trakt ratings and watched status (Trakt's own Plex Sync skips ratings). Syncs every 6 h; /init drops to
+  # PUID/PGID. One-time login: docker-compose run --rm plextraktsync login (needs a Trakt API app, see README.md).
+  plextraktsync:
+    image: ghcr.io/taxel/plextraktsync:latest
+    container_name: plextraktsync
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+      PYTHONPATH: /patches  # sitecustomize.py: fixes rating URLs for Trakt usernames with "_"
+    command: ["sh", "-c", "while :; do /init sync; sleep 21600; done"]
+    volumes:
+      - ${DATA_ROOT}/plextraktsync:/app/config
+      - ./plextraktsync:/patches:ro
+
   # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
   homepage:
     image: ghcr.io/gethomepage/homepage:latest

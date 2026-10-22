@@ -10,6 +10,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
 | spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
+| PlexTraktSync | — | Plex ⇄ Trakt ratings and watched status every 6 h (see Movie recommendations) |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
@@ -28,13 +29,22 @@ Lidarr unmonitors tracks you delete, so trimming an album in Media Index doesn't
 
 ## Movie recommendations (Trakt)
 
-Rate movies in Plex (stars). Trakt's built-in Plex Sync (free: one server, daily) copies ratings and watch history to
-Trakt, which turns them into picks at trakt.tv/movies/recommended. Add the ones you want to your Trakt watchlist;
-Radarr's import list "Trakt Watchlist" (Trakt User → Watchlist, HD-1080p, `movies/`) adds and searches them on its
-next list sync. Clean Library Level stays Disabled, so watching a movie (Trakt then drops it from the watchlist)
-never deletes it. Radarr signs in through its own Trakt app, so no Trakt API app or VIP is needed; if the list
-stops syncing, open it in Radarr → Settings → Import Lists and press Start OAuth again, in Chrome or Safari: the
-sign-in popup hands its token back to the form, which Claude's browser pane can't do.
+Rate movies in Plex (stars). PlexTraktSync (container `plextraktsync`, every 6 h) copies ratings and watched
+status both ways between Plex and Trakt; Trakt's own Plex Sync handles library and history but drops ratings in both
+directions (October 2026). Trakt turns ratings into picks at trakt.tv/movies/recommended. Add the ones you want to
+your Trakt watchlist; Radarr's import list "Trakt Watchlist" (Trakt User → Watchlist, HD-1080p, `movies/`) adds
+and searches them on its next list sync. PlexTraktSync also mirrors the Plex watchlist to Trakt, so a movie
+watchlisted in Plex is downloaded too. Clean Library Level stays Disabled, so watching a movie (Trakt then drops it
+from the watchlist) never deletes it.
+
+Sign-ins live in `$DATA_ROOT/plextraktsync/` (`.env`, `.pytrakt.json`, `servers.yml`) and Radarr's database, so a
+moved or restored stack keeps them. Only a fresh install needs them again:
+- PlexTraktSync: a Trakt API app (app.trakt.tv → Your API Apps, Development, redirect `http://localhost`), then
+  `docker-compose run --rm --no-deps plextraktsync login` and answer the prompts (Plex sign-in, server
+  `plex-server`, the app's Client ID, then the trakt.tv/activate code). Run it over SSH from the computer showing the
+  Client ID; `trakt-login` redoes only the Trakt half.
+- Radarr: open the list in Radarr → Settings → Import Lists and press Start OAuth, in Chrome or Safari (the sign-in
+  popup hands its token back to the form, which Claude's browser pane can't do).
 
 ## Files
 
@@ -170,7 +180,7 @@ python3 media-index/drives.py status                 # what the reminder checks
 2. **Install** Docker Engine with the compose plugin, clone the dotfiles (`yadm` linux class), and copy
    `env.example` to `.env`.
 3. **Stop the Mac stack** (`docker-compose down`, quit Plex), then copy the app data across:
-   `rsync -a ~/.local/share/{radarr,sonarr,lidarr,prowlarr,seerr,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
+   `rsync -a ~/.local/share/{radarr,sonarr,lidarr,prowlarr,seerr,plextraktsync,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
 4. **Edit `.env`**: `MEDIA_ROOT=/mnt/plex`, `DATA_ROOT=/home/<you>/.local/share`, `PUID`/`PGID` from `id`
    (usually 1000), `HOMEPAGE_ALLOWED_HOSTS` for the new address, keys unchanged.
    Seerr runs as uid 1000: `sudo chown -R 1000:1000 $DATA_ROOT/seerr/config`.
