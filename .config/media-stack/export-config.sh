@@ -27,7 +27,7 @@ dump() {  # app port api-version key endpoint...
   done
 }
 
-arr=(customformat qualityprofile delayprofile tag rootfolder downloadclient remotepathmapping
+arr=(customformat qualityprofile delayprofile tag rootfolder downloadclient remotepathmapping importlist config/importlist
      config/naming config/mediamanagement config/downloadclient)
 dump radarr 7878 v3 "$(env_val HOMEPAGE_VAR_RADARR_KEY)" "${arr[@]}"
 dump sonarr 8989 v3 "$(env_val HOMEPAGE_VAR_SONARR_KEY)" "${arr[@]}"

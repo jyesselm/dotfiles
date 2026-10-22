@@ -26,6 +26,16 @@ Music library, Plexamp app). Lidarr only fetches whole albums, so for one song p
 if spotDL fails with YouTube 403/429 errors, `docker-compose build --pull spotdl && docker-compose up -d spotdl`.
 Lidarr unmonitors tracks you delete, so trimming an album in Media Index doesn't re-download it.
 
+## Movie recommendations (Trakt)
+
+Rate movies in Plex (stars). Trakt's built-in Plex Sync (free: one server, daily) copies ratings and watch history to
+Trakt, which turns them into picks at trakt.tv/movies/recommended. Add the ones you want to your Trakt watchlist;
+Radarr's import list "Trakt Watchlist" (Trakt User → Watchlist, HD-1080p, `movies/`) adds and searches them on its
+next list sync. Clean Library Level stays Disabled, so watching a movie (Trakt then drops it from the watchlist)
+never deletes it. Radarr signs in through its own Trakt app, so no Trakt API app or VIP is needed; if the list
+stops syncing, open it in Radarr → Settings → Import Lists and press Start OAuth again, in Chrome or Safari: the
+sign-in popup hands its token back to the form, which Claude's browser pane can't do.
+
 ## Files
 
 - `compose.yml`, `homepage/`, `gluetun-auth.toml`: tracked in dotfiles, no secrets.

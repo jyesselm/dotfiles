@@ -1,0 +1,169 @@
+[
+  {
+    "enabled": true,
+    "enableAuto": true,
+    "monitor": "movieOnly",
+    "rootFolderPath": "/Volumes/plex-media/movies",
+    "qualityProfileId": 4,
+    "searchOnAdd": true,
+    "minimumAvailability": "released",
+    "listType": "trakt",
+    "listOrder": 2,
+    "minRefreshInterval": "12:00:00",
+    "name": "Trakt Watchlist",
+    "fields": [
+      {
+        "order": 0,
+        "name": "accessToken",
+        "label": "Access Token",
+        "value": "",
+        "type": "textbox",
+        "advanced": false,
+        "hidden": "hidden",
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 1,
+        "name": "refreshToken",
+        "label": "Refresh Token",
+        "value": "",
+        "type": "textbox",
+        "advanced": false,
+        "hidden": "hidden",
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 2,
+        "name": "expires",
+        "label": "Expires",
+        "value": "2026-10-29T18:41:22Z",
+        "type": "textbox",
+        "advanced": false,
+        "hidden": "hidden",
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 3,
+        "name": "authUser",
+        "label": "Auth User",
+        "value": "",
+        "type": "textbox",
+        "advanced": false,
+        "hidden": "hidden",
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 4,
+        "name": "traktListType",
+        "label": "List Type",
+        "helpText": "Type of list you're seeking to import from",
+        "value": 0,
+        "type": "select",
+        "advanced": false,
+        "selectOptions": [
+          {
+            "value": 0,
+            "name": "User Watch List",
+            "order": 7,
+            "hint": "(0)",
+            "dividerAfter": false
+          },
+          {
+            "value": 1,
+            "name": "User Watched List",
+            "order": 9,
+            "hint": "(1)",
+            "dividerAfter": false
+          },
+          {
+            "value": 2,
+            "name": "User Collection List",
+            "order": 11,
+            "hint": "(2)",
+            "dividerAfter": false
+          }
+        ],
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 5,
+        "name": "traktWatchSorting",
+        "label": "Watch List Sorting",
+        "helpText": "If List Type is Watch, select the order to sort the list",
+        "value": 0,
+        "type": "select",
+        "advanced": false,
+        "selectOptions": [
+          {
+            "value": 0,
+            "name": "Rank",
+            "order": 0,
+            "dividerAfter": false
+          },
+          {
+            "value": 1,
+            "name": "Added",
+            "order": 1,
+            "dividerAfter": false
+          },
+          {
+            "value": 2,
+            "name": "Title",
+            "order": 2,
+            "dividerAfter": false
+          },
+          {
+            "value": 3,
+            "name": "Released",
+            "order": 3,
+            "dividerAfter": false
+          }
+        ],
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 6,
+        "name": "username",
+        "label": "Username",
+        "helpText": "Username for the List to import from (leave empty to use Auth User)",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 7,
+        "name": "limit",
+        "label": "Limit",
+        "helpText": "Limit the number of movies to get",
+        "value": 100,
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 8,
+        "name": "signIn",
+        "label": "Authenticate with Trakt",
+        "value": "startOAuth",
+        "type": "oAuth",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      }
+    ],
+    "implementationName": "Trakt User",
+    "implementation": "TraktUserImport",
+    "configContract": "TraktUserSettings",
+    "infoLink": "https://wiki.servarr.com/radarr/supported#traktuserimport",
+    "tags": [],
+    "id": 1
+  }
+]
