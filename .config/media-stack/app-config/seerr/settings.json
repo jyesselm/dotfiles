@@ -39,14 +39,14 @@
         "name": "Movies",
         "enabled": true,
         "type": "movie",
-        "lastScan": 1792511700099
+        "lastScan": 1792596900187
       },
       {
         "id": "2",
         "name": "TV Shows",
         "enabled": true,
         "type": "show",
-        "lastScan": 1792511700112
+        "lastScan": 1792596900293
       }
     ],
     "machineId": "ee41ae9cca848b09fa0291f1a8f331587a584325"
@@ -75,7 +75,7 @@
       "baseUrl": "",
       "activeProfileId": 4,
       "activeProfileName": "HD-1080p",
-      "activeDirectory": "/Volumes/Plex_Disk_4/Movies",
+      "activeDirectory": "/Volumes/plex-media/movies",
       "is4k": false,
       "minimumAvailability": "released",
       "isDefault": true,
@@ -95,10 +95,10 @@
       "baseUrl": "",
       "activeProfileId": 4,
       "activeProfileName": "HD-1080p",
-      "activeDirectory": "/Volumes/Plex_Disk_4/TV Shows",
+      "activeDirectory": "/Volumes/plex-media/tv",
       "activeAnimeProfileId": 4,
       "activeAnimeProfileName": "HD-1080p",
-      "activeAnimeDirectory": "/Volumes/Plex_Disk_4/Anime",
+      "activeAnimeDirectory": "/Volumes/plex-media/anime",
       "is4k": false,
       "isDefault": true,
       "enableSeasonFolders": true,

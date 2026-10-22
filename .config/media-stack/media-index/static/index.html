@@ -166,7 +166,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
   <section class="card" aria-label="Disk usage by folder">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <strong>Plex_Disk_4</strong><span class="sub" id="diskpct"></span>
+      <strong>plex-media</strong><span class="sub" id="diskpct"></span>
     </div>
     <div class="bar" id="bar"></div>
     <div class="legend" id="legend"></div>
@@ -201,7 +201,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
 <dialog id="confirm">
   <h2 id="ctitle"></h2>
-  <div class="sub">These folders move to <code>Plex_Disk_4/_trash</code>, which is on the same disk, so it's instant and you can restore them from the Trash tile. Radarr/Sonarr stop monitoring them so they aren't downloaded again. Nothing is permanently deleted until you empty <code>_trash</code> yourself.</div>
+  <div class="sub">These folders move to <code>plex-media/_trash</code>, which is on the same disk, so it's instant and you can restore them from the Trash tile. Radarr/Sonarr stop monitoring them so they aren't downloaded again. Nothing is permanently deleted until you empty <code>_trash</code> yourself.</div>
   <ul id="clist"></ul>
   <div class="actions"><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="go">Move to trash</button></div>
 </dialog>
@@ -297,9 +297,9 @@ function renderSummary() {
 }
 
 // One chip per top-level folder, so small ones (Music, Podcasts) are as easy to pick as Movies.
-const TYPE_ICONS = { Movies: "🎬", "TV Shows": "📺", Anime: "🍥", music: "♪", "Audio Books": "📚", Podcasts: "🎙", Youtube: "▶" };
+const TYPE_LABELS = { movies: "🎬 Movies", tv: "📺 TV", anime: "🍥 Anime", music: "♪ Music", audiobooks: "📚 Audiobooks", podcasts: "🎙 Podcasts", youtube: "▶ YouTube" };
 function renderTypes(categories) {
-  const label = (name) => (TYPE_ICONS[name] ? TYPE_ICONS[name] + " " : "") + name.charAt(0).toUpperCase() + name.slice(1);
+  const label = (name) => TYPE_LABELS[name] || name.charAt(0).toUpperCase() + name.slice(1);
   $("types").innerHTML = `<button class="chip ${state.category ? "" : "on"}" data-cat="">All</button>` +
     categories.map(([name, size]) => `<button class="chip ${state.category === name ? "on" : ""}" data-cat="${esc(name)}">${esc(label(name))}<b>${gb(size)}</b></button>`).join("");
   for (const el of $("types").children) el.onclick = () => { state.category = el.dataset.cat || null; reset(); renderSummary(); };
@@ -326,7 +326,7 @@ function tip(e, text) {
 }
 
 const GB_PER_HOUR_OVERSIZED = 6e9; // a good 1080p movie encode is ~2-4 GB/hour
-const isBig = (it) => it.category === "Movies" && it.video_files > 0 && !it.trashed_at && !it.swap &&
+const isBig = (it) => it.category === "movies" && it.video_files > 0 && !it.trashed_at && !it.swap &&
   ((it.height || 0) >= 1600 || (it.duration_s && it.size / (it.duration_s / 3600) > GB_PER_HOUR_OVERSIZED));
 const isOld = (it) => (it.codecs || "").split(",").some((c) => OLD_CODECS.includes(c));
 const FLAGS = {
@@ -385,7 +385,7 @@ function rowHtml(it, i, max) {
   if (isOld(it)) badges.push(`<span class="badge warn">Old format</span>`);
   if (isBig(it)) badges.push(`<button class="linkbtn" data-swap>⇄ Find smaller 1080p</button>`);
   if (it.swap) badges.push(`<span class="badge swap" title="${esc(it.swap.release)}">⇄ Swapped ${ago(it.swap.swapped_at)}: ${gb(it.swap.original_size)} → ${gb(it.swap.release_size)} (original in _trash)</span>`);
-  if (it.freeable < it.size && !it.trashed_at) badges.push(`<span class="badge" title="Hardlinked with a torrent in downloading/; deleting frees space only once the torrent is removed too">Shared with torrent · frees ${gb(it.freeable)}</span>`);
+  if (it.freeable < it.size && !it.trashed_at) badges.push(`<span class="badge" title="Hardlinked with a torrent in downloads/; deleting frees space only once the torrent is removed too">Shared with torrent · frees ${gb(it.freeable)}</span>`);
   if (isSong(it) && !it.trashed_at) badges.push(`<button class="linkbtn" data-play>${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
   if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
   const d = status(it);

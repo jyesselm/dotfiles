@@ -1,7 +1,7 @@
 {
   "autoUnmonitorPreviouslyDownloadedTracks": true,
-  "recycleBin": "",
-  "recycleBinCleanupDays": 7,
+  "recycleBin": "/Volumes/plex-media/_trash/lidarr",
+  "recycleBinCleanupDays": 0,
   "downloadPropersAndRepacks": "preferAndUpgrade",
   "createEmptyArtistFolders": false,
   "deleteEmptyFolders": false,

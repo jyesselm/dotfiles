@@ -129,9 +129,9 @@ def _trashed_item(decision: dict) -> dict:
     }
 
 
-# Torrents in downloading/ are hardlinked into the libraries, so count those files only once (in the library).
+# Torrents in downloads/ are hardlinked into the libraries, so count those files only once (in the library).
 CATEGORIES_SQL = """
-select category, sum(case when category = 'downloading' and nlink > 1 then 0 else size end) as size
+select category, sum(case when category = 'downloads' and nlink > 1 then 0 else size end) as size
 from files group by category order by size desc
 """
 
@@ -300,7 +300,7 @@ def swap_options(item: str) -> dict:
     """Smaller English 1080p releases Radarr can find for a movie.
 
     Args:
-        item: Item key, e.g. "Movies/First Man (2018)".
+        item: Item key, e.g. "movies/First Man (2018)".
 
     Returns:
         {"ok", "message", "current_size", "options"}.

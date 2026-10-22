@@ -1,5 +1,5 @@
 - resources:
-    label: Plex_Disk_4
-    disk: /Volumes/Plex_Disk_4
+    label: plex-media
+    disk: /Volumes/plex-media
 - datetime:
     format: {dateStyle: medium, timeStyle: short}

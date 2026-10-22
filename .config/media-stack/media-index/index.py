@@ -1,7 +1,7 @@
 """Scan the media disk into a SQLite index: one row per file, grouped into reviewable items.
 
 An item is a title-sized unit: the folder (or loose file) one level under a top-level folder,
-e.g. "Movies/Heat (1995)" or "TV Shows/The Wire". Music is reviewed song by song, so each file under
+e.g. "movies/Heat (1995)" or "tv/The Wire". Music is reviewed song by song, so each file under
 "music/" is its own item. Decisions are made per item.
 """
 
@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", "/Volumes/Plex_Disk_4"))
+MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", "/Volumes/plex-media"))
 DB_PATH = Path(os.environ.get("INDEX_DB", "/data/media-index.db"))
 PLEX_DB_DIR = Path(os.environ.get("PLEX_DB_DIR", "/plex-db"))
 TRASH_NAME = "_trash"
@@ -37,7 +37,7 @@ create table if not exists files (
     kind text not null,         -- video | audio | other
     size integer not null,
     mtime real not null,
-    nlink integer not null,     -- >1 means hardlinked (usually shared with downloading/)
+    nlink integer not null,     -- >1 means hardlinked (usually shared with downloads/)
     duration_s real,
     height integer,
     codec text,
@@ -128,10 +128,10 @@ def item_for(rel_path: str) -> tuple[str, str]:
     """Return (item, category) for a path relative to the media root.
 
     Args:
-        rel_path: e.g. "Movies/Heat (1995)/Heat.mkv".
+        rel_path: e.g. "movies/Heat (1995)/Heat.mkv".
 
     Returns:
-        ("Movies/Heat (1995)", "Movies"); loose files at the root are their own item in "(root)",
+        ("movies/Heat (1995)", "movies"); loose files at the root are their own item in "(root)",
         and each music file is its own item.
     """
     parts = rel_path.split("/")
@@ -160,7 +160,7 @@ def kind_for(name: str) -> str:
 
 
 def is_skipped(name: str) -> bool:
-    """True for hidden/system entries and the review trash, which are not indexed.
+    """True for hidden/system entries and underscore folders (_trash, _backups, _meta), which are not indexed.
 
     Args:
         name: A file or folder name.
@@ -169,7 +169,7 @@ def is_skipped(name: str) -> bool:
         Whether to skip it.
     """
     # "Icon\r" is Finder's custom folder icon; the \r also breaks TSV manifests.
-    return name.startswith(".") or name in {TRASH_NAME, "$RECYCLE.BIN", "System Volume Information", "Icon\r"}
+    return name.startswith((".", "_")) or name in {"$RECYCLE.BIN", "System Volume Information", "Icon\r"}
 
 
 def walk(root: Path = MEDIA_ROOT) -> Iterator[FileStat]:
@@ -333,7 +333,7 @@ def title_key(item: str) -> str:
     """Normalize an item name for duplicate matching: drop year, brackets, quality tags, punctuation.
 
     Args:
-        item: e.g. "Movies/Heat (1995) [1080p]".
+        item: e.g. "movies/Heat (1995) [1080p]".
 
     Returns:
         e.g. "heat".

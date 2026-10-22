@@ -6,7 +6,7 @@ albums holding your lowest-bitrate songs, gives the artist the "Upgrade to 320" 
 searches.
 Albums are pinned to their current release so Lidarr can't swap editions and drop songs; songs are matched by title,
 and nothing is deleted while any song you had lacks a file. Lidarr replaces the old files itself. Everything removed
-goes to Lidarr's recycle bin, Plex_Disk_4/_trash/lidarr, which is never emptied automatically. Albums with no 320
+goes to Lidarr's recycle bin, plex-media/_trash/lidarr, which is never emptied automatically. Albums with no 320
 release after GIVE_UP_DAYS are unmonitored and not tried again. Songs Lidarr doesn't know
 (most YouTube rips) can't be upgraded this way.
 
@@ -43,7 +43,7 @@ RUN_HOUR = 3
 PROFILE_NAME = "Upgrade to 320"
 TARGET_GROUP = "High Quality Lossy"  # Lidarr's group holding MP3-320, AAC-320 and MP3 V0
 LOW_GROUPS = ("Trash Quality Lossy", "Poor Quality Lossy", "Low Quality Lossy")  # up to 224 kbps, worst first
-RECYCLE_BIN = "/Volumes/Plex_Disk_4/_trash/lidarr"
+RECYCLE_BIN = "/Volumes/plex-media/_trash/lidarr"
 ALBUMS_PER_RUN = 10
 GIVE_UP_DAYS = 14
 

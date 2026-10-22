@@ -11,27 +11,27 @@ import index  # noqa: E402
 
 
 def test_item_for_groups_one_level_below_category() -> None:
-    assert index.item_for("Movies/Heat (1995)/Heat.mkv") == ("Movies/Heat (1995)", "Movies")
-    assert index.item_for("Movies/loose.mkv") == ("Movies/loose.mkv", "Movies")
+    assert index.item_for("movies/Heat (1995)/Heat.mkv") == ("movies/Heat (1995)", "movies")
+    assert index.item_for("movies/loose.mkv") == ("movies/loose.mkv", "movies")
     assert index.item_for("log.tsv") == ("log.tsv", "(root)")
     assert index.item_for("music/Ratatat/LP3/Shempi.mp3") == ("music/Ratatat/LP3/Shempi.mp3", "music")
 
 
 def test_title_key_ignores_year_and_quality() -> None:
-    assert index.title_key("Movies/Heat (1995)") == "heat"
+    assert index.title_key("movies/Heat (1995)") == "heat"
     assert index.title_key("old/Heat.1995.1080p.BluRay.x264.mkv") == "heat"
 
 
 def test_scan_indexes_and_skips_trash(tmp_path: Path) -> None:
     media = tmp_path / "media"
-    (media / "Movies" / "Heat (1995)").mkdir(parents=True)
-    (media / "Movies" / "Heat (1995)" / "Heat.mkv").write_bytes(b"x" * 10)
-    (media / "_trash" / "Movies").mkdir(parents=True)
-    (media / "_trash" / "Movies" / "gone.mkv").write_bytes(b"x")
+    (media / "movies" / "Heat (1995)").mkdir(parents=True)
+    (media / "movies" / "Heat (1995)" / "Heat.mkv").write_bytes(b"x" * 10)
+    (media / "_trash" / "movies").mkdir(parents=True)
+    (media / "_trash" / "movies" / "gone.mkv").write_bytes(b"x")
     conn = index.connect(tmp_path / "db" / "index.db")
     index.scan(conn, media)
     rows = [dict(r) for r in conn.execute("select path, item, kind, size from files")]
-    assert rows == [{"path": "Movies/Heat (1995)/Heat.mkv", "item": "Movies/Heat (1995)", "kind": "video", "size": 10}]
+    assert rows == [{"path": "movies/Heat (1995)/Heat.mkv", "item": "movies/Heat (1995)", "kind": "video", "size": 10}]
 
 
 def test_shrink_saving_skips_hevc_and_estimates_h264() -> None:

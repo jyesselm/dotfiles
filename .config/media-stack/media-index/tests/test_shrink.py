@@ -34,7 +34,7 @@ def test_deadline_is_the_next_occurrence() -> None:
 def media(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(shrink, "MEDIA_ROOT", tmp_path)
     monkeypatch.setattr(shrink, "finish", lambda rel, replace: shrink.swap_in_encode(tmp_path, rel, replace))
-    (tmp_path / "TV Shows" / "Show").mkdir(parents=True)
+    (tmp_path / "tv" / "Show").mkdir(parents=True)
     return tmp_path
 
 
@@ -45,26 +45,26 @@ def _make_video(path: Path, *extra: str) -> None:
 
 @needs_ffmpeg
 def test_shrink_file_replaces_original_and_moves_it_to_trash(media: Path) -> None:
-    src = media / "TV Shows" / "Show" / "ep.avi"
+    src = media / "tv" / "Show" / "ep.avi"
     _make_video(src, "-c:v", "mpeg4", "-q:v", "1", "-c:a", "mp3")
     size = src.stat().st_size
-    outcome, before, after = shrink.shrink_file("TV Shows/Show/ep.avi", include_hardlinked=False, dry_run=False)
+    outcome, before, after = shrink.shrink_file("tv/Show/ep.avi", include_hardlinked=False, dry_run=False)
     assert outcome == "done" and before == size and after < size
     assert not src.exists()
-    assert (media / "_trash" / "TV Shows" / "Show" / "ep.avi").stat().st_size == size
-    new = shrink.ffprobe(media / "TV Shows" / "Show" / "ep.mkv")
+    assert (media / "_trash" / "tv" / "Show" / "ep.avi").stat().st_size == size
+    new = shrink.ffprobe(media / "tv" / "Show" / "ep.mkv")
     assert shrink.video_codec(new) == "hevc" and any(s["codec_type"] == "audio" for s in new["streams"])
-    assert not list((media / "TV Shows" / "Show").glob(".*"))  # temp file gone
+    assert not list((media / "tv" / "Show").glob(".*"))  # temp file gone
 
 
 @needs_ffmpeg
 def test_shrink_file_skips_hardlinked_and_keeps_small_wins(media: Path) -> None:
-    src = media / "TV Shows" / "Show" / "ep.mkv"
+    src = media / "tv" / "Show" / "ep.mkv"
     _make_video(src, "-c:v", "libx264", "-crf", "35", "-c:a", "aac")
     (media / "linked.mkv").hardlink_to(src)
-    assert shrink.shrink_file("TV Shows/Show/ep.mkv", include_hardlinked=False, dry_run=False)[0] == "skipped"
+    assert shrink.shrink_file("tv/Show/ep.mkv", include_hardlinked=False, dry_run=False)[0] == "skipped"
     (media / "linked.mkv").unlink()
-    assert shrink.shrink_file("TV Shows/Show/ep.mkv", include_hardlinked=False, dry_run=False)[0] == "kept"
+    assert shrink.shrink_file("tv/Show/ep.mkv", include_hardlinked=False, dry_run=False)[0] == "kept"
     assert src.exists() and not (media / "_trash").exists()
 
 
@@ -76,19 +76,17 @@ def test_shrink_title_marks_keep_when_every_file_is_done(monkeypatch: pytest.Mon
     monkeypatch.setattr(shrink.arr, "request", lambda url, key, body=None, method=None: calls.append((url, body)))
     monkeypatch.setattr(shrink, "rescan", lambda item: calls.append(("rescan", item)))
     args = Namespace(match=None, retry_failed=False, include_hardlinked=False, dry_run=False)
-    title = {"item": "TV Shows/Show", "note": "", "files": [{"path": "a.avi"}, {"path": "b.avi"}]}
+    title = {"item": "tv/Show", "note": "", "files": [{"path": "a.avi"}, {"path": "b.avi"}]}
     budget = {"left": 10, "deadline": float("inf")}
     assert shrink.shrink_title(title, args, {}, budget)
-    assert calls[0] == ("rescan", "TV Shows/Show")
+    assert calls[0] == ("rescan", "tv/Show")
     assert calls[1][1]["decision"] == "keep" and "0.00 GB" in calls[1][1]["note"]
     assert budget["left"] == 8
 
 
 def test_can_read_disk_fails_when_probe_is_blocked(media: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    (media / "TV Shows" / "Show" / "ep.avi").write_bytes(b"x")
-    queue = [
-        {"item": "TV Shows/Show", "files": [{"path": "TV Shows/Show/missing.avi"}, {"path": "TV Shows/Show/ep.avi"}]}
-    ]
+    (media / "tv" / "Show" / "ep.avi").write_bytes(b"x")
+    queue = [{"item": "tv/Show", "files": [{"path": "tv/Show/missing.avi"}, {"path": "tv/Show/ep.avi"}]}]
     monkeypatch.setattr(shrink, "ffprobe", lambda path: {})
     assert not shrink.can_read_disk(queue)
     monkeypatch.setattr(shrink, "ffprobe", lambda path: {"format": {"duration": "1"}})

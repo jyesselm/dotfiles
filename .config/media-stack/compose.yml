@@ -1,6 +1,6 @@
 # Plex server media stack. See README.md here for setup, updates and moving to Linux.
 # Machine-specific values and API keys live in the untracked .env next to this file (template: env.example).
-# The media disk is always mounted at /Volumes/Plex_Disk_4 inside containers, whatever its host path,
+# The media disk is always mounted at /Volumes/plex-media inside containers, whatever its host path,
 # so the paths Radarr/Sonarr have stored keep working on a new machine.
 # Up/update: docker-compose -f ~/.config/media-stack/compose.yml pull && docker-compose -f ~/.config/media-stack/compose.yml up -d
 x-common: &common
@@ -18,7 +18,7 @@ services:
     ports: ["7878:7878"]
     volumes:
       - ${DATA_ROOT}/radarr/config:/config
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   sonarr:
     <<: *common
@@ -27,7 +27,7 @@ services:
     ports: ["8989:8989"]
     volumes:
       - ${DATA_ROOT}/sonarr/config:/config
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   lidarr:
     <<: *common
@@ -36,7 +36,7 @@ services:
     ports: ["8687:8686"]
     volumes:
       - ${DATA_ROOT}/lidarr/config:/config
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   # Single songs: paste a Spotify song/album/playlist link; audio comes from YouTube Music, tags from Spotify,
   # saved as music/<Artist>/<Album>/<Song>.mp3 for Plex. For whole albums in better quality, use Lidarr.
@@ -51,10 +51,10 @@ services:
     command: >-
       web --host 0.0.0.0 --port 8800 --keep-alive --web-use-output-dir --allowed-origins "*"
       --format mp3 --bitrate auto --overwrite skip
-      --output "/Volumes/Plex_Disk_4/music/{album-artist}/{album}/{title}.{output-ext}"
+      --output "/Volumes/plex-media/music/{album-artist}/{album}/{title}.{output-ext}"
     volumes:
       - ${DATA_ROOT}/spotdl:/config
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   # Music discovery: Last.fm artists similar to the ones in Lidarr; one click adds an artist to Lidarr.
   # Host port 8688 because macOS's AirPlay Receiver holds 5000. Login: admin + SONOBARR_ADMIN_PASSWORD.
@@ -70,7 +70,7 @@ services:
       secret_key: ${SONOBARR_SECRET_KEY}
       lidarr_address: http://lidarr:8686
       lidarr_api_key: ${HOMEPAGE_VAR_LIDARR_KEY}
-      root_folder_path: /Volumes/Plex_Disk_4/music/
+      root_folder_path: /Volumes/plex-media/music/
       quality_profile_id: 3   # Standard, like the existing artists
       metadata_profile_id: 1  # Standard
       last_fm_api_key: ${LASTFM_API_KEY}
@@ -131,7 +131,7 @@ services:
       WEBUI_PORT: "8080"
     volumes:
       - ${DATA_ROOT}/qbittorrent/config:/config
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   # Request app (formerly Jellyseerr/Overseerr). Runs as uid 1000 inside the container.
   seerr:
@@ -162,10 +162,10 @@ services:
     volumes:
       - ${DATA_ROOT}/audiobookshelf/config:/config
       - ${DATA_ROOT}/audiobookshelf/metadata:/metadata
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   # Retro game library with in-browser play (EmulatorJS) and per-user saves. ROMs live in
-  # Plex_Disk_4/Games/roms/<platform>/ (folder names: docs.romm.app → Supported Platforms). Accounts are made in its web UI.
+  # plex-media/games/roms/<platform>/ (folder names: docs.romm.app → Supported Platforms). Accounts are made in its web UI.
   romm:
     image: rommapp/romm:latest
     container_name: romm
@@ -188,7 +188,7 @@ services:
       SCREENSCRAPER_USER: ${SCREENSCRAPER_USER:-}
       SCREENSCRAPER_PASSWORD: ${SCREENSCRAPER_PASSWORD:-}
     volumes:
-      - ${MEDIA_ROOT}/Games:/romm/library
+      - ${MEDIA_ROOT}/games:/romm/library
       - ${DATA_ROOT}/romm/resources:/romm/resources
       - ${DATA_ROOT}/romm/assets:/romm/assets
       - ${DATA_ROOT}/romm/config:/romm/config
@@ -199,7 +199,7 @@ services:
         restart: true
 
   # Game/ROM search and download (the *arr for games): searches Prowlarr's game indexers, downloads via qBittorrent,
-  # hardlinks ROMs into Games/roms/<platform>/ for RomM. The disk is mounted at the same path as in qBittorrent
+  # hardlinks ROMs into games/roms/<platform>/ for RomM. The disk is mounted at the same path as in qBittorrent
   # because Gamarr has no remote path mapping.
   gamarr:
     image: ghcr.io/jeremiahm37/gamarr:latest
@@ -213,14 +213,14 @@ services:
       PROWLARR_API_KEY: ${HOMEPAGE_VAR_PROWLARR_KEY}
       QB_URL: http://gluetun:8080
       QB_CATEGORY: games
-      QB_SAVE_PATH: /Volumes/Plex_Disk_4/downloading/games
-      GAMES_ROMS_PATH: /Volumes/Plex_Disk_4/Games/roms
-      GAMES_VAULT_PATH: /Volumes/Plex_Disk_4/Games/pc
+      QB_SAVE_PATH: /Volumes/plex-media/downloads/games
+      GAMES_ROMS_PATH: /Volumes/plex-media/games/roms
+      GAMES_VAULT_PATH: /Volumes/plex-media/games/pc
       IMPORT_MODE: hardlink
       ROMM_URL: http://romm:8080
     volumes:
       - ${DATA_ROOT}/gamarr:/data
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
 
   romm-db:
     image: mariadb:11
@@ -249,7 +249,7 @@ services:
     ports: ["3010:3000"]
 
   # Media index: what's using the disk, Plex watch history, keep/delete/shrink review. See media-index/.
-  # "Delete" only moves items into Plex_Disk_4/_trash (emptied by hand) and unmonitors them in Radarr/Sonarr.
+  # "Delete" only moves items into plex-media/_trash (emptied by hand) and unmonitors them in Radarr/Sonarr.
   media-index:
     build: ./media-index
     container_name: media-index
@@ -260,9 +260,10 @@ services:
       TZ: ${TZ}
       RADARR_KEY: ${HOMEPAGE_VAR_RADARR_KEY}
       SONARR_KEY: ${HOMEPAGE_VAR_SONARR_KEY}
+      DRIVE_CATALOG_DIR: /data/drives  # = ~/.local/share/media-index/drives, where drives.py keeps manifests
     volumes:
       - ${DATA_ROOT}/media-index:/data
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+      - ${MEDIA_ROOT}:/Volumes/plex-media
       - ${PLEX_DB_DIR}:/plex-db:ro
 
   # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
@@ -279,7 +280,7 @@ services:
       HOMEPAGE_VAR_HOST_ADDR: ${HOST_ADDR}
     volumes:
       - ./homepage:/app/config
-      - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4:ro
+      - ${MEDIA_ROOT}:/Volumes/plex-media:ro
 
   # Up/down checks with history and phone alerts.
   uptime-kuma:

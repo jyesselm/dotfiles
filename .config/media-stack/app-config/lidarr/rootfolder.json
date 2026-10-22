@@ -1,15 +1,15 @@
 [
   {
     "name": "Music",
-    "path": "/Volumes/Plex_Disk_4/music",
+    "path": "/Volumes/plex-media/music",
     "defaultMetadataProfileId": 1,
     "defaultQualityProfileId": 3,
     "defaultMonitorOption": "existing",
     "defaultNewItemMonitorOption": "none",
     "defaultTags": [],
     "accessible": true,
-    "freeSpace": 1697112571904,
+    "freeSpace": 2047270543360,
     "totalSpace": 8001219248128,
-    "id": 1
+    "id": 2
   }
 ]

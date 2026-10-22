@@ -1,42 +1,37 @@
 [
   {
-    "path": "/Volumes/Plex_Disk_4/TV Shows",
+    "path": "/Volumes/plex-media/tv",
     "accessible": true,
-    "freeSpace": 1719376125952,
+    "freeSpace": 2047270543360,
     "unmappedFolders": [
       {
         "name": "Anne of Avonlea ",
-        "path": "/Volumes/Plex_Disk_4/TV Shows/Anne of Avonlea ",
+        "path": "/Volumes/plex-media/tv/Anne of Avonlea ",
         "relativePath": "Anne of Avonlea "
       },
       {
         "name": "Anne of Green Gables The Sequel",
-        "path": "/Volumes/Plex_Disk_4/TV Shows/Anne of Green Gables The Sequel",
+        "path": "/Volumes/plex-media/tv/Anne of Green Gables The Sequel",
         "relativePath": "Anne of Green Gables The Sequel"
       },
       {
-        "name": "Investigation",
-        "path": "/Volumes/Plex_Disk_4/TV Shows/Investigation",
-        "relativePath": "Investigation"
-      },
-      {
         "name": "Justice League Unlimited",
-        "path": "/Volumes/Plex_Disk_4/TV Shows/Justice League Unlimited",
+        "path": "/Volumes/plex-media/tv/Justice League Unlimited",
         "relativePath": "Justice League Unlimited"
       },
       {
-        "name": "Scene",
-        "path": "/Volumes/Plex_Disk_4/TV Shows/Scene",
-        "relativePath": "Scene"
+        "name": "Supernatural",
+        "path": "/Volumes/plex-media/tv/Supernatural",
+        "relativePath": "Supernatural"
       }
     ],
-    "id": 1
+    "id": 3
   },
   {
-    "path": "/Volumes/Plex_Disk_4/Anime",
+    "path": "/Volumes/plex-media/anime",
     "accessible": true,
-    "freeSpace": 1719376125952,
+    "freeSpace": 2047270543360,
     "unmappedFolders": [],
-    "id": 2
+    "id": 4
   }
 ]

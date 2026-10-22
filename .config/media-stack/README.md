@@ -16,11 +16,11 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
 | Homepage | 3000 | Dashboard |
 | Uptime Kuma | 3001 | Up/down history and alerts |
-| Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `Games/roms` for RomM |
-| RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`Plex_Disk_4/Games`) |
+| Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
+| RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
 | Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review (`media-index/`) |
 
-A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `Movies` / `TV Shows` → Plex. Music is the same
+A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
 Music library, Plexamp app). Lidarr only fetches whole albums, so for one song paste its Spotify link into spotDL instead;
 if spotDL fails with YouTube 403/429 errors, `docker-compose build --pull spotdl && docker-compose up -d spotdl`.
@@ -36,9 +36,11 @@ Lidarr unmonitors tracks you delete, so trimming an album in Media Index doesn't
   folders, download clients, Prowlarr apps, Seerr settings). Refresh with `./export-config.sh` after changing
   settings, then commit. It's the reference for rebuilding an app by hand if `$DATA_ROOT` is lost; API keys,
   passwords and indexers are left out, so re-enter those.
-- The media disk is always mounted at `/Volumes/Plex_Disk_4` inside containers, whatever its host path, so the
-  paths stored in Radarr, Sonarr, qBittorrent and Plex stay valid on any machine. Downloads (`downloading/`) and
-  the libraries share that one disk so imports are instant hardlinks.
+- The media disk is always mounted at `/Volumes/plex-media` inside containers, whatever its host path, so the
+  paths stored in Radarr, Sonarr, qBittorrent and Plex stay valid on any machine. Downloads (`downloads/`) and
+  the libraries share that one disk so imports are instant hardlinks. Top-level folders are lowercase, one per
+  type (`movies tv anime music audiobooks podcasts youtube games other downloads`); folders starting with `_`
+  (`_trash`, `_backups`, `_meta`) are bookkeeping, not media, and Media Index skips them.
 
 ## Everyday commands
 
@@ -64,11 +66,11 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 
 `media-index/` indexes the disk daily (sizes, ffprobe video info, watch history from Plex's dated database backups) and
 serves a review page on 8686. Mark each title Keep, Shrink (worth re-encoding to HEVC) or Delete. "Move to trash"
-renames Delete items into `Plex_Disk_4/_trash/` and unmonitors them in Radarr/Sonarr; restore from the page. Nothing is
-permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/Plex_Disk_4/_trash/*`. Music is reviewed per song:
+renames Delete items into `plex-media/_trash/` and unmonitors them in Radarr/Sonarr; restore from the page. Nothing is
+permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/plex-media/_trash/*`. Music is reviewed per song:
 pick ♪ Music in the type chips, press `p` (or ▶) to listen, and `1`/`3` keep or delete; while a song plays, moving or deciding plays
 the next one. Plex's automatic scan drops trashed songs from the library. Items hardlinked with
-a torrent in `downloading/` free space only once the torrent is removed in qBittorrent too. Its database is
+a torrent in `downloads/` free space only once the torrent is removed in qBittorrent too. Its database is
 `$DATA_ROOT/media-index/media-index.db`; don't open it from macOS while the container runs (use `docker exec`).
 
 **Shrink** titles are re-encoded on the Mac itself by `media-index/shrink.py` (Docker can't reach the hardware encoder).
@@ -95,7 +97,7 @@ python3 media-index/shrink.py install                       # nightly at 01:00; 
 grabs whole albums, so the script monitors up to 10 albums holding your lowest-bitrate songs under an "Upgrade to 320"
 profile and searches them again each day. Once every song you had is at 320, it deletes the album's other tracks and
 unmonitors it. Albums with no 320 release after 14 days are dropped. Replaced and removed files go to
-`Plex_Disk_4/_trash/lidarr` (Lidarr's recycle bin, never emptied automatically). Songs Lidarr doesn't know (most
+`plex-media/_trash/lidarr` (Lidarr's recycle bin, never emptied automatically). Songs Lidarr doesn't know (most
 YouTube rips) are skipped; re-get those with spotDL.
 
 ```sh
@@ -110,14 +112,34 @@ after changing a drive. A file counts as copied when another drive has the same 
 files over 50 MB, which catches renames).
 
 ```sh
-python3 media-index/drives.py catalog "/Volumes/Plex Disk 1"   # after plugging a drive in
+python3 media-index/drives.py catalog /Volumes/plex-backup-1      # after plugging a drive in
 python3 media-index/drives.py where supernatural               # which drives hold it
-python3 media-index/drives.py missing "Plex Disk 1" Plex_Disk_4  # titles not yet copied
+python3 media-index/drives.py missing plex-backup-1 plex-media  # titles not yet copied
 ```
+
+## Backups
+
+`backup.sh` (launchd, nightly at 04:00) archives every app's settings and databases, Plex's library database and
+`.env` into `settings-YYYY-MM-DD.tar.gz` (~400 MB) in `~/backups/media-stack/` and `plex-media/_backups/settings/`,
+keeping 7 in each. Cover art and Plex artwork are left out; they re-download. To restore an app, stop it and copy
+its folder from the archive back to `$DATA_ROOT` (Plex: its two `.db` files into `Plug-in Support/Databases/`).
+
+Movies are mirrored in full on `plex-movie-backups`. Every Sunday at 10:00 `backup.sh remind` re-catalogs
+`plex-media` and shows a notification with how much is not yet copied; with the drive plugged in, catch up with:
+
+```sh
+rsync -a --delete /Volumes/plex-media/movies/ /Volumes/plex-movie-backups/movies/
+python3 media-index/drives.py catalog /Volumes/plex-movie-backups
+python3 media-index/drives.py status               # what the reminder checks
+./backup.sh install                                # (re)install both launchd jobs
+```
+
+Add a drive that mirrors more folders to `BACKUPS` in `media-index/drives.py`. `plex-backup-1` and `plex-backup-3`
+hold older partial copies and are only catalogued.
 
 ## Moving to Linux
 
-1. **Disk format.** `Plex_Disk_4` is journaled HFS+. Linux mounts it read-only unless journaling is turned off, so
+1. **Disk format.** `plex-media` is journaled HFS+. Linux mounts it read-only unless journaling is turned off, so
    plan to move the data to an ext4 disk (copy 5.8 TB off, reformat, copy back, or buy a new disk and copy across).
    Mount it somewhere fixed, e.g. `/mnt/plex`, via `/etc/fstab`.
 2. **Install** Docker Engine with the compose plugin, clone the dotfiles (`yadm` linux class), and copy
@@ -138,7 +160,7 @@ python3 media-index/drives.py missing "Plex Disk 1" Plex_Disk_4  # titles not ye
      environment: {PUID: "${PUID}", PGID: "${PGID}", TZ: "${TZ}", VERSION: docker}
      volumes:
        - ${DATA_ROOT}/plex/config:/config
-       - ${MEDIA_ROOT}:/Volumes/Plex_Disk_4
+       - ${MEDIA_ROOT}:/Volumes/plex-media
    ```
    Move Plex's data per https://support.plex.tv/articles/201370363 : copy the Mac's
    `~/Library/Application Support/Plex Media Server/` to `$DATA_ROOT/plex/config/Library/Application Support/Plex Media Server/`.
@@ -150,15 +172,15 @@ python3 media-index/drives.py missing "Plex Disk 1" Plex_Disk_4  # titles not ye
 ## Games (RomM)
 
 RomM serves the game library at port 8090 and plays most pre-PS2 systems in the browser (EmulatorJS), with saves per
-account. Put ROMs of games you own in `Plex_Disk_4/Games/roms/<platform>/` (slugs from docs.romm.app → Supported
-Platforms; `nes snes n64 genesis gb gbc gba ps dos` exist) and firmware in `Games/bios/<platform>/`, then
+account. Put ROMs of games you own in `plex-media/games/roms/<platform>/` (slugs from docs.romm.app → Supported
+Platforms; `nes snes n64 genesis gb gbc gba ps dos` exist) and firmware in `games/bios/<platform>/`, then
 Library → Scan in the web UI. The first visit creates the admin account; add other users under Administration.
 Covers come from keyless sources (Hasheous, LaunchBox, Playmatch); for better matches set the IGDB and ScreenScraper
 values in `.env` and `docker-compose up -d romm`. Its data and MariaDB database are in `$DATA_ROOT/romm/`. On a TV,
 RetroArch on the Onn plays the same files with a controller.
 
 Gamarr (port 5001) is the *arr for games: search a title, pick a result, and it downloads through qBittorrent
-(category `games`) and hardlinks ROMs into `Games/roms/<platform>/` (PC games into `Games/pc/`). It is a small,
+(category `games`) and hardlinks ROMs into `games/roms/<platform>/` (PC games into `games/pc/`). It is a small,
 young project; check what a release contains before opening it, and never run `.exe` files from a ROM download.
 
 ## FlareSolverr

@@ -26,7 +26,7 @@ from pathlib import Path
 
 import arr  # Radarr/Sonarr client shared with the container; only its request() is used here
 
-MEDIA_ROOT = Path("/Volumes/Plex_Disk_4")
+MEDIA_ROOT = Path("/Volumes/plex-media")
 API = "http://localhost:8686/api"
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 STATE_DIR = Path.home() / ".local/share/media-index"
@@ -40,8 +40,8 @@ MIN_SAVING = 0.2  # keep the original unless the encode is at least 20% smaller
 DURATION_TOLERANCE_S = 1.0
 PROBE_TIMEOUT_S = 120  # a probe blocked by a macOS privacy prompt nobody answers would otherwise hang for hours
 ARR = {
-    "Movies": ("http://localhost:7878/api/v3", "movie", "HOMEPAGE_VAR_RADARR_KEY", "RescanMovie"),
-    "TV Shows": ("http://localhost:8989/api/v3", "series", "HOMEPAGE_VAR_SONARR_KEY", "RescanSeries"),
+    "movies": ("http://localhost:7878/api/v3", "movie", "HOMEPAGE_VAR_RADARR_KEY", "RescanMovie"),
+    "tv": ("http://localhost:8989/api/v3", "series", "HOMEPAGE_VAR_SONARR_KEY", "RescanSeries"),
 }
 LABEL = "com.yesselman.media-shrink"
 START_HOUR, STOP_HOUR = 1, 8
@@ -237,7 +237,7 @@ def read_env(path: Path = ENV_FILE) -> dict[str, str]:
 
 
 def rescan(item: str) -> None:
-    """Ask Radarr (Movies) or Sonarr (TV Shows) to rescan the title's folder so it picks up the new files."""
+    """Ask Radarr (movies/) or Sonarr (tv/) to rescan the title's folder so it picks up the new files."""
     category = item.split("/")[0]
     if category not in ARR:
         return
