@@ -43,6 +43,10 @@ BACKUPS = {
     "plex-tv-backups": [f"tv/[{TV_FIRST_HALF}]*", "audiobooks"],
     "plex-misc-backups": [f"tv/[!{TV_FIRST_HALF}]*", "anime", "other", "youtube", "music", "podcasts"],
 }
+# Second copy of what can't be re-downloaded (backup.sh's CLOUD_FOLDERS), kept away from the house. Two drives take
+# turns: one is always offsite while the other is home being synced.
+OFFSITE = ["other", "anime", "youtube", "music", "podcasts", "audiobooks"]
+BACKUPS |= {"plex-offsite-1": OFFSITE, "plex-offsite-2": OFFSITE}
 SETTINGS_DIR = "_backups/settings"  # backup.sh's nightly archives; every backup drive gets a copy when synced
 
 

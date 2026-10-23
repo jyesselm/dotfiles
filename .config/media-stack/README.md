@@ -7,6 +7,8 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 |---|---|---|
 | Plex (native on the Mac) | 32400 | Streaming |
 | Seerr | 5055 | Requests from you and your wife |
+| Audiobookshelf | 13378 | Audiobooks and podcasts (iPhone: ShelfPlayer, server `http://plex-server.tail2813f4.ts.net:13378`) |
+| AudioBookRequest | 8000 | Audiobook requests: Audible search → Prowlarr → qBittorrent category `audiobooks` → `audiobooks/` |
 | Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
 | spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
@@ -159,13 +161,14 @@ Everything except `downloads/` and `games/` is mirrored on three backup drives (
 |---|---|
 | `plex-movie-backups` (3 TB) | `movies` |
 | `plex-tv-backups` (3 TB) | `tv` shows starting 0–9 or A–S, `audiobooks` |
-| `plex-misc-backups` (2 TB) | `tv` shows starting T–Z, `anime`, `other`, `youtube`, `music`, `podcasts`; also `MaP2D_Data` (lab data, second copy; the other is on Plex Disk 3) |
+| `plex-misc-backups` (2 TB) | `tv` shows starting T–Z, `anime`, `other`, `youtube`, `music`, `podcasts`; also `MaP2D_Data` (lab data; the other copy is on `plex-offsite-2`) |
+| `plex-offsite-1`, `plex-offsite-2` (3 TB each) | `other`, `anime`, `youtube`, `music`, `podcasts`, `audiobooks` (what can't be re-downloaded; also on Google Drive). They take turns away from the house: every month or two bring one home, sync it, take the other out. `plex-offsite-2` also keeps a copy of `MaP2D_Data` (lab data; not on `plex-media`, so sync leaves it alone) |
 
 Every Sunday at 10:00 `backup.sh remind` re-catalogs `plex-media` and shows a notification with how much each
 drive is behind. Plug the drive in and run `sync`; it mirrors deletions too and re-catalogs the drive:
 
 ```sh
-python3 media-index/drives.py sync plex-tv-backups   # or plex-movie-backups / plex-misc-backups
+python3 media-index/drives.py sync plex-tv-backups   # or plex-movie-backups / plex-misc-backups / plex-offsite-1 / -2
 python3 media-index/drives.py status                 # what the reminder checks
 ./backup.sh install                                  # (re)install both launchd jobs
 ```

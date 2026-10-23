@@ -28,6 +28,11 @@
           type: audiobookshelf
           url: http://audiobookshelf:80
           key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}"
+    - AudioBookRequest:
+        icon: mdi-book-plus
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8000
+        siteMonitor: http://audiobookrequest:8000
+        description: Audiobook requests
     - RomM:
         icon: romm.svg
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8090

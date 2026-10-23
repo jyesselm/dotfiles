@@ -151,6 +151,18 @@ services:
       interval: 15s
       retries: 3
 
+  # Seerr for audiobooks: search Audible, request, and it grabs through Prowlarr's qBittorrent client (category
+  # audiobooks, saved straight into the audiobooks folder).
+  audiobookrequest:
+    image: markbeep/audiobookrequest:1
+    container_name: audiobookrequest
+    restart: unless-stopped
+    ports: ["8000:8000"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${DATA_ROOT}/audiobookrequest/config:/config
+
   # Audiobooks with per-user progress; iPhone apps. Accounts and libraries are set up in its web UI.
   audiobookshelf:
     image: ghcr.io/advplyr/audiobookshelf:latest
