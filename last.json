@@ -1,0 +1,127 @@
+{
+  "started": "2026-10-24T15:00:01.023494+00:00",
+  "finished": "2026-10-24T15:02:10.278973+00:00",
+  "machine": "laptop@Joseph\u2019s-MacBook-Pro",
+  "profile": "mac",
+  "exit": 0,
+  "format": 1,
+  "phases": {
+    "layout": {
+      "status": "warn",
+      "summary": "1 expected dirs missing, 10 unplanned entries in ~",
+      "details": [
+        "expected:cloud/gdrive",
+        "unplanned:dropbox_backup",
+        "unplanned:dropbox_backup_DUPES_review_20260618",
+        "unplanned:dropbox_backup_REGENERABLE_review_20260619",
+        "unplanned:gdrive",
+        "unplanned:mcp.json",
+        "unplanned:ml-notes-backup-2026-09-21",
+        "unplanned:obsidian-css-backup-2026-09-21",
+        "unplanned:old_downloads",
+        "unplanned:organization",
+        "unplanned:test.py"
+      ]
+    },
+    "dotfiles": {
+      "status": "ok",
+      "summary": "nothing to commit, up to date with origin",
+      "details": []
+    },
+    "keys": {
+      "status": "ok",
+      "summary": "4 keys authorized",
+      "details": []
+    },
+    "packages": {
+      "status": "ok",
+      "summary": "0 extras in no Brewfile or extras.txt (not removed), 16 casks present outside Homebrew, 4 Brewfiles",
+      "details": [
+        "present:iterm2",
+        "present:cursor",
+        "present:1password",
+        "present:alfred",
+        "present:karabiner-elements",
+        "present:contexts",
+        "present:google-chrome",
+        "present:claude",
+        "present:chatgpt",
+        "present:slack",
+        "present:zotero",
+        "present:fantastical",
+        "present:tailscale-app",
+        "present:dropbox",
+        "present:zoom",
+        "present:spotify"
+      ]
+    },
+    "repos": {
+      "status": "ok",
+      "summary": "grc active sync --apply",
+      "details": [
+        "grc up to date with /Users/jyesselman2/local/code/python/developing/git-repo-checker",
+        "\u2502                     \u2502                      \u2502           \u2502 Switch branches     \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 explicitly.         \u2502",
+        "\u2502 jobsubmit           \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 rnamake_ens_gen     \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 seq_deposit         \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 pymerize            \u2502 main                 \u2502 attention \u2502 On master; expected \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 main. Switch        \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 branches            \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 explicitly.         \u2502",
+        "\u2502 computer-setup      \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 RNAMake.New         \u2502 main                 \u2502 attention \u2502 On master; expected \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 main. Switch        \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 branches            \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 explicitly.         \u2502",
+        "\u2502 master_protocol_sh\u2026 \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 zotero-cli          \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 search-cli          \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 hotkeys             \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 typing-trainer      \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 dungeon_crawler     \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 notes               \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 tasks               \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 music_dl            \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+        "s up to date with /Users/jyesselman2/local/code/python/developing/search-cli"
+      ]
+    },
+    "apps": {
+      "status": "ok",
+      "summary": "4 apps checked",
+      "details": [
+        "notes 0.2.0 up to date",
+        "Tasks 0.2.1 up to date",
+        "Hotkeys 0.1.0 up to date (built from 9499f1c)",
+        "Search CLI launcher up to date"
+      ]
+    },
+    "defaults": {
+      "status": "ok",
+      "summary": "0 preferences applied",
+      "details": []
+    },
+    "hotkeys": {
+      "status": "ok",
+      "summary": "0 clashes, 1 layer overlaps",
+      "details": [
+        "Karabiner grabs: Apple Internal Keyboard / Trackpad, K1-Keyboard, USB Receiver",
+        "Global       \u2318,         layer      Alfred: Workflow: Search CLI Launcher"
+      ]
+    },
+    "doctor": {
+      "status": "warn",
+      "summary": "1 items need attention, 0 absolute home paths",
+      "details": [
+        "shell PATH check failed: zsh -ilc exited 124"
+      ]
+    }
+  }
+}
