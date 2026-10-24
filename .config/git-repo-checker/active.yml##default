@@ -200,6 +200,10 @@ repos:
   remote: https://github.com/jyesselm/music-dl.git
   branch: main
   enabled: true
+- path: local/code/other/kodi-appletv-skin
+  remote: https://github.com/jyesselm/kodi-appletv-skin.git
+  branch: main
+  enabled: true
 ignored_repos: []
 approved_accounts:
 - jyesselm
