@@ -133,6 +133,16 @@ services:
       - ${DATA_ROOT}/qbittorrent/config:/config
       - ${MEDIA_ROOT}:/Volumes/plex-media
 
+  # Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search for another.
+  # Configured in its web UI: qBittorrent at http://gluetun:8080, Radarr, Sonarr; queue cleaner every 30 min, stall rule 12 strikes (6 h).
+  cleanuparr:
+    <<: *common
+    image: ghcr.io/cleanuparr/cleanuparr:latest
+    container_name: cleanuparr
+    ports: ["11011:11011"]
+    volumes:
+      - ${DATA_ROOT}/cleanuparr/data:/config
+
   # Request app (formerly Jellyseerr/Overseerr). Runs as uid 1000 inside the container.
   seerr:
     image: ghcr.io/seerr-team/seerr:latest

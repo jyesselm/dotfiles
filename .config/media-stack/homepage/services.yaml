@@ -133,6 +133,11 @@
           url: http://gluetun:8080
           username: ""
           password: ""
+    - Cleanuparr:
+        icon: cleanuparr.png
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:11011
+        siteMonitor: http://cleanuparr:11011
+        description: Replaces stalled downloads
     - VPN:
         icon: gluetun.svg
         description: NordVPN exit for qBittorrent

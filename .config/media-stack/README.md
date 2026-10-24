@@ -15,7 +15,8 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | PlexTraktSync | — | Plex ⇄ Trakt ratings and watched status every 6 h (see Movie recommendations) |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
-| gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet) |
+| gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers |
+| Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
 | Homepage | 3000 | Dashboard |
 | Uptime Kuma | 3001 | Up/down history and alerts |
