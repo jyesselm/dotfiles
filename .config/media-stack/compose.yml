@@ -29,6 +29,16 @@ services:
       - ${DATA_ROOT}/sonarr/config:/config
       - ${MEDIA_ROOT}:/Volumes/plex-media
 
+  # English subtitles for foreign-language movies and shows from Radarr/Sonarr (saved as .en.srt next to the video).
+  bazarr:
+    <<: *common
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    ports: ["6767:6767"]
+    volumes:
+      - ${DATA_ROOT}/bazarr/config:/config
+      - ${MEDIA_ROOT}:/Volumes/plex-media
+
   lidarr:
     <<: *common
     image: lscr.io/linuxserver/lidarr:latest

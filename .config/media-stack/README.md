@@ -13,6 +13,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
 | PlexTraktSync | — | Plex ⇄ Trakt ratings and watched status every 6 h (see Movie recommendations) |
+| Bazarr | 6767 | English subtitles for foreign-language titles (Radarr/Sonarr auto-tag them `foreign`), synced to the audio |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers |
@@ -184,7 +185,7 @@ python3 media-index/drives.py status                 # what the reminder checks
 2. **Install** Docker Engine with the compose plugin, clone the dotfiles (`yadm` linux class), and copy
    `env.example` to `.env`.
 3. **Stop the Mac stack** (`docker-compose down`, quit Plex), then copy the app data across:
-   `rsync -a ~/.local/share/{radarr,sonarr,lidarr,prowlarr,seerr,plextraktsync,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
+   `rsync -a ~/.local/share/{radarr,sonarr,bazarr,lidarr,prowlarr,seerr,plextraktsync,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
 4. **Edit `.env`**: `MEDIA_ROOT=/mnt/plex`, `DATA_ROOT=/home/<you>/.local/share`, `PUID`/`PGID` from `id`
    (usually 1000), `HOMEPAGE_ALLOWED_HOSTS` for the new address, keys unchanged.
    Seerr runs as uid 1000: `sudo chown -R 1000:1000 $DATA_ROOT/seerr/config`.

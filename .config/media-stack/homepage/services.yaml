@@ -88,6 +88,11 @@
           url: http://sonarr:8989
           key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
           enableQueue: true
+    - Bazarr:
+        icon: bazarr.svg
+        href: http://{{HOMEPAGE_VAR_LINK_HOST}}:6767
+        siteMonitor: http://bazarr:6767
+        description: Subtitles for foreign titles
     - Lidarr:
         icon: lidarr.svg
         href: http://{{HOMEPAGE_VAR_LINK_HOST}}:8687
