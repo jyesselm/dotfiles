@@ -247,6 +247,7 @@ section { margin-bottom: 36px; }
 <div class="view" id="v-computers">
   <div class="hero"><div class="eyebrow">Computers</div><h1>Your machines</h1><div class="lead" id="pc-lead">Everything is reachable over Tailscale from anywhere.</div></div>
   <section><div class="machines" id="machines"></div></section>
+  <section><h2>Websites</h2><div class="card"><ul class="rows" id="sites"></ul></div></section>
 </div>
 
 <!-- ADMIN -->
@@ -324,7 +325,7 @@ function render(D) {
   const active = G.filter((g) => g.active), warn = G.filter((g) => g.warn && !g.active), queued = G.filter((g) => !g.active && !g.warn).sort((a, b) => b.n - a.n);
   const nActive = Q.filter((q) => q.state === "downloading").length, nWarn = Q.filter((q) => q.state === "warning").length;
   const S = D.storage, M = D.machines || [], online = M.filter((m) => m.online), offline = M.filter((m) => !m.online);
-  const svcDown = (D.services || []).filter((s) => !s.up);
+  const svcDown = [...(D.services || []), ...(D.sites || [])].filter((s) => !s.up);
   $("glance").innerHTML =
     tile("downloads", "var(--blue)", "↓", `${nActive} downloading`, nWarn ? `${nWarn} need attention` : D.torrents ? `${mb(D.torrents.dl_speed)} · ${D.torrents.seeding} seeding` : "Everything is flowing") +
     (S ? tile("storage", "var(--green)", "◔", `${gb(S.free)} free`, `${gb(S.shrinkable)} could be shrunk`) : tile("storage", "var(--green)", "◔", "Storage", "Media Index isn't answering")) +
@@ -384,6 +385,9 @@ function render(D) {
       ${m.links.length ? `<div class="chips">${m.links.map(([l, u]) => `<a class="chip" href="${u}">${esc(l)}</a>`).join("")}</div>` : ""}</div>`;
   }).join("");
   document.querySelectorAll(".copy").forEach((b) => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.c); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1200); });
+
+  $("sites").innerHTML = (D.sites || []).map((s) =>
+    `<li><span class="tt"><a href="${s.url}">${esc(s.name)}</a><span class="ss">${esc(s.url.replace(/^https?:\/\/|\/$/g, ""))}</span></span><span class="meta ${s.up ? "" : "warn"}">${s.up ? `<span class="dot"></span> Up · ${s.ms} ms` : `<span class="dot" style="background:var(--red)"></span> Down${s.code ? " · HTTP " + s.code : ""}`}</span></li>`).join("");
 
   // ---- ADMIN ----
   const V = D.vpn;

@@ -69,6 +69,9 @@ MACHINES = [
     ("Living Room TV", "Onn 4K Pro · Kodi", "android.svg", "living-room", "100.110.116.104", "", 8080, []),
 ]
 
+# Public websites: name, URL. Up when the server answers at all (a login redirect counts).
+SITES = [("Tasks", "https://tasks.jyesselman.com/")]
+
 state: dict = {"ok": False}
 state_lock = threading.Lock()
 posters: dict[str, bytes] = {}
@@ -213,6 +216,20 @@ def machines() -> list[dict]:
             for (n, role, ic, host, ip, user, _p, links), ok in zip(MACHINES, up)]
 
 
+def sites() -> list[dict]:
+    out = []
+    for name, url in SITES:
+        t = time.time()
+        try:
+            with urlopen(Request(url, method="HEAD", headers={"User-Agent": "dashboard"}), timeout=8) as r:
+                code = r.status
+        except Exception as e:  # HTTP errors still mean the site answered
+            code = getattr(e, "code", None)
+        out.append({"name": name, "url": url, "up": code is not None and code < 500, "code": code,
+                    "ms": round((time.time() - t) * 1000)})
+    return out
+
+
 def collect() -> dict:
     out: dict = {"errors": {}}
 
@@ -226,7 +243,7 @@ def collect() -> dict:
     with ThreadPoolExecutor(8) as ex:
         jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("counts", plex_counts), ("queue", queue),
                                                    ("arr", arr_counts), ("torrents", torrents), ("vpn", vpn),
-                                                   ("storage", storage), ("nas", nas), ("machines", machines))}
+                                                   ("storage", storage), ("nas", nas), ("machines", machines), ("sites", sites))}
         for j in jobs:
             j.result()
     run("services", services, out["arr"] or {}, out["torrents"] or {}, out["vpn"] or {}, out["counts"] or {})
