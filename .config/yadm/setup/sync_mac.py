@@ -433,6 +433,11 @@ def apps(setup, machine_class: str, applications: Path) -> PhaseResult:
     details, states = [], []
     jobs = [(app['name'], lambda app=app: sync_app(setup, app, applications, platform.machine())) for app in load_apps(setup.assets / 'apps.json')]
     jobs.append(('Search CLI', lambda: search_app(setup, applications)))
+    def converge_search():
+        import sync_search
+        state, detail = sync_search.desktop(setup)
+        return detail, state
+    jobs.append(('Search GUI and F4', converge_search))
     for name, job in jobs:
         try:
             detail, state = job()

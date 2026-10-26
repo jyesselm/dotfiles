@@ -326,7 +326,7 @@ class AppTests(Base):
         with patch.object(setup, 'read', return_value=done('', 1, 'no auth')), patch.object(sm.platform, 'machine', return_value='arm64'):
             result = sm.apps(setup, 'laptop', self.root)
         self.assertEqual(result.status, 'failed')
-        self.assertEqual(len(result.details), 4)  # three apps.json entries plus the Search CLI launcher
+        self.assertEqual(len(result.details), 5)  # apps, Search bundle, and GUI/F4 convergence
 
     def search_icon(self, setup, data=b'icns'):
         icon = setup.checkout('s') / 'src/search_cli/assets/search-lens.icns'

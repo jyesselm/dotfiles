@@ -175,3 +175,16 @@ Tailscale connectivity, and localhost links refer to each computer itself.
 
 The Chrome dashboard must exist in the search-cli checkout; until its feature
 branch is merged/pushed, a new clone of main may not have the latest interface.
+
+### Search desktop convergence
+
+On Mac desktops/laptops, `converge sync` now converges the Search GUI as part of
+its apps phase after repository and package updates: it writes the Search CLI app
+bundle, binds F4 and Apple's Spotlight key in the active Karabiner profile, and
+retires the old background GUI when the source fingerprint changes. The next F4
+loads current code; unchanged syncs leave the running app alone. Only a process
+identified by Search's resident lock, current UID, and GUI command is stopped;
+indexers and terminal searches are untouched. Other Karabiner rules/profiles are
+preserved and changed configuration is backed up. Missing Karabiner setup or a
+resident that will not exit is reported as a warning, not silent success.
+`converge setup --search` and `converge chrome-home` apply the same desktop steps.

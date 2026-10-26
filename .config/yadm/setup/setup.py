@@ -366,6 +366,18 @@ class Setup:
         self.clone('https://github.com/jyesselm/' + checkout.name + '.git', checkout, sentinel='pyproject.toml')
         self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', str(checkout) + self.extras(command)])
 
+    def search_desktop(self):
+        if self.profile != 'mac':
+            return
+        import sync_mac
+        import sync_search
+        detail, state = sync_mac.search_app(self, Path('/Applications'))
+        self.say('  ' + state + ': ' + detail)
+        state, detail = sync_search.desktop(self)
+        self.say('  ' + state + ': ' + detail)
+        if state == 'warn' and not self.args.plan:
+            self.errors.append(detail)
+
     def chrome_home(self):
         """Prepare Chrome Home without touching browser profiles or credentials."""
         if self.profile == 'cluster':
@@ -374,6 +386,7 @@ class Setup:
         if extension_id and not re.fullmatch('[a-p]{32}', extension_id):
             raise RuntimeError('Expected the 32-letter extension ID from chrome://extensions.')
         self.tool('s')
+        self.search_desktop()
         extension = self.checkout('s') / 'src/search_cli/chrome_newtab'
         if not self.args.plan and not (extension / 'manifest.json').is_file():
             raise RuntimeError('This search-cli checkout has no Chrome Home extension. Update its branch first.')
@@ -458,6 +471,7 @@ class Setup:
             self.phase('Private practice games (requires GitHub authentication)', self.games)
         if self.args.search:
             self.phase('Search CLI', lambda: self.tool('s'))
+            self.phase('Search GUI and F4', self.search_desktop)
         if not self.args.plan:
             self.errors += self.doctor()
         if self.errors:
@@ -530,7 +544,7 @@ def dispatch(args) -> int:
     setup = Setup(args)
     if args.command == 'chrome-home':
         setup.chrome_home()
-        return 0
+        return int(bool(setup.errors))
     if args.command == 'status':
         from sync import print_status
         from sync_schedule import is_installed
