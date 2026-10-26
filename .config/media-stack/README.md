@@ -19,7 +19,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers |
 | Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
-| Homepage | 3000 | Dashboard |
+| Dashboard | 3000 | Home page: recently added, downloads, storage review, machines on the tailnet, service health (`dashboard/`, own code) |
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
@@ -52,7 +52,7 @@ moved or restored stack keeps them. Only a fresh install needs them again:
 
 ## Files
 
-- `compose.yml`, `homepage/`, `gluetun-auth.toml`: tracked in dotfiles, no secrets.
+- `compose.yml`, `dashboard/`, `media-index/`, `gluetun-auth.toml`: tracked in dotfiles, no secrets.
 - `.env`: untracked, this machine's paths and keys. Template: `env.example`.
 - `$DATA_ROOT/<app>/config` (and `$DATA_ROOT/uptime-kuma`): each app's settings and database. Not tracked; this is
   what you copy to move the stack.
@@ -187,7 +187,7 @@ python3 media-index/drives.py status                 # what the reminder checks
 3. **Stop the Mac stack** (`docker-compose down`, quit Plex), then copy the app data across:
    `rsync -a ~/.local/share/{radarr,sonarr,bazarr,lidarr,prowlarr,seerr,plextraktsync,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
 4. **Edit `.env`**: `MEDIA_ROOT=/mnt/plex`, `DATA_ROOT=/home/<you>/.local/share`, `PUID`/`PGID` from `id`
-   (usually 1000), `HOMEPAGE_ALLOWED_HOSTS` for the new address, keys unchanged.
+   (usually 1000), keys unchanged.
    Seerr runs as uid 1000: `sudo chown -R 1000:1000 $DATA_ROOT/seerr/config`.
 5. **Add Plex to `compose.yml`** (hardware transcoding needs an Intel/AMD GPU at `/dev/dri` and Plex Pass):
    ```yaml

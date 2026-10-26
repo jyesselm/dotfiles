@@ -314,21 +314,21 @@ services:
       - ${DATA_ROOT}/plextraktsync:/app/config
       - ./plextraktsync:/patches:ro
 
-  # Dashboard: one tile per service with live stats. Config (no secrets) is tracked in ./homepage.
-  homepage:
-    image: ghcr.io/gethomepage/homepage:latest
-    container_name: homepage
+  # Home dashboard: library, downloads, storage, machines and service health on one page.
+  # Own code in ./dashboard (standard library); reads every service's API, writes nothing.
+  dashboard:
+    build: ./dashboard
+    container_name: dashboard
     restart: unless-stopped
     ports: ["3000:3000"]
-    env_file: .env
     environment:
-      PUID: ${PUID}
-      PGID: ${PGID}
-      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS}
-      HOMEPAGE_VAR_HOST_ADDR: ${HOST_ADDR}
-    volumes:
-      - ./homepage:/app/config
-      - ${MEDIA_ROOT}:/Volumes/plex-media:ro
+      TZ: ${TZ}
+      HOST_ADDR: ${HOST_ADDR}
+      PLEX_TOKEN: ${HOMEPAGE_VAR_PLEX_TOKEN}
+      RADARR_KEY: ${HOMEPAGE_VAR_RADARR_KEY}
+      SONARR_KEY: ${HOMEPAGE_VAR_SONARR_KEY}
+      LIDARR_KEY: ${HOMEPAGE_VAR_LIDARR_KEY}
+      PROWLARR_KEY: ${HOMEPAGE_VAR_PROWLARR_KEY}
 
   # Up/down checks with history and phone alerts.
   uptime-kuma:

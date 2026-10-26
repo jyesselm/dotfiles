@@ -31,7 +31,7 @@ CLOUD_DEST="gcrypt:"  # rclone crypt remote over gdrive:media-stack-backups
 CLOUD_KEEP=4
 CLOUD_FOLDERS=(other anime youtube music podcasts audiobooks)  # mirrored to Drive (tv and movies re-download)
 CLOUD_GRACE_DAYS=30
-APPS=(radarr sonarr bazarr lidarr prowlarr seerr plextraktsync audiobookrequest qbittorrent cleanuparr uptime-kuma audiobookshelf romm gamarr media-index homepage)
+APPS=(radarr sonarr bazarr lidarr prowlarr seerr plextraktsync audiobookrequest qbittorrent cleanuparr uptime-kuma audiobookshelf romm gamarr media-index)
 export PATH="/Applications/OrbStack.app/Contents/MacOS/xbin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # install_job <label> <StartCalendarInterval keys> <program args...>: write a LaunchAgent and (re)load it.
