@@ -188,3 +188,7 @@ indexers and terminal searches are untouched. Other Karabiner rules/profiles are
 preserved and changed configuration is backed up. Missing Karabiner setup or a
 resident that will not exit is reported as a warning, not silent success.
 `converge setup --search` and `converge chrome-home` apply the same desktop steps.
+Once F4 is configured, convergence also clears the obsolete Cmd+, hotkey from
+Alfred's exact `Search CLI Launcher` workflow in its configured sync folder.
+It backs up the plist and preserves the workflow, other triggers, and all other
+workflows. This migration is Mac-only and idempotent.

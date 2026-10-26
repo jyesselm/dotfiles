@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import plistlib
 from pathlib import Path
 import shlex
 import shutil
@@ -39,6 +40,39 @@ def configure_f4(path, plan=False):
     profile['complex_modifications']['rules'] = desired
     path.write_text(json.dumps(data, indent=4) + '\n')
     return 'changed', 'F4 and Spotlight key now open Search; previous config backed up'
+
+
+def retire_alfred_binding(root, plan=False):
+    prefs = root / 'Library/Application Support/Alfred/prefs.json'
+    if not prefs.exists():
+        return 'ok', 'No Alfred preferences to migrate'
+    current = json.loads(prefs.read_text()).get('current')
+    if not current:
+        return 'ok', 'No active Alfred sync folder'
+    folder = Path(current.replace('~/', str(root) + '/', 1))
+    changed = 0
+    for path in (folder / 'workflows').glob('*/info.plist'):
+        raw = path.read_bytes()
+        data = plistlib.loads(raw)
+        if data.get('name') != 'Search CLI Launcher':
+            continue
+        updates = []
+        for obj in data.get('objects', []):
+            config = obj.get('config', {})
+            if obj.get('type') == 'alfred.workflow.trigger.hotkey' and config.get('hotkey') == 43 and config.get('hotmod') == 1048576:
+                updates.append(config)
+        if not updates:
+            continue
+        changed += 1
+        if not plan:
+            backup = path.with_name('info.before-search-f4-' + str(time.time_ns()) + '.plist')
+            shutil.copy2(path, backup)
+            for config in updates:
+                config.update(hotkey=0, hotmod=0, hotstring='')
+            path.write_bytes(plistlib.dumps(data, fmt=plistlib.FMT_BINARY if raw.startswith(b'bplist') else plistlib.FMT_XML))
+    if changed:
+        return ('ok' if plan else 'changed'), ('would clear' if plan else 'cleared') + ' obsolete Alfred Search Cmd+, binding; workflow preserved'
+    return 'ok', 'No obsolete Alfred Search binding'
 
 
 def source_digest(checkout):
@@ -113,6 +147,10 @@ def desktop(setup):
         configure_f4(setup.root / '.config/karabiner/karabiner.json', setup.args.plan),
         refresh_resident(checkout, setup.root / '.local/state/dotfiles/sync/search-gui.sha256', setup.args.plan),
     ):
+        states.append(state)
+        details.append(detail)
+    if states[0] != 'warn':
+        state, detail = retire_alfred_binding(setup.root, setup.args.plan)
         states.append(state)
         details.append(detail)
     return ('warn' if 'warn' in states else 'changed' if 'changed' in states else 'ok'), '; '.join(details)

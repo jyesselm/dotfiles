@@ -54,3 +54,22 @@ class SearchTests(unittest.TestCase):
             for line,expected in [('501 /env/bin/python /home/me/.local/bin/s gui',55),('502 /env/bin/python /home/me/.local/bin/s gui',None),('501 python other.py',None)]:
                 with patch.object(s.subprocess,'run',return_value=CompletedProcess([],0,line,'')):
                     self.assertEqual(s.resident_pid(lock,501),expected)
+
+    def test_retire_only_old_alfred_search_binding(self):
+        import plistlib
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);prefs=root/'Library/Application Support/Alfred/prefs.json'
+            prefs.parent.mkdir(parents=True)
+            folder=root/'Alfred.alfredpreferences';prefs.write_text(json.dumps({'current':str(folder)}))
+            path=folder/'workflows/search/info.plist';path.parent.mkdir(parents=True)
+            old={'type':'alfred.workflow.trigger.hotkey','config':{'hotkey':43,'hotmod':1048576,'hotstring':','}}
+            other={'type':'alfred.workflow.trigger.hotkey','config':{'hotkey':44,'hotmod':1048576}}
+            path.write_bytes(plistlib.dumps({'name':'Search CLI Launcher','objects':[old,other]}))
+            original=path.read_bytes()
+            s.retire_alfred_binding(root,True);self.assertEqual(path.read_bytes(),original)
+            self.assertEqual(s.retire_alfred_binding(root)[0],'changed')
+            data=plistlib.loads(path.read_bytes())
+            self.assertEqual(data['objects'][0]['config']['hotmod'],0)
+            self.assertEqual(data['objects'][1],other)
+            self.assertEqual(s.retire_alfred_binding(root)[0],'ok')
+            self.assertEqual(len(list(path.parent.glob('info.before-*'))),1)
