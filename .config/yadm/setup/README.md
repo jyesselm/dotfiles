@@ -145,3 +145,33 @@ The laptop-only `Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist##cl
 ### Media stack on the Plex server
 
 Seerr, Radarr, Sonarr, Prowlarr, qBittorrent behind a NordVPN gluetun tunnel, the Homepage dashboard and Uptime Kuma run in OrbStack from `~/.config/media-stack/compose.yml`; Plex stays native. Setup, everyday commands and the move to Linux are in `~/.config/media-stack/README.md`.
+
+## Chrome Home across computers
+
+`~/.config/search-cli/dashboard.json` is tracked by yadm: it carries pinned
+bookmarks, service URLs, and the weather location. It contains no Raindrop token,
+Chrome history, or generated search index. Treat this as shared configuration:
+after editing shortcuts in Home, commit that file with yadm on the source
+computer, push, and pull on the other computer. Uncommitted edits on both
+computers require resolving the normal Git conflict; sync does not overwrite them.
+
+On a macOS or Linux desktop with the dotfiles and uv installed:
+
+```sh
+converge chrome-home --plan
+converge chrome-home
+# Follow the printed Load unpacked path in chrome://extensions, then:
+converge chrome-home --extension-id THE_ID_SHOWN_ON_THIS_COMPUTER
+```
+
+The command installs Search CLI from its existing developing checkout (clones if
+missing) and prints the extension directory. It does not force checkout changes,
+reload Chrome, grant browser permissions, or store credentials. The second command
+registers the native bridge with this machine's Python executable and Chrome ID.
+Chrome IDs may differ between computers for unpacked extensions. After extension
+updates, use Reload on its Chrome extensions card. Enable history separately on
+each computer; connect Raindrop with a device-local token. Tailscale services need
+Tailscale connectivity, and localhost links refer to each computer itself.
+
+The Chrome dashboard must exist in the search-cli checkout; until its feature
+branch is merged/pushed, a new clone of main may not have the latest interface.

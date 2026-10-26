@@ -22,3 +22,8 @@
 .claude/settings.local.json
 .claude/claude_desktop_config.json
 Library/Group Containers/UBF8T346G9.Office/User Content.localized/Templates.localized/Normal.dotm
+
+# Search Home: credentials and generated indexes are device-local.
+.config/search-cli/credentials/
+.cache/search-cli/
+.local/share/search-cli/

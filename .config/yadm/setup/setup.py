@@ -366,6 +366,30 @@ class Setup:
         self.clone('https://github.com/jyesselm/' + checkout.name + '.git', checkout, sentinel='pyproject.toml')
         self.run(['uv', 'tool', 'install', '--python', '3.12', '--editable', str(checkout) + self.extras(command)])
 
+    def chrome_home(self):
+        """Prepare Chrome Home without touching browser profiles or credentials."""
+        if self.profile == 'cluster':
+            raise RuntimeError('Chrome Home requires a macOS or Linux desktop, not a cluster.')
+        extension_id = getattr(self.args, 'extension_id', None)
+        if extension_id and not re.fullmatch('[a-p]{32}', extension_id):
+            raise RuntimeError('Expected the 32-letter extension ID from chrome://extensions.')
+        self.tool('s')
+        extension = self.checkout('s') / 'src/search_cli/chrome_newtab'
+        if not self.args.plan and not (extension / 'manifest.json').is_file():
+            raise RuntimeError('This search-cli checkout has no Chrome Home extension. Update its branch first.')
+        config = self.root / '.config/search-cli/dashboard.json'
+        if config.exists() and not self.args.plan:
+            config.chmod(0o600)
+        self.say('Chrome: open chrome://extensions, enable Developer mode, Load unpacked:')
+        self.say('  ' + str(extension))
+        if extension_id:
+            self.run([self.root / '.local/bin/s', 'web', '--install-chrome', extension_id])
+        else:
+            self.say('Then connect the extension ID shown there:')
+            self.say('  converge chrome-home --extension-id YOUR_EXTENSION_ID')
+        self.say('Pins, services and weather use the yadm-tracked ~/.config/search-cli/dashboard.json.')
+        self.say('Enable history once in the new tab. Connect Raindrop separately on this computer.')
+
     def doctor(self):
         self.say('\nDoctor (read-only checks)')
         failures = []
@@ -446,6 +470,7 @@ class Setup:
 
 
 COMMANDS = {  # subcommand -> (help, flag it replaces; `dotfiles-setup --flag` still works through normalize())
+    'chrome-home': ('Prepare Chrome Home and optionally connect its local bridge', None),
     'setup': ('Bootstrap this computer (what yadm bootstrap runs); flags choose optional components', None),
     'sync': ('Converge this computer: layout, dotfiles, packages, repos, apps, defaults, hotkeys, doctor', '--sync'),
     'status': ("Last sync, each warning's details and how to clear it", '--status'),
@@ -474,6 +499,8 @@ def parser():
     commands = p.add_subparsers(dest='command', metavar='command', required=True)
     for name, (help_text, _) in COMMANDS.items():
         sub = commands.add_parser(name, help=help_text, description=help_text, parents=[common])
+        if name == 'chrome-home':
+            sub.add_argument('--extension-id', help='Chrome extension ID from chrome://extensions on this computer')
         if name == 'status':
             sub.add_argument('--all', action='store_true', help='Every detail line, not just the first 12 per group')
         if name in ('fleet', 'checkin'):
@@ -501,6 +528,9 @@ def parse(argv):
 def dispatch(args) -> int:
     """Run the requested command; sync modules are imported lazily."""
     setup = Setup(args)
+    if args.command == 'chrome-home':
+        setup.chrome_home()
+        return 0
     if args.command == 'status':
         from sync import print_status
         from sync_schedule import is_installed
