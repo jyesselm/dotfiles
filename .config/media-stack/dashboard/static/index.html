@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plex Server</title>
+<link rel="icon" href="icons/plex.svg">
+<style>
+:root {
+  --bg: #f5f5f7; --surface: rgba(255,255,255,.8); --solid: #fff; --hair: rgba(0,0,0,.08);
+  --text: #1d1d1f; --text-2: #6e6e73; --text-3: #aeaeb2; --fill: rgba(0,0,0,.045); --fill-2: rgba(0,0,0,.08);
+  --blue: #0071e3; --green: #34c759; --orange: #ff9500; --red: #ff3b30; --purple: #af52de; --teal: #5ac8fa; --pink: #ff2d55; --indigo: #5856d6;
+  --shadow: 0 1px 1px rgba(0,0,0,.02), 0 6px 24px rgba(0,0,0,.06); --bar: rgba(255,255,255,.72);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #000; --surface: rgba(28,28,30,.75); --solid: #1c1c1e; --hair: rgba(255,255,255,.1);
+  --text: #f5f5f7; --text-2: #a1a1a6; --text-3: #636366; --fill: rgba(255,255,255,.07); --fill-2: rgba(255,255,255,.12);
+  --blue: #2997ff; --green: #30d158; --orange: #ff9f0a; --red: #ff453a; --purple: #bf5af2; --teal: #64d2ff; --pink: #ff375f; --indigo: #5e5ce6;
+  --shadow: none; --bar: rgba(10,10,12,.7);
+}}
+:root[data-theme="dark"] {
+  --bg: #000; --surface: rgba(28,28,30,.75); --solid: #1c1c1e; --hair: rgba(255,255,255,.1);
+  --text: #f5f5f7; --text-2: #a1a1a6; --text-3: #636366; --fill: rgba(255,255,255,.07); --fill-2: rgba(255,255,255,.12);
+  --blue: #2997ff; --green: #30d158; --orange: #ff9f0a; --red: #ff453a; --purple: #bf5af2; --teal: #64d2ff; --pink: #ff375f; --indigo: #5e5ce6;
+  --shadow: none; --bar: rgba(10,10,12,.7);
+}
+* { box-sizing: border-box; margin: 0; }
+
+body { background: var(--bg); color: var(--text); min-height: 100vh;
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+.glass { backdrop-filter: blur(28px) saturate(1.8); -webkit-backdrop-filter: blur(28px) saturate(1.8); }
+.ambient { position: fixed; inset: -25% -10% auto; height: 70vh; z-index: -1; filter: blur(100px) saturate(1.5); opacity: .28;
+  background-size: cover; background-position: center; pointer-events: none; }
+
+/* top bar */
+.bar { position: sticky; top: 0; z-index: 10; background: var(--bar); border-bottom: .5px solid var(--hair); }
+.bar .in { max-width: 1100px; margin: 0 auto; padding: 0 16px; height: 52px; display: flex; align-items: center; gap: 16px; }
+.brand { font-weight: 700; letter-spacing: -.02em; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.brand i { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg,#e5a00d,#ff9f0a); display: inline-block; }
+nav.tabs { display: flex; gap: 2px; margin: 0 auto; padding: 3px; border-radius: 10px; background: var(--fill); }
+nav.tabs a .i { display: none; }
+nav.tabs a { padding: 5px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 500; color: var(--text-2); transition: all .2s; }
+nav.tabs a.on { background: var(--solid); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.right { display: flex; align-items: center; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: var(--fill); font-size: 12.5px; font-weight: 500; color: var(--text-2); border: 0; cursor: default; }
+.pill b { color: var(--text); font-weight: 600; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent); }
+.dot.off { background: var(--text-3); box-shadow: none; }
+.theme { cursor: pointer; }
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 80px; }
+.view { display: none; animation: fade .35s cubic-bezier(.2,.8,.2,1); }
+.view.on { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } }
+.hero { padding: 40px 4px 24px; }
+.eyebrow { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
+h1 { font-size: 38px; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; margin-top: 4px; }
+.lead { color: var(--text-2); margin-top: 8px; font-size: 16px; }
+h2 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin: 0 4px 12px; display: flex; align-items: baseline; justify-content: space-between; }
+h2 small, .link { font-size: 14px; font-weight: 500; color: var(--blue); }
+section { margin-bottom: 36px; }
+
+/* cards */
+.card { background: var(--surface); border-radius: 20px; border: .5px solid var(--hair); box-shadow: var(--shadow); padding: 18px; min-width: 0; }
+.card h3 { font-size: 12.5px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; display: flex; justify-content: space-between; align-items: center; }
+.big { font-size: 34px; font-weight: 700; letter-spacing: -.03em; margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sub { font-size: 13.5px; color: var(--text-2); margin-top: 2px; }
+.warn { color: var(--orange); font-weight: 500; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* glance tiles (doorways to other tabs) */
+.glance { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.tile { display: flex; align-items: center; gap: 14px; padding: 16px 18px; transition: transform .3s cubic-bezier(.2,.8,.2,1), background .2s; }
+.tile:hover { transform: translateY(-2px); }
+.tile .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; color: #fff; flex: none; }
+.tile .v { font-size: 20px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.tile .l { font-size: 13px; color: var(--text-2); }
+.tile .chev { margin-left: auto; color: var(--text-3); font-size: 18px; }
+
+/* poster shelf */
+.shelf { display: grid; grid-auto-flow: column; grid-auto-columns: 140px; gap: 14px; overflow-x: auto; padding: 4px 4px 10px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.shelf::-webkit-scrollbar { display: none; }
+.poster { scroll-snap-align: start; }
+.poster .art { aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; background: var(--fill); box-shadow: 0 8px 22px rgba(0,0,0,.18); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
+.poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poster:hover .art { transform: scale(1.04); }
+.poster .t { font-size: 13px; font-weight: 500; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.err { font-size: 12px; color: var(--text-3); margin: 0 4px; }
+.poster .s { font-size: 12px; color: var(--text-2); }
+
+/* app launchers */
+.apps { display: grid; gap: 14px 8px; padding: 18px 10px; }
+.app { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.icon { width: 60px; height: 60px; border-radius: 15px; background: var(--solid); display: grid; place-items: center; position: relative;
+  box-shadow: inset 0 0 0 .5px var(--hair), 0 2px 8px rgba(0,0,0,.08); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.icon img { width: 36px; height: 36px; object-fit: contain; }
+.icon .glyph { font-size: 26px; }
+.app:hover .icon { transform: translateY(-3px); }
+.app .n { font-size: 12.5px; font-weight: 500; line-height: 1.2; }
+.app .d { font-size: 11px; color: var(--text-2); }
+
+/* lists */
+.rows { list-style: none; padding: 0; }
+.rows li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 11px 0; border-top: .5px solid var(--hair); align-items: center; }
+.rows li:first-child { border-top: 0; }
+.rows .tt { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14.5px; }
+.rows .ss { font-size: 12.5px; color: var(--text-2); display: block; font-weight: 400; }
+.rows .meta { font-size: 13px; color: var(--text-2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rows .meta.warn { color: var(--orange); }
+.rows .meta b { color: var(--text); font-weight: 600; }
+.pbar { grid-column: 1/-1; height: 4px; border-radius: 2px; background: var(--fill); overflow: hidden; }
+.pbar i { display: block; height: 100%; border-radius: 2px; background: var(--blue); }
+.more { all: unset; cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 11px 0 2px; border-top: .5px solid var(--hair); color: var(--blue); font-size: 14px; font-weight: 500; }
+.more .chev { transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.more[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s cubic-bezier(.2,.8,.2,1); }
+.fold > div { overflow: hidden; }
+.fold.open { grid-template-rows: 1fr; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 13.5px; font-weight: 600; border: 0; cursor: pointer; }
+.btn.soft { background: var(--fill); color: var(--text); }
+
+/* storage */
+.segbar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; margin: 14px 0 10px; background: var(--fill); }
+.segbar i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--text-2); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
+.stat .v { font-size: 24px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 13px; color: var(--text-2); }
+.gauge { display: flex; align-items: center; gap: 14px; }
+.ring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none;
+  background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--fill) 0); }
+.ring span { width: 50px; height: 50px; border-radius: 50%; background: var(--solid); display: grid; place-items: center; }
+
+/* computers */
+.machines { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.machine { padding: 18px; }
+.machine .head { display: flex; align-items: center; gap: 12px; }
+.machine .os { width: 44px; height: 44px; border-radius: 12px; background: var(--solid); display: grid; place-items: center; box-shadow: inset 0 0 0 .5px var(--hair); font-size: 22px; }
+.machine .os img { width: 26px; height: 26px; }
+.machine .nm { font-size: 16px; font-weight: 600; }
+.machine .role { font-size: 13px; color: var(--text-2); }
+.machine .status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin-top: 14px; font-size: 13.5px; }
+.kv dt { color: var(--text-2); }
+.kv dd { font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.kv code { font: 12.5px ui-monospace, SF Mono, Menlo, monospace; background: var(--fill); padding: 2px 7px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.copy { all: unset; cursor: pointer; font-size: 12px; color: var(--blue); font-weight: 500; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.chip { font-size: 12.5px; padding: 5px 11px; border-radius: 999px; background: var(--fill); font-weight: 500; transition: background .2s; }
+.chip:hover { background: var(--fill-2); }
+
+/* admin */
+.services { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); overflow: hidden; padding: 0; }
+.svc { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: .5px solid var(--hair); border-right: .5px solid var(--hair); margin: 0 -.5px -.5px 0; transition: background .2s; }
+.svc:hover { background: var(--fill); }
+.svc img, .svc .glyph { width: 26px; height: 26px; object-fit: contain; font-size: 18px; display: grid; place-items: center; flex: none; }
+.svc .n { font-size: 14px; font-weight: 500; flex: 1; min-width: 0; }
+.svc .d { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* phone: bottom tab bar */
+.tabbar { display: none; }
+@media (max-width: 760px) {
+  .bar nav.tabs, .bar .pill.status { display: none; }
+  .tabbar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; display: flex; justify-content: space-around; padding: 8px 6px calc(10px + env(safe-area-inset-bottom));
+    background: var(--bar); border-top: .5px solid var(--hair); }
+  .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 500; color: var(--text-2); min-width: 56px; }
+  .tabbar a span.i { font-size: 20px; line-height: 1; }
+  .tabbar a.on { color: var(--blue); }
+  .wrap { padding-bottom: 100px; }
+  h1 { font-size: 30px; } .hero { padding-top: 24px; }
+  .glance, .grid3, .grid2, .machines, .stats { grid-template-columns: 1fr 1fr; }
+  .glance, .grid2, .machines { grid-template-columns: 1fr; }
+  .card h3 { flex-wrap: wrap; gap: 4px 10px; }
+  .kv code { max-width: 100%; }
+  .shelf { grid-auto-columns: 112px; gap: 10px; }
+  .apps { grid-template-columns: repeat(4, 1fr) !important; padding: 16px 6px; }
+  .icon { width: 54px; height: 54px; } .icon img { width: 32px; height: 32px; }
+}
+</style>
+</head>
+<body>
+<div class="ambient" id="ambient"></div>
+
+<div class="bar glass"><div class="in">
+  <a class="brand" href="#home"><i></i>Plex Server</a>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="right">
+    <span class="pill status" id="status"><span class="dot"></span><b>Loading</b></span>
+    <button class="pill theme" id="theme" title="Light / dark">◐</button>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+<!-- HOME -->
+<div class="view" id="v-home">
+  <div class="hero"><div class="eyebrow" id="date"></div><h1 id="greet">Good evening</h1></div>
+  <section>
+    <h2>Recently Added <a class="link" id="plex-link" href="#">Open Plex ›</a></h2>
+    <div class="shelf" id="shelf"></div>
+  </section>
+  <section class="grid2" style="margin-bottom:36px">
+    <div><h2>Watch, Listen &amp; Play</h2><div class="card apps" id="apps-use" style="grid-template-columns:repeat(3,1fr)"></div></div>
+    <div><h2>Request Something</h2><div class="card apps" id="apps-ask" style="grid-template-columns:repeat(4,1fr)"></div></div>
+  </section>
+  <section>
+    <h2>At a Glance</h2>
+    <div class="glance" id="glance"></div>
+  </section>
+</div>
+
+<!-- DOWNLOADS -->
+<div class="view" id="v-downloads">
+  <div class="hero"><div class="eyebrow">Downloads</div><h1 id="dl-title"></h1><div class="lead" id="dl-lead"></div></div>
+  <section class="grid2">
+    <div class="card"><h3>Downloading now</h3><ul class="rows" id="dl-active"></ul></div>
+    <div class="card"><h3>Needs attention <a class="link" data-port="11011" href="#">Open Cleanuparr ›</a></h3><ul class="rows" id="dl-warn"></ul></div>
+  </section>
+  <section>
+    <div class="card"><h3>Queued <span id="dl-qn"></span></h3><ul class="rows" id="dl-queued"></ul>
+      <div class="fold" id="dl-fold"><div><ul class="rows" id="dl-rest"></ul></div></div>
+      <button class="more" id="dl-more" aria-expanded="false"><span></span><span class="chev">›</span></button></div>
+  </section>
+  <section style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn soft" data-port="7878" href="#">Radarr · Movies</a><a class="btn soft" data-port="8989" href="#">Sonarr · TV</a><a class="btn soft" data-port="8687" href="#">Lidarr · Music</a><a class="btn soft" data-port="8080" href="#">qBittorrent</a>
+  </section>
+</div>
+
+<!-- STORAGE -->
+<div class="view" id="v-storage">
+  <div class="hero"><div class="eyebrow">Storage</div><h1 id="st-title"></h1><div class="lead" id="st-lead"></div></div>
+  <section><div class="card" id="st-disk"></div></section>
+  <section class="grid2">
+    <div class="card"><h3>Never watched <a class="link" data-port="8686" href="#">Review in Media Index ›</a></h3><ul class="rows" id="st-never"></ul></div>
+    <div>
+      <div class="card" id="st-nas" style="margin-bottom:14px"></div>
+      <div class="card" id="st-trash"></div>
+    </div>
+  </section>
+</div>
+
+<!-- COMPUTERS -->
+<div class="view" id="v-computers">
+  <div class="hero"><div class="eyebrow">Computers</div><h1>Your machines</h1><div class="lead" id="pc-lead">Everything is reachable over Tailscale from anywhere.</div></div>
+  <section><div class="machines" id="machines"></div></section>
+</div>
+
+<!-- ADMIN -->
+<div class="view" id="v-admin">
+  <div class="hero"><div class="eyebrow">Admin</div><h1>Behind the scenes</h1><div class="lead" id="ad-lead">The tools that keep the library running. You rarely need these.</div></div>
+  <section><div class="card services" id="svcs"></div></section>
+</div>
+
+</div>
+
+<nav class="tabbar glass" id="tabbar"></nav>
+
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const gb = (b) => b >= 1e12 ? (b / 1e12).toFixed(2) + " TB" : Math.round(b / 1e9) + " GB";
+const mb = (b) => b >= 1e6 ? (b / 1e6).toFixed(1) + " MB/s" : Math.round(b / 1e3) + " kB/s";
+const I = (n) => `icons/${n}`;
+const img = (ic, cls = "") => /\.(svg|png)$/.test(ic) ? `<img src="${I(ic)}" alt="" class="${cls}">` : `<span class="glyph">${ic}</span>`;
+// Links use the hostname the page was opened with, so they work on localhost and over Tailscale alike.
+const H = location.hostname;
+const link = (port, path = "") => `http://${H}:${port}${path}`;
+const $ = (id) => document.getElementById(id);
+
+// tabs (hash-routed, remembered)
+const TABS = [["home", "Home", "⌂"], ["downloads", "Downloads", "↓"], ["storage", "Storage", "◔"], ["computers", "Computers", "▭"], ["admin", "Admin", "⚙"]];
+for (const id of ["tabs", "tabbar"]) $(id).innerHTML = TABS.map(([k, n, g]) => `<a href="#${k}" data-t="${k}"><span class="i">${g}</span>${n}</a>`).join("");
+function show(t) {
+  if (!TABS.some(([k]) => k === t)) t = "home";
+  document.querySelectorAll(".view").forEach((v) => v.classList.toggle("on", v.id === "v-" + t));
+  document.querySelectorAll("[data-t]").forEach((a) => a.classList.toggle("on", a.dataset.t === t));
+  try { localStorage.setItem("tab", t); } catch {}
+  scrollTo(0, 0);
+}
+addEventListener("hashchange", () => show(location.hash.slice(1)));
+let first = location.hash.slice(1); try { first ||= localStorage.getItem("tab"); } catch {}
+show(first || "home");
+
+// header
+const now = new Date(), h = now.getHours();
+$("greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+$("date").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+const root = document.documentElement;
+try { const t = localStorage.getItem("theme"); if (t) root.dataset.theme = t; } catch {}
+$("theme").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+};
+document.querySelectorAll("[data-port]").forEach((a) => a.href = link(a.dataset.port));
+$("plex-link").href = link(32400, "/web");
+
+const app = (n, icon, port, d, path = "") => `<a class="app" href="${link(port, path)}"><div class="icon">${img(icon)}</div><div class="n">${n}</div>${d ? `<div class="d">${d}</div>` : ""}</a>`;
+$("apps-use").innerHTML = app("Plex", "plex.svg", 32400, "Movies, TV, music", "/web") + app("Audiobookshelf", "audiobookshelf.svg", 13378, "Audiobooks") + app("RomM", "romm.svg", 8090, "Retro games");
+$("apps-ask").innerHTML = app("Movies & TV", "jellyseerr.svg", 5055) + app("Audiobooks", "📚", 8000) + app("Games", "🎮", 5001) + app("Songs", "spotify.svg", 8800);
+
+const tile = (t, color, ic, v, l) => `<a class="card tile" href="#${t}"><div class="ic" style="background:${color}">${ic}</div><div><div class="v">${v}</div><div class="l">${l}</div></div><span class="chev">›</span></a>`;
+const row = (g, meta, bar) => `<li><span class="tt">${esc(g.title)}<span class="ss">${g.kind}${g.n > 1 ? ` · ${g.n} episodes` : ""}</span></span><span class="meta ${g.warn && !g.active ? "warn" : ""}">${meta}</span>${bar ? `<div class="pbar"><i style="width:${Math.max(g.pct, 3)}%"></i></div>` : ""}</li>`;
+const COLORS = ["var(--blue)", "var(--purple)", "var(--orange)", "var(--text-3)", "var(--pink)", "var(--teal)", "var(--indigo)", "var(--green)", "var(--red)", "var(--text-2)"];
+let foldOpen = false;
+
+function render(D) {
+  // ---- HOME ----
+  const R = D.recent || [];
+  if (R[0]) $("ambient").style.backgroundImage = `url(${R[0].img})`;
+  $("shelf").innerHTML = R.map((p) =>
+    `<a class="poster" href="${link(32400, "/web")}"><div class="art"><img src="${p.img}" alt="" loading="lazy"></div><div class="t">${esc(p.title)}</div><div class="s">${p.sub ? esc(p.sub) : p.kind + (p.year ? " · " + p.year : "")}</div></a>`).join("")
+    || `<div class="err">Plex isn't answering${D.errors?.recent ? " · " + esc(D.errors.recent) : ""}</div>`;
+
+  // downloads grouped by title
+  const Q = D.queue || [], groups = {};
+  for (const q of Q) {
+    const g = (groups[q.kind + q.title] ||= { title: q.title, kind: q.kind, n: 0, pct: 0, active: 0, warn: 0 });
+    g.n++; g.pct = Math.max(g.pct, q.pct); if (q.state === "downloading") g.active++; if (q.state === "warning") g.warn++;
+  }
+  const G = Object.values(groups);
+  const active = G.filter((g) => g.active), warn = G.filter((g) => g.warn && !g.active), queued = G.filter((g) => !g.active && !g.warn).sort((a, b) => b.n - a.n);
+  const nActive = Q.filter((q) => q.state === "downloading").length, nWarn = Q.filter((q) => q.state === "warning").length;
+  const S = D.storage, M = D.machines || [], online = M.filter((m) => m.online), offline = M.filter((m) => !m.online);
+  const svcDown = (D.services || []).filter((s) => !s.up);
+  $("glance").innerHTML =
+    tile("downloads", "var(--blue)", "↓", `${nActive} downloading`, nWarn ? `${nWarn} need attention` : D.torrents ? `${mb(D.torrents.dl_speed)} · ${D.torrents.seeding} seeding` : "Everything is flowing") +
+    (S ? tile("storage", "var(--green)", "◔", `${gb(S.free)} free`, `${gb(S.shrinkable)} could be shrunk`) : tile("storage", "var(--green)", "◔", "Storage", "Media Index isn't answering")) +
+    tile("computers", "var(--indigo)", "▭", `${online.length} of ${M.length} online`, offline.length ? `${offline.map((m) => m.name).join(", ")} ${offline.length > 1 ? "are" : "is"} off` : "Everything is reachable");
+  const st = $("status");
+  st.innerHTML = svcDown.length ? `<span class="dot" style="background:var(--orange);box-shadow:none"></span><b>${svcDown.length} down</b> · ${esc(svcDown.map((s) => s.name).join(", "))}`
+    : `<span class="dot"></span><b>All systems</b> normal`;
+
+  // ---- DOWNLOADS ----
+  $("dl-title").textContent = `${Q.length} in the queue`;
+  $("dl-lead").innerHTML = `${nActive} downloading now · ${queued.reduce((a, g) => a + g.n, 0)} waiting · <span class="warn">${nWarn} stalled</span>` +
+    (D.torrents ? ` · ↓ ${mb(D.torrents.dl_speed)} ↑ ${mb(D.torrents.up_speed)}` : "");
+  $("dl-active").innerHTML = active.map((g) => row(g, `<b>${g.pct}%</b>`, true)).join("") || `<li><span class="meta" style="text-align:left">Nothing downloading</span></li>`;
+  $("dl-warn").innerHTML = warn.map((g) => row(g, `${g.warn} stalled`)).join("") || `<li><span class="meta" style="text-align:left">Nothing stuck</span></li>`;
+  $("dl-qn").textContent = `${queued.length} titles`;
+  $("dl-queued").innerHTML = queued.slice(0, 6).map((g) => row(g, "Waiting")).join("") || `<li><span class="meta" style="text-align:left">Queue is empty</span></li>`;
+  $("dl-rest").innerHTML = queued.slice(6).map((g) => row(g, "Waiting")).join("");
+  const more = $("dl-more"), extra = Math.max(queued.length - 6, 0);
+  more.style.display = extra ? "" : "none";
+  more.firstElementChild.textContent = foldOpen ? "Show less" : `Show ${extra} more`;
+  more.setAttribute("aria-expanded", foldOpen); $("dl-fold").classList.toggle("open", foldOpen);
+  more.onclick = () => { foldOpen = !foldOpen; more.setAttribute("aria-expanded", foldOpen); $("dl-fold").classList.toggle("open", foldOpen); more.firstElementChild.textContent = foldOpen ? "Show less" : `Show ${extra} more`; };
+
+  // ---- STORAGE ----
+  if (S) {
+    $("st-title").textContent = `${gb(S.free)} free`;
+    $("st-lead").textContent = `${gb(S.used)} of ${gb(S.total)} used on plex-media · ${S.undecided.toLocaleString()} titles haven't been reviewed yet`;
+    $("st-disk").innerHTML = `<h3>plex-media</h3>
+      <div class="segbar">${S.cats.map((c, i) => `<i style="width:${(100 * c[1] / S.total).toFixed(2)}%;background:${COLORS[i]}" title="${c[0]}"></i>`).join("")}</div>
+      <div class="legend">${S.cats.filter((c) => c[1] > S.total / 200).map((c, i) => `<span><i style="background:${COLORS[i]}"></i>${c[0]} ${gb(c[1])}</span>`).join("")}<span><i style="background:var(--fill)"></i>Free ${gb(S.free)}</span></div>
+      <div class="stats">
+        <div class="stat"><div class="v">${gb(S.shrinkable)}</div><div class="l">Could be shrunk</div></div>
+        <div class="stat"><div class="v">${S.undecided.toLocaleString()}</div><div class="l">To review</div></div>
+        <div class="stat"><div class="v">${gb(S.trash)}</div><div class="l">In trash</div></div>
+        <div class="stat"><div class="v">${S.trashed_items}</div><div class="l">Trashed titles</div></div>
+      </div>`;
+    $("st-never").innerHTML = S.never.map((n) =>
+      `<li><span class="tt">${esc(n.item)}<span class="ss">${n.cat} · ${n.files} files${n.h ? ` · ${n.h}p ${n.codec}` : ""}</span></span><span class="meta"><b>${gb(n.size)}</b></span></li>`).join("");
+    $("st-trash").innerHTML = `<h3>Trash</h3><div class="big">${gb(S.trashed_size)}</div><div class="sub">${S.trashed_items} titles waiting · emptying frees the space for good</div>`;
+  } else {
+    $("st-title").textContent = "Media Index isn't answering";
+    $("st-lead").textContent = D.errors?.storage || "";
+  }
+  const N = D.nas;
+  $("st-nas").innerHTML = `<h3>NAS · Yesselman Backup <span class="dot ${N ? "" : "off"}"></span></h3>` + (N
+    ? `<div class="gauge" style="margin-top:12px"><div class="ring" style="--p:${N.v1}"><span>${N.v1}%</span></div><div><div style="font-weight:600">Volume 1 · ${gb(N.free1)} free</div><div class="sub">Volume 2 · ${N.v2}% · ${gb(N.free2)} free</div><div class="sub">RAID ${N.raid} · hottest drive ${N.temp} °C</div></div></div>`
+    : `<div class="sub" style="margin-top:8px">Not answering</div>`);
+
+  // ---- COMPUTERS ----
+  $("pc-lead").textContent = `${online.length} of ${M.length} online · everything is reachable over Tailscale from anywhere.`;
+  $("machines").innerHTML = M.map((m) => {
+    const ssh = `ssh ${m.user}@${m.host.split(".")[0]}`;
+    return `<div class="card machine"><div class="head"><div class="os">${img(m.icon)}</div>
+      <div><div class="nm">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></div><div class="status"><span class="dot ${m.online ? "" : "off"}"></span>${m.online ? "Online" : "Offline"}</div></div>
+      <dl class="kv"><dt>Tailscale</dt><dd><code>${m.host}</code></dd><dt>IP</dt><dd><code>${m.ip}</code></dd>
+      ${m.user ? `<dt>SSH</dt><dd><code>${ssh}</code><button class="copy" data-c="${ssh}">Copy</button></dd>` : ""}</dl>
+      ${m.links.length ? `<div class="chips">${m.links.map(([l, u]) => `<a class="chip" href="${u}">${esc(l)}</a>`).join("")}</div>` : ""}</div>`;
+  }).join("");
+  document.querySelectorAll(".copy").forEach((b) => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.c); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1200); });
+
+  // ---- ADMIN ----
+  const V = D.vpn;
+  $("ad-lead").textContent = (V?.ip ? `Traffic leaves through NordVPN in ${V.city}, ${V.country} (${V.ip}). ` : "The VPN tunnel is down. ") + "You rarely need these.";
+  $("svcs").innerHTML = (D.services || []).map((s) =>
+    `<a class="svc" href="${s.port ? link(s.port, s.name === "Plex" ? "/web" : "") : "#"}">${img(s.icon)}<span class="n">${esc(s.name)}<span class="d">${esc(s.desc)}</span></span><span class="dot ${s.up ? "" : "off"}" ${s.up ? "" : 'style="background:var(--red)"'}></span></a>`).join("");
+}
+
+async function refresh() {
+  try {
+    const D = await (await fetch("/api/state", { cache: "no-store" })).json();
+    if (D.ok) render(D);
+    else $("status").innerHTML = `<span class="dot off"></span><b>Starting</b> up…`;
+  } catch (e) { $("status").innerHTML = `<span class="dot off"></span><b>Offline</b>`; }
+}
+refresh();
+setInterval(refresh, 60000);
+addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+</script>
+</body>
+</html>
