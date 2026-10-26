@@ -128,6 +128,48 @@ def plex_recent() -> list[dict]:
     return out[:14]
 
 
+def now_playing() -> list[dict]:
+    d = get_json(f"{PLEX}/status/sessions?X-Plex-Token={PLEX_TOKEN}", {"Accept": "application/json"})
+    out = []
+    for m in d.get("MediaContainer", {}).get("Metadata", []):
+        t = m.get("type")
+        if t == "episode":
+            title, sub = m.get("grandparentTitle"), f"{m.get('parentTitle')} · {m.get('title')}"
+        elif t == "track":
+            title, sub = m.get("title"), m.get("grandparentTitle")
+        else:
+            title, sub = m.get("title"), str(m.get("year") or "")
+        thumb = m.get("grandparentThumb") if t in ("episode", "track") else m.get("thumb")
+        out.append({"title": title, "sub": sub, "kind": t, "img": "/poster?p=" + quote(thumb) if thumb else None,
+                    "user": (m.get("User") or {}).get("title"), "player": (m.get("Player") or {}).get("title"),
+                    "state": (m.get("Player") or {}).get("state"),
+                    "pct": round(100 * (m.get("viewOffset") or 0) / m["duration"]) if m.get("duration") else 0})
+    return out
+
+
+titles: dict[tuple, dict] = {}  # Seerr media id -> title/poster, looked up once
+
+
+def requests_recent() -> list[dict]:
+    """Latest Seerr requests with where each one stands (Seerr media status 5 = in Plex, 4 = partly)."""
+    h = {"X-Api-Key": ENV.get("SEERR_KEY", "")}
+    d = get_json("http://seerr:5055/api/v1/request?take=8&sort=added", h)
+    out = []
+    for r in d.get("results", []):
+        key = (r["type"], r["media"]["tmdbId"])
+        if key not in titles:
+            m = get_json(f"http://seerr:5055/api/v1/{key[0]}/{key[1]}", h)
+            titles[key] = {"title": m.get("title") or m.get("name"),
+                           "img": "/poster?p=" + quote(m["posterPath"]) if m.get("posterPath") else None,
+                           "year": (m.get("releaseDate") or m.get("firstAirDate") or "")[:4]}
+        ms, rs = r["media"].get("status"), r.get("status")
+        state = "declined" if rs == 3 else "pending" if rs == 1 else "available" if ms == 5 else "partial" if ms == 4 else "processing"
+        out.append({**titles[key], "kind": "Movie" if r["type"] == "movie" else "TV", "state": state,
+                    "by": (r.get("requestedBy") or {}).get("displayName"), "added": r.get("createdAt", "")[:10],
+                    "seasons": [s["seasonNumber"] for s in r.get("seasons") or []]})
+    return out
+
+
 def plex_counts() -> dict:
     n = {}
     for key, name in ((1, "movies"), (2, "shows"), (4, "anime")):
@@ -241,7 +283,7 @@ def collect() -> dict:
             out[name] = None
 
     with ThreadPoolExecutor(8) as ex:
-        jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("counts", plex_counts), ("queue", queue),
+        jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("playing", now_playing), ("requests", requests_recent), ("counts", plex_counts), ("queue", queue),
                                                    ("arr", arr_counts), ("torrents", torrents), ("vpn", vpn),
                                                    ("storage", storage), ("nas", nas), ("machines", machines), ("sites", sites))}
         for j in jobs:
@@ -267,8 +309,10 @@ def refresher():
 
 
 def poster(path: str) -> bytes:
+    """Plex thumb (/library/...) or TMDB poster (/xyz.jpg), fetched once and kept in memory."""
     if path not in posters:
-        url = f"{PLEX}/photo/:/transcode?width=320&height=480&minSize=1&upscale=1&url={quote(path, safe='')}&X-Plex-Token={PLEX_TOKEN}"
+        url = (f"{PLEX}/photo/:/transcode?width=320&height=480&minSize=1&upscale=1&url={quote(path, safe='')}&X-Plex-Token={PLEX_TOKEN}"
+               if path.startswith("/library/") else f"https://image.tmdb.org/t/p/w185{path}")
         posters[path] = get(url, timeout=15)
     return posters[path]
 
@@ -297,7 +341,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(body, "application/json")
         if u.path == "/poster":
             p = parse_qs(u.query).get("p", [""])[0]
-            if not p.startswith("/library/"):
+            if not p.startswith("/") or ".." in p:
                 return self.send(b"bad", "text/plain", HTTPStatus.BAD_REQUEST)
             try:
                 return self.send(poster(p), "image/jpeg", cache="public, max-age=86400")

@@ -106,6 +106,13 @@ section { margin-bottom: 36px; }
 .rows { list-style: none; padding: 0; }
 .rows li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 11px 0; border-top: .5px solid var(--hair); align-items: center; }
 .rows li:first-child { border-top: 0; }
+.rows li.pic { grid-template-columns: auto 1fr auto; }
+.rows .thumb { width: 34px; height: 50px; border-radius: 6px; object-fit: cover; background: var(--fill); grid-row: span 1; }
+.rows li.pic .pbar { grid-column: 2 / -1; }
+.tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--fill); color: var(--text-2); }
+.tag.ok { background: color-mix(in srgb, var(--green) 18%, transparent); color: var(--green); }
+.tag.go { background: color-mix(in srgb, var(--blue) 16%, transparent); color: var(--blue); }
+.tag.no { background: color-mix(in srgb, var(--red) 16%, transparent); color: var(--red); }
 .rows .tt { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14.5px; }
 .rows .ss { font-size: 12.5px; color: var(--text-2); display: block; font-weight: 400; }
 .rows .meta { font-size: 13px; color: var(--text-2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -202,6 +209,10 @@ section { margin-bottom: 36px; }
   <section>
     <h2>Recently Added <a class="link" id="plex-link" href="#">Open Plex ›</a></h2>
     <div class="shelf" id="shelf"></div>
+  </section>
+  <section class="grid2" style="align-items:start">
+    <div><h2>Now Playing</h2><div class="card"><ul class="rows" id="playing"></ul></div></div>
+    <div><h2>Recent Requests <a class="link" data-port="5055" href="#">Open Seerr ›</a></h2><div class="card"><ul class="rows" id="requests"></ul></div></div>
   </section>
   <section class="grid2" style="margin-bottom:36px">
     <div><h2>Watch, Listen &amp; Play</h2><div class="card apps" id="apps-use" style="grid-template-columns:repeat(3,1fr)"></div></div>
@@ -314,6 +325,16 @@ function render(D) {
   $("shelf").innerHTML = R.map((p) =>
     `<a class="poster" href="${link(32400, "/web")}"><div class="art"><img src="${p.img}" alt="" loading="lazy"></div><div class="t">${esc(p.title)}</div><div class="s">${p.sub ? esc(p.sub) : p.kind + (p.year ? " · " + p.year : "")}</div></a>`).join("")
     || `<div class="err">Plex isn't answering${D.errors?.recent ? " · " + esc(D.errors.recent) : ""}</div>`;
+
+  const empty = (t) => `<li><span class="meta" style="text-align:left">${t}</span></li>`;
+  $("playing").innerHTML = (D.playing || []).map((p) =>
+    `<li class="pic">${p.img ? `<img class="thumb" src="${p.img}" alt="">` : `<span class="thumb"></span>`}<span class="tt">${esc(p.title)}<span class="ss">${esc(p.sub)}</span></span><span class="meta">${esc(p.user)}<span class="ss">${esc(p.player)}${p.state === "paused" ? " · paused" : ""}</span></span><div class="pbar"><i style="width:${Math.max(p.pct, 2)}%"></i></div></li>`).join("")
+    || empty("Nobody's watching right now");
+  const TAG = { available: ["ok", "In Plex"], partial: ["ok", "Partly in Plex"], processing: ["go", "On its way"], pending: ["", "Awaiting approval"], declined: ["no", "Declined"] };
+  $("requests").innerHTML = (D.requests || []).slice(0, 6).map((r) => {
+    const [cls, label] = TAG[r.state] || ["", r.state];
+    return `<li class="pic">${r.img ? `<img class="thumb" src="${r.img}" alt="" loading="lazy">` : `<span class="thumb"></span>`}<span class="tt">${esc(r.title)}<span class="ss">${r.kind}${r.year ? " · " + r.year : ""}${r.seasons.length ? ` · season ${r.seasons.join(", ")}` : ""} · ${esc(r.by)}</span></span><span class="meta"><span class="tag ${cls}">${label}</span></span></li>`;
+  }).join("") || empty(D.errors?.requests ? "Seerr isn't answering" : "No requests yet");
 
   // downloads grouped by title
   const Q = D.queue || [], groups = {};
