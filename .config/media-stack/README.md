@@ -19,7 +19,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers |
 | Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
-| Dashboard | 3000 | Home page: recently added, downloads, storage review, machines on the tailnet, service health (`dashboard/`, own code) |
+| Dashboard | 3000 | Home page: recently added, now playing, requests, downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |

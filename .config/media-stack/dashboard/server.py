@@ -7,8 +7,10 @@ proxied through /poster so the token never reaches the browser. Nothing here wri
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
+import re
 import socket
 import threading
 import time
@@ -27,6 +29,9 @@ PLEX = f"http://{ENV.get('HOST_ADDR', 'host.docker.internal')}:32400"
 PLEX_TOKEN = ENV.get("PLEX_TOKEN", "")
 TAILNET = ENV.get("TAILNET", "tail2813f4.ts.net")
 NAS_STATUS = "http://100.88.15.86:8765/status.json"
+HOST_JSON = Path("/host/host.json")  # written by host-stats.py on the Mac
+BACKUPS = Path("/backups")  # ~/backups/media-stack, written by backup.sh
+DOCKER_SOCK = "/var/run/docker.sock"
 
 # Services: name, icon, blurb, container host:port, published port (None = no page), API key env.
 # Links are built in the browser from its own hostname plus the published port.
@@ -133,13 +138,13 @@ def now_playing() -> list[dict]:
     out = []
     for m in d.get("MediaContainer", {}).get("Metadata", []):
         t = m.get("type")
+        if t == "track":  # music plays all day; only video is worth a row
+            continue
         if t == "episode":
             title, sub = m.get("grandparentTitle"), f"{m.get('parentTitle')} · {m.get('title')}"
-        elif t == "track":
-            title, sub = m.get("title"), m.get("grandparentTitle")
         else:
             title, sub = m.get("title"), str(m.get("year") or "")
-        thumb = m.get("grandparentThumb") if t in ("episode", "track") else m.get("thumb")
+        thumb = m.get("grandparentThumb") if t == "episode" else m.get("thumb")
         out.append({"title": title, "sub": sub, "kind": t, "img": "/poster?p=" + quote(thumb) if thumb else None,
                     "user": (m.get("User") or {}).get("title"), "player": (m.get("Player") or {}).get("title"),
                     "state": (m.get("Player") or {}).get("state"),
@@ -250,12 +255,58 @@ def services(counts: dict, tor: dict, vp: dict, lib: dict) -> list[dict]:
             for (n, ic, blurb, _h, port, _k), ok in zip(SERVICES, up)]
 
 
-def machines() -> list[dict]:
+def machines(peers: dict) -> list[dict]:
     with ThreadPoolExecutor(8) as ex:
         up = list(ex.map(lambda m: reachable(m[4], m[6]), MACHINES))
-    return [{"name": n, "role": role, "icon": ic, "host": f"{host}.{TAILNET}", "ip": ip, "user": user, "online": ok,
+    return [{"name": n, "role": role, "icon": ic, "host": f"{host}.{TAILNET}", "ip": ip, "user": user,
+             "online": peers[ip]["online"] if ip in peers else ok, "last_seen": (peers.get(ip) or {}).get("last_seen"),
              "links": [(label, url.format(ts=TAILNET)) for label, url in links]}
             for (n, role, ic, host, ip, user, _p, links), ok in zip(MACHINES, up)]
+
+
+def host() -> dict:
+    """Mac stats from host-stats.py; stale after 5 minutes means the launchd job stopped."""
+    d = json.loads(HOST_JSON.read_text())
+    d["stale"] = time.time() - d["time"] > 300
+    return d
+
+
+class DockerConn(http.client.HTTPConnection):
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX)
+        self.sock.connect(DOCKER_SOCK)
+
+
+def docker(path: str):
+    c = DockerConn("docker")
+    c.request("GET", path)
+    return json.loads(c.getresponse().read())
+
+
+def containers() -> list[dict]:
+    out = []
+    for c in docker('/containers/json?all=1&filters={"label":["com.docker.compose.project=media-stack"]}'):
+        name = c["Names"][0].lstrip("/")
+        i = docker(f"/containers/{name}/json")
+        health = (i["State"].get("Health") or {}).get("Status")
+        out.append({"name": name, "state": c["State"], "status": c["Status"], "health": health,
+                    "restarts": i.get("RestartCount", 0), "started": i["State"].get("StartedAt", "")[:19]})
+    return sorted(out, key=lambda c: (c["state"] == "running" and c["health"] != "unhealthy", c["name"]))
+
+
+def backups() -> dict:
+    """Last settings archive and what the log says happened to it, plus the last cloud sync."""
+    tars = sorted(BACKUPS.glob("settings-*.tar.gz"), key=lambda f: f.stat().st_mtime)
+    log = (BACKUPS / "backup.log").read_text(errors="replace").splitlines() if (BACKUPS / "backup.log").exists() else []
+    last = tars[-1] if tars else None
+    lines = [ln for ln in log if last and last.name in ln]
+    cloud = [ln for ln in log if "cloud sync" in ln]
+    return {
+        "last": last.stat().st_mtime if last else None, "size": last.stat().st_size if last else 0, "count": len(tars),
+        "on_disk": any("_backups/settings" in ln for ln in lines),
+        "on_drive": any(ln.rstrip().endswith(".tar.gz") and "gcrypt:" in ln for ln in lines),
+        "cloud_sync": cloud[-1][:19] if cloud else None, "cloud_ok": bool(cloud) and "done" in cloud[-1],
+    }
 
 
 def sites() -> list[dict]:
@@ -285,9 +336,11 @@ def collect() -> dict:
     with ThreadPoolExecutor(8) as ex:
         jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("playing", now_playing), ("requests", requests_recent), ("counts", plex_counts), ("queue", queue),
                                                    ("arr", arr_counts), ("torrents", torrents), ("vpn", vpn),
-                                                   ("storage", storage), ("nas", nas), ("machines", machines), ("sites", sites))}
+                                                   ("storage", storage), ("nas", nas), ("sites", sites), ("host", host),
+                                                   ("containers", containers), ("backups", backups))}
         for j in jobs:
             j.result()
+    run("machines", machines, (out["host"] or {}).get("peers", {}))
     run("services", services, out["arr"] or {}, out["torrents"] or {}, out["vpn"] or {}, out["counts"] or {})
     out["ok"] = True
     out["updated"] = time.time()

@@ -330,6 +330,10 @@ services:
       LIDARR_KEY: ${HOMEPAGE_VAR_LIDARR_KEY}
       PROWLARR_KEY: ${HOMEPAGE_VAR_PROWLARR_KEY}
       SEERR_KEY: ${HOMEPAGE_VAR_SEERR_KEY}
+    volumes:
+      - ${DATA_ROOT}/dashboard:/host:ro
+      - ${HOME}/backups/media-stack:/backups:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   # Up/down checks with history and phone alerts.
   uptime-kuma:

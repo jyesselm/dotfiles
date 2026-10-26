@@ -137,6 +137,11 @@ section { margin-bottom: 36px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
 .stat .v { font-size: 24px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .stat .l { font-size: 13px; color: var(--text-2); }
+.meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 12px; }
+.meter .l { font-size: 12.5px; color: var(--text-2); display: flex; justify-content: space-between; }
+.meter .pbar { margin-top: 6px; height: 6px; border-radius: 3px; }
+.ok { color: var(--green); }
+.bad { color: var(--red); }
 .gauge { display: flex; align-items: center; gap: 14px; }
 .ring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none;
   background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--fill) 0); }
@@ -257,6 +262,10 @@ section { margin-bottom: 36px; }
 <!-- COMPUTERS -->
 <div class="view" id="v-computers">
   <div class="hero"><div class="eyebrow">Computers</div><h1>Your machines</h1><div class="lead" id="pc-lead">Everything is reachable over Tailscale from anywhere.</div></div>
+  <section class="grid2" style="align-items:start">
+    <div><h2>Server health</h2><div class="card" id="health"></div></div>
+    <div><h2>Backups</h2><div class="card" id="backups"></div></div>
+  </section>
   <section><div class="machines" id="machines"></div></section>
   <section><h2>Websites</h2><div class="card"><ul class="rows" id="sites"></ul></div></section>
 </div>
@@ -273,7 +282,7 @@ section { margin-bottom: 36px; }
 
 <script>
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const gb = (b) => b >= 1e12 ? (b / 1e12).toFixed(2) + " TB" : Math.round(b / 1e9) + " GB";
+const gb = (b) => b >= 1e12 ? (b / 1e12).toFixed(2) + " TB" : b >= 1e9 ? Math.round(b / 1e9) + " GB" : Math.round(b / 1e6) + " MB";
 const mb = (b) => b >= 1e6 ? (b / 1e6).toFixed(1) + " MB/s" : Math.round(b / 1e3) + " kB/s";
 const I = (n) => `icons/${n}`;
 const img = (ic, cls = "") => /\.(svg|png)$/.test(ic) ? `<img src="${I(ic)}" alt="" class="${cls}">` : `<span class="glyph">${ic}</span>`;
@@ -396,17 +405,36 @@ function render(D) {
     : `<div class="sub" style="margin-top:8px">Not answering</div>`);
 
   // ---- COMPUTERS ----
+  const ago = (t) => { const m = Math.round((Date.now() / 1000 - t) / 60); return m < 60 ? `${m} min ago` : m < 2880 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
   $("pc-lead").textContent = `${online.length} of ${M.length} online · everything is reachable over Tailscale from anywhere.`;
   $("machines").innerHTML = M.map((m) => {
     const ssh = `ssh ${m.user}@${m.host.split(".")[0]}`;
     return `<div class="card machine"><div class="head"><div class="os">${img(m.icon)}</div>
-      <div><div class="nm">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></div><div class="status"><span class="dot ${m.online ? "" : "off"}"></span>${m.online ? "Online" : "Offline"}</div></div>
+      <div><div class="nm">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></div><div class="status"><span class="dot ${m.online ? "" : "off"}"></span>${m.online ? "Online" : m.last_seen && !m.last_seen.startsWith("0001") ? "Last seen " + ago(new Date(m.last_seen) / 1000) : "Offline"}</div></div>
       <dl class="kv"><dt>Tailscale</dt><dd><code>${m.host}</code></dd><dt>IP</dt><dd><code>${m.ip}</code></dd>
       ${m.user ? `<dt>SSH</dt><dd><code>${ssh}</code><button class="copy" data-c="${ssh}">Copy</button></dd>` : ""}</dl>
       ${m.links.length ? `<div class="chips">${m.links.map(([l, u]) => `<a class="chip" href="${u}">${esc(l)}</a>`).join("")}</div>` : ""}</div>`;
   }).join("");
   document.querySelectorAll(".copy").forEach((b) => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.c); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1200); });
 
+  const Hh = D.host, C = D.containers || [], B = D.backups;
+  const bad = C.filter((c) => c.state !== "running" || c.health === "unhealthy");
+  const meter = (l, v, text, color) => `<div class="meter"><div class="l"><span>${l}</span><b>${text}</b></div><div class="pbar"><i style="width:${Math.min(v, 100)}%;background:${color || (v > 90 ? "var(--red)" : v > 70 ? "var(--orange)" : "var(--blue)")}"></i></div></div>`;
+  const days = Hh ? Math.floor((Hh.time - Hh.boot) / 86400) : 0;
+  $("health").innerHTML = `<h3>Plex Server · Mac mini ${Hh ? `<span class="sub">${Hh.stale ? '<span class="bad">stats are stale</span>' : `up ${days} day${days === 1 ? "" : "s"} · load ${Hh.load}`}</span>` : ""}</h3>` +
+    (Hh ? `<div class="meters">${meter("CPU", Hh.cpu_pct, Hh.cpu_pct + "%")}${meter("Memory", 100 * Hh.mem_used / Hh.mem_total, gb(Hh.mem_used) + " of " + gb(Hh.mem_total))}${S ? meter("plex-media", 100 * S.used / S.total, gb(S.free) + " free") : ""}</div>`
+       : `<div class="sub" style="margin-top:8px">No host stats yet · run <code>python3 dashboard/host-stats.py install</code> on the Mac</div>`) +
+    `<div class="sub" style="margin-top:16px;display:flex;justify-content:space-between"><span><b class="${bad.length ? "bad" : "ok"}">${C.length - bad.length} of ${C.length}</b> containers running</span>${bad.length ? `<span class="bad">${esc(bad.map((c) => c.name).join(", "))}</span>` : ""}</div>` +
+    `<ul class="rows" style="margin-top:6px">${(bad.length ? bad : []).concat(C.filter((c) => c.restarts > 0 && !bad.includes(c))).slice(0, 6).map((c) =>
+      `<li><span class="tt">${esc(c.name)}<span class="ss">${esc(c.status)}${c.restarts ? ` · restarted ${c.restarts}×` : ""}</span></span><span class="meta ${c.state === "running" && c.health !== "unhealthy" ? "" : "warn"}">${c.health || c.state}</span></li>`).join("")}</ul>`;
+  $("backups").innerHTML = B ? `<h3>Settings &amp; databases <span class="sub">nightly 04:00</span></h3>
+    <div class="big">${B.last ? ago(B.last) : "never"}</div>
+    <div class="sub">${B.last ? `${gb(B.size)} · ${B.count} kept locally` : "no settings archive found"}</div>
+    <ul class="rows" style="margin-top:10px">
+      <li><span class="tt">Copy on plex-media</span><span class="meta ${B.on_disk ? "ok" : "warn"}">${B.on_disk ? "✓ done" : "missed"}</span></li>
+      <li><span class="tt">Encrypted copy in Google Drive</span><span class="meta ${B.on_drive ? "ok" : "warn"}">${B.on_drive ? "✓ done" : "missed"}</span></li>
+      <li><span class="tt">Media mirror to Drive<span class="ss">Saturdays 01:00 · ${B.cloud_sync ? esc(B.cloud_sync) : "never run"}</span></span><span class="meta ${B.cloud_ok ? "ok" : "warn"}">${!B.cloud_sync ? "—" : B.cloud_ok ? "✓ done" : "failed · see cloud.log"}</span></li>
+    </ul>` : `<h3>Backups</h3><div class="sub" style="margin-top:8px">~/backups/media-stack isn't mounted</div>`;
   $("sites").innerHTML = (D.sites || []).map((s) =>
     `<li><span class="tt"><a href="${s.url}">${esc(s.name)}</a><span class="ss">${esc(s.url.replace(/^https?:\/\/|\/$/g, ""))}</span></span><span class="meta ${s.up ? "" : "warn"}">${s.up ? `<span class="dot"></span> Up · ${s.ms} ms` : `<span class="dot" style="background:var(--red)"></span> Down${s.code ? " · HTTP " + s.code : ""}`}</span></li>`).join("");
 
