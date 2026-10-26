@@ -300,8 +300,19 @@ def backups() -> dict:
     log = (BACKUPS / "backup.log").read_text(errors="replace").splitlines() if (BACKUPS / "backup.log").exists() else []
     last = tars[-1] if tars else None
     lines = [ln for ln in log if last and last.name in ln]
-    cloud = [ln for ln in log if "cloud sync" in ln]
+    cloud = [ln for ln in log if "cloud sync" in ln and "still running" not in ln]
+    running = None
+    try:
+        i = docker("/containers/media-cloud-upload/json")
+        if i["State"]["Running"]:
+            text = (BACKUPS / "cloud.log").read_text(errors="replace")
+            prog = re.findall(r"Transferred:\s+(\d+) / (\d+), (\d+)%", text)
+            running = {"since": i["State"]["StartedAt"][:19], "pct": int(prog[-1][2]) if prog else None,
+                       "files": f"{prog[-1][0]} of {prog[-1][1]} files" if prog else None}
+    except Exception:
+        pass
     return {
+        "cloud_running": running,
         "last": last.stat().st_mtime if last else None, "size": last.stat().st_size if last else 0, "count": len(tars),
         "on_disk": any("_backups/settings" in ln for ln in lines),
         "on_drive": any(ln.rstrip().endswith(".tar.gz") and "gcrypt:" in ln for ln in lines),

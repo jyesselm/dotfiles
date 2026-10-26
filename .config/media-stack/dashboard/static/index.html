@@ -433,7 +433,7 @@ function render(D) {
     <ul class="rows" style="margin-top:10px">
       <li><span class="tt">Copy on plex-media</span><span class="meta ${B.on_disk ? "ok" : "warn"}">${B.on_disk ? "✓ done" : "missed"}</span></li>
       <li><span class="tt">Encrypted copy in Google Drive</span><span class="meta ${B.on_drive ? "ok" : "warn"}">${B.on_drive ? "✓ done" : "missed"}</span></li>
-      <li><span class="tt">Media mirror to Drive<span class="ss">Saturdays 01:00 · ${B.cloud_sync ? esc(B.cloud_sync) : "never run"}</span></span><span class="meta ${B.cloud_ok ? "ok" : "warn"}">${!B.cloud_sync ? "—" : B.cloud_ok ? "✓ done" : "failed · see cloud.log"}</span></li>
+      <li><span class="tt">Media mirror to Drive<span class="ss">Saturdays 01:00 · ${B.cloud_sync ? esc(B.cloud_sync) : "never run"}</span></span>${B.cloud_running ? `<span class="meta">running · <b>${B.cloud_running.pct ?? "?"}%</b><span class="ss">${esc(B.cloud_running.files || "")} · since ${esc(B.cloud_running.since.slice(0, 10))}</span></span><div class="pbar"><i style="width:${B.cloud_running.pct || 2}%"></i></div>` : `<span class="meta ${B.cloud_ok ? "ok" : "warn"}">${!B.cloud_sync ? "—" : B.cloud_ok ? "✓ done" : "failed · see cloud.log"}</span>`}</li>
     </ul>` : `<h3>Backups</h3><div class="sub" style="margin-top:8px">~/backups/media-stack isn't mounted</div>`;
   $("sites").innerHTML = (D.sites || []).map((s) =>
     `<li><span class="tt"><a href="${s.url}">${esc(s.name)}</a><span class="ss">${esc(s.url.replace(/^https?:\/\/|\/$/g, ""))}</span></span><span class="meta ${s.up ? "" : "warn"}">${s.up ? `<span class="dot"></span> Up · ${s.ms} ms` : `<span class="dot" style="background:var(--red)"></span> Down${s.code ? " · HTTP " + s.code : ""}`}</span></li>`).join("");

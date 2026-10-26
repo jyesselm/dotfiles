@@ -77,10 +77,14 @@ cloud)
         docker run --rm --name media-cloud-upload -v "$HOME/.config/rclone:/config/rclone" \
             -v "$MEDIA_ROOT:/media:ro" -v "$LOCAL_DEST:/logs" rclone/rclone:1.71 "$@"
     }
+    if docker ps --format '{{.Names}}' | grep -qx media-cloud-upload; then
+        echo "$(date '+%F %T') cloud sync still running since $(docker inspect -f '{{.State.StartedAt}}' media-cloud-upload | cut -c1-16), not starting another"
+        exit 0
+    fi
     filters=(--filter "- ._*" --filter "- .DS_Store")  # first match wins, so excludes go first
     for folder in "${CLOUD_FOLDERS[@]}"; do filters+=(--filter "+ /$folder/**"); done
     if rclone_run sync /media gmedia:current "${filters[@]}" --filter "- *" \
-        --backup-dir "gmedia:deleted/$(date +%F)" --drive-stop-on-upload-limit --transfers 4 --bwlimit "08:00,5M 23:00,off" \
+        --backup-dir "gmedia:deleted/$(date +%F)" --drive-stop-on-upload-limit --transfers 4 --tpslimit 8 --bwlimit "08:00,5M 23:00,off" \
         --log-file /logs/cloud.log --log-level NOTICE --stats 10m --stats-log-level NOTICE; then
         cutoff="$(date -v-"${CLOUD_GRACE_DAYS}"d +%F)"
         for day in $(rclone_run lsf --dirs-only gmedia:deleted 2>/dev/null | tr -d /); do
