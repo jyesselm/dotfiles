@@ -94,6 +94,12 @@ def load_items() -> list[dict]:
         files = [dict(r) for r in conn.execute("select item, kind, size, codec, duration_s, height from files")]
         trashed = [dict(r) for r in conn.execute("select * from decisions where trashed_at is not null")]
         swaps = {r["item"]: dict(r) for r in conn.execute("select * from swaps")}
+        # _trash is emptied by hand; once a trashed item's files are gone, forget it.
+        gone = [t["item"] for t in trashed if not (TRASH / t["item"]).exists()]
+        if gone:
+            conn.executemany("delete from decisions where item = ?", [(g,) for g in gone])
+            conn.commit()
+            trashed = [t for t in trashed if t["item"] not in gone]
     for name, item in items.items():
         item["shrink_saving"] = 0
         item["swap"] = swaps.get(name)
