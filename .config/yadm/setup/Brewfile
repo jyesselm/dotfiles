@@ -49,3 +49,4 @@ brew "pymol"
 cask "android-platform-tools"   # `adb`, for the Onn 4K Pro travel kit (~/.config/media-stack/travel-onn.md)
 cask "android-commandlinetools"   # `sdkmanager`, builds the Onn home launcher (~/local/code/other/onn-launcher); ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
 brew "gradle"   # builds the Onn home launcher
+brew "rsync"
