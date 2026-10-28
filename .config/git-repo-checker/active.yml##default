@@ -176,6 +176,10 @@ repos:
   remote: https://github.com/jyesselm/search-cli.git
   branch: main
   enabled: true
+- path: local/code/rust/clips
+  remote: https://github.com/jyesselm/clips.git
+  branch: main
+  enabled: true
 - path: local/code/web/hotkeys
   remote: https://github.com/jyesselm/hotkeys.git
   branch: main
