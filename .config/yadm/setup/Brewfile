@@ -40,6 +40,7 @@ brew "git-filter-repo"
 brew "tmuxinator"
 brew "cmake"
 brew "ninja"
+brew "emscripten"   # C++ → WebAssembly for the rna_draw web editor (~/local/code/python/developing/rna_draw)
 brew "clang-format"
 brew "rust"
 brew "colima"
