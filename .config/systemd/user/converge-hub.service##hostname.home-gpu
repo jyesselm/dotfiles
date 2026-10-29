@@ -4,6 +4,8 @@ Description=converge hub: fleet check-ins on 127.0.0.1:8790 (tailscale serve --s
 [Service]
 ExecStart=%h/.config/yadm/setup/hub.py serve
 Environment=PATH=%h/.local/bin:/usr/bin:/bin
+# Uncomment to file pending recipes as chains in the Tasks app (project Computers):
+#Environment=CONVERGE_TASKS=http://100.73.70.25:8767
 Restart=on-failure
 RestartSec=5
 

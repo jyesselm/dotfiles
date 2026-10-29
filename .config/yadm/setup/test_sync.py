@@ -710,7 +710,8 @@ class PlanTests(Base):
             self.output.truncate(0)
             self.output.seek(0)
             with patch.object(m.subprocess, 'run', side_effect=AssertionError('ran')), patch.object(m.urllib.request, 'urlopen', side_effect=AssertionError('net')), \
-                    patch('shutil.move', side_effect=AssertionError('moved')), patch.object(sy, 'load_mac_settings', return_value=stub):
+                    patch('shutil.move', side_effect=AssertionError('moved')), patch.object(sy, 'load_mac_settings', return_value=stub), \
+                    patch('platform.machine', return_value='arm64'):  # the apps phase needs an apps.json asset for the architecture
                 self.assertEqual(sync.execute(), 0, self.output.getvalue())
             summary = self.output.getvalue().split('Summary\n')[1].splitlines()
             self.assertTrue(summary[0].split()[0] == 'layout')

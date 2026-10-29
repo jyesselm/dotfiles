@@ -13,6 +13,7 @@ from typing import Optional
 from unittest.mock import patch
 
 import hub
+import hub_pages
 import sync as sy
 
 GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
@@ -79,6 +80,53 @@ class StoreTests(Temp):
                          ['/fleet', '/', '/fleet', '/convergex', '/'])
 
 
+def report(machine, profile='mac', pending=(), phases=None):
+    """A last.json with a profile, a pending list and full phase results."""
+    return dict(last(machine, phases=phases), profile=profile, pending=list(pending))
+
+
+GH = {'name': 'gh-login', 'title': 'Sign in to GitHub CLI', 'steps': ['gh auth login --web', 'converge sync']}
+
+
+class PageTests(unittest.TestCase):
+    STATES = [{'machine': 'mac@a', 'profile': 'mac', 'state': {'os': '15', 'apps.Zoom': '6', 'gh.auth': 'joe'}},
+              {'machine': 'mac@b', 'profile': 'mac', 'state': {'os': '15', 'apps.Zoom': '6', 'gh.auth': 'none'}},
+              {'machine': 'mac@c', 'profile': 'mac', 'state': {'os': '14', 'apps.Zoom': '5', 'gh.auth': 'joe'}},
+              {'machine': 'linux@d', 'profile': 'linux', 'state': {'os': '1', 'gh.auth': 'joe'}}]
+    EVERY = hub_pages.snapshot.EVERY_KEY
+
+    def test_odd_keys_compare_against_the_majority_of_the_same_profile(self):
+        self.assertEqual(hub_pages.odd_keys('c', self.STATES, self.EVERY), [('apps.Zoom', '5', '6'), ('os', '14', '15')])
+        self.assertEqual(hub_pages.odd_keys('b', self.STATES, self.EVERY), [('gh.auth', 'none', 'joe')])
+        self.assertEqual(hub_pages.odd_keys('d', self.STATES, self.EVERY), [])  # alone in its profile
+        self.assertEqual(hub_pages.odd_keys('nobody', self.STATES, self.EVERY), [])
+        two = self.STATES[:2]
+        self.assertEqual(hub_pages.odd_keys('a', two, self.EVERY), [('gh.auth', 'joe', 'none')])
+
+    def test_fleet_page_has_hosts_drift_and_pending_steps(self):
+        rows = [dict(host='a<b', **{'class': 'mac', 'finished': last('x')['finished'], 'exit': 1, 'corrective': 0,
+                                    'phases': {'keys': 'failed'}, 'stale': False, 'pending': [GH]})]
+        page = hub_pages.render_fleet(rows, self.STATES)
+        self.assertIn('<a href="machine/a%3Cb">a&lt;b</a>', page)
+        self.assertIn('keys:failed', page)
+        self.assertIn('1. gh auth login --web', page)
+        self.assertIn('setup/compare.yml', page)
+        every = hub_pages.render_fleet(rows, self.STATES, every=True)
+        self.assertIn('(everything)', every)
+        self.assertIn('apps.Zoom', every)
+        self.assertIn('No check-ins yet', hub_pages.render_fleet([], []))
+
+    def test_machine_page_has_phases_declared_recipes_and_odd_keys(self):
+        data = report('mac@c', pending=[GH], phases={'keys': 'warn', 'layout': 'ok'})
+        data['phases']['keys']['details'] = ['missing:id_ecdsa.pub']
+        state = dict(self.STATES[2]['state'], **{'declared.apps.missing': ['Magnet'], 'declared.apps.undeclared': []})
+        page = hub_pages.render_machine('c', {'last': data, 'state': state}, self.STATES, every=True)
+        for text in ['! warn</span> <b>keys</b>', '✓ ok</span> <b>layout</b>', 'missing (1): id_ecdsa.pub',
+                     'missing (1): Magnet', '2. converge sync', 'apps.Zoom', 'converge recipe gh-login']:
+            self.assertIn(text, page)
+        self.assertLess(page.index('<b>keys</b>'), page.index('<b>layout</b>'))  # problems first
+
+
 class BridgeTests(Temp):
     def push_status(self, remote, data, state=None):
         """Point status/<class>-<host> at a parentless commit of last.json (and state.json), as publish_status makes it."""
@@ -94,12 +142,12 @@ class BridgeTests(Temp):
         self.push_status(remote, last('cluster@login.swan', 3), {'os': 'linux'})
         self.push_status(remote, last('linux@old'))  # pushed before snapshots existed: no state.json
         workdir = self.dir / 'bridge'
-        self.assertEqual(hub.bridge_once(self.db, 'file://%s' % remote, workdir), 2)
-        self.assertEqual(hub.bridge_once(self.db, 'file://%s' % remote, workdir), 0)
+        self.assertEqual(len(hub.bridge_once(self.db, 'file://%s' % remote, workdir)), 2)
+        self.assertEqual(hub.bridge_once(self.db, 'file://%s' % remote, workdir), [])
         self.assertEqual(hub.machine(self.db, 'login.swan')['state'], {'os': 'linux'})
         self.assertEqual(hub.machine(self.db, 'old')['state'], {})
         self.push_status(remote, last('cluster@login.swan', 1, 1), {'os': 'linux'})
-        self.assertEqual(hub.bridge_once(self.db, 'file://%s' % remote, workdir), 1)
+        self.assertEqual([d['machine'] for d in hub.bridge_once(self.db, 'file://%s' % remote, workdir)], ['cluster@login.swan'])
         self.assertEqual(hub.machine(self.db, 'login.swan')['last']['exit'], 1)
 
     def test_bridge_failure_names_git(self):
@@ -133,10 +181,18 @@ class HttpTests(Temp):
         self.assertEqual(states[0]['state'], {'os': 'mac'})
         status, page = self.call('GET', '/converge/')
         self.assertEqual(status, 200)
-        self.assertIn('<pre>book ', page)
+        self.assertIn('<a href="machine/book">book</a>', page)
         self.assertEqual(json.loads(self.call('GET', '/machine/book')[1])['state'], {'os': 'mac'})
+        status, page = self.call('GET', '/converge/machine/book', headers={'Accept': 'text/html,*/*'})
+        self.assertEqual(status, 200)
+        self.assertIn('<h1>book</h1>', page)
         self.assertEqual(self.call('GET', '/machine/nobody')[0], 404)
         self.assertEqual(self.call('GET', '/elsewhere')[0], 404)
+
+    def test_host_option_reaches_the_bind(self):
+        args = hub.parser().parse_args(['serve', '--host', '0.0.0.0', '--port', '0'])
+        with hub.make_server(args.port, self.config, args.host) as server:
+            self.assertEqual(server.server_address[0], '0.0.0.0')
 
     def test_post_needs_the_tailscale_header_unless_trust_local(self):
         body = json.dumps({'last': last('laptop@book'), 'state': {}}).encode()

@@ -8,7 +8,6 @@ thread fetches with git. One sqlite table holds every report for 90 days. Stdlib
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import os
 import sqlite3
@@ -23,11 +22,14 @@ from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
+import hub_pages
+import hub_tasks
 import sync
 
 PORT = 8790
+HOST = '127.0.0.1'  # tailscale serve is the only way in; containers bind 0.0.0.0 with --host
 DB = '.local/state/dotfiles/hub.sqlite'
 BRIDGE_DIR = '.local/state/dotfiles/hub-bridge'  # bare clone of the remote, status/* branches only
 REMOTE = 'https://github.com/jyesselm/dotfiles.git'  # public: plain git, no gh login needed
@@ -47,6 +49,13 @@ NEWEST = '''SELECT * FROM reports r WHERE id = (SELECT id FROM reports WHERE hos
 JSON, TEXT, PAGE = 'application/json', 'text/plain; charset=utf-8', 'text/html; charset=utf-8'
 
 
+class Ask(NamedTuple):
+    """What a route needs from a request: the path without /converge, `?all=1`, and whether the browser asked for HTML."""
+    path: str
+    every: bool = False
+    html: bool = False
+
+
 class Reply(NamedTuple):
     """What a route answers: HTTP status, body text and Content-Type."""
     status: int
@@ -56,9 +65,11 @@ class Reply(NamedTuple):
 
 @dataclass
 class HubConfig:
-    """What every request handler needs: the database path and whether direct (non-tailscale-serve) posts count."""
+    """What every request handler needs: the database path, whether direct (non-tailscale-serve) posts count,
+    and the Tasks server that pending recipes are filed in (None: off)."""
     db: Path
     trust_local: bool = False
+    tasks: Optional[str] = None
 
 
 def now() -> datetime:
@@ -112,13 +123,15 @@ def is_stale(finished: str) -> bool:
 
 
 def fleet_rows(db: sqlite3.Connection) -> List[dict]:
-    """Newest report per host, newest first, in the shape sync.fleet_lines prints."""
+    """Newest report per host, newest first, in the shape sync.fleet_lines prints, plus its pending recipes (the fleet page)."""
     rows = []
     for row in db.execute(NEWEST):
-        phases = {key: phase['status'] for key, phase in json.loads(row['last_json'])['phases'].items()}
+        last = json.loads(row['last_json'])
+        phases = {key: phase['status'] for key, phase in last['phases'].items()}
         rows.append({'host': row['host'], 'class': row['class'], 'profile': row['profile'], 'finished': row['finished'],
                      'exit': row['exit'], 'received': row['received'], 'phases': phases,
-                     'corrective': sync.corrective(phases.values()), 'stale': is_stale(row['finished'])})
+                     'corrective': sync.corrective(phases.values()), 'stale': is_stale(row['finished']),
+                     'pending': last.get('pending') or []})
     return rows
 
 
@@ -158,20 +171,20 @@ def read_ref(workdir: Path, ref: str) -> Tuple[dict, dict]:
     return last, state
 
 
-def bridge_once(db: sqlite3.Connection, remote: str, workdir: Path) -> int:
-    """Fetch the remote's status/* branches and store each one newer than that host's stored report; how many were stored."""
+def bridge_once(db: sqlite3.Connection, remote: str, workdir: Path) -> List[dict]:
+    """Fetch the remote's status/* branches and store each one newer than that host's stored report; the last.json of each stored."""
     if not (workdir / 'HEAD').exists():
         workdir.mkdir(parents=True, exist_ok=True)
         git(workdir, 'init', '--bare', '--quiet')
     spec = '+refs/heads/%s*:refs/heads/%s*' % (sync.STATUS_REFS, sync.STATUS_REFS)
     git(workdir, 'fetch', '--quiet', '--force', '--prune', remote, spec)
-    stored = 0
+    stored = []
     for ref in git(workdir, 'for-each-ref', '--format=%(refname)', 'refs/heads/' + sync.STATUS_REFS).split():
         last, state = read_ref(workdir, ref)
         newest = db.execute('SELECT MAX(finished) FROM reports WHERE host = ?', (validate_last(last)[1],)).fetchone()[0]
         if newest is None or last['finished'] > newest:
             store_report(db, last, state)
-            stored += 1
+            stored.append(last)
     return stored
 
 
@@ -181,7 +194,8 @@ def bridge_loop(config: HubConfig, remote: str, interval_s: int) -> None:
     while True:
         try:
             with closing(connect(config.db)) as db:
-                bridge_once(db, remote, workdir)
+                for last in bridge_once(db, remote, workdir):
+                    hub_tasks.file_in_background(config.tasks, last)
         except (OSError, RuntimeError, ValueError, subprocess.SubprocessError, sqlite3.Error) as exc:
             print('bridge: %s' % exc, file=sys.stderr, flush=True)
         time.sleep(interval_s)
@@ -192,13 +206,6 @@ def strip_prefix(path: str) -> str:
     if path == PREFIX or path.startswith(PREFIX + '/'):
         path = path[len(PREFIX):]
     return path or '/'
-
-
-def render_fleet(rows: List[dict]) -> str:
-    """Minimal fleet page: the CLI's table in a <pre> (phase 3 adds drift and pending recipes)."""
-    table = html.escape('\n'.join(sync.fleet_lines(rows)) or 'no check-ins yet')
-    return ('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
-            '<title>converge fleet</title><h1>converge fleet</h1><pre>%s</pre>\n' % table)
 
 
 def parse_report(headers, stream) -> Tuple[dict, dict]:
@@ -216,18 +223,23 @@ def parse_report(headers, stream) -> Tuple[dict, dict]:
     return body.get('last') or {}, body.get('state') or {}
 
 
-def get(db: sqlite3.Connection, path: str) -> Reply:
-    """Answer a GET: the fleet page, /fleet, /machines or /machine/<host>."""
-    if path == '/':
-        return Reply(200, render_fleet(fleet_rows(db)), PAGE)
-    if path == '/fleet':
+def get(db: sqlite3.Connection, ask: Ask) -> Reply:
+    """Answer a GET: the fleet page, /fleet, /machines or /machine/<host> (a page when the browser asks for HTML)."""
+    if ask.path == '/':
+        return Reply(200, hub_pages.render_fleet(fleet_rows(db), machines(db), ask.every), PAGE)
+    if ask.path == '/fleet':
         return Reply(200, json.dumps(fleet_rows(db)), JSON)
-    if path == '/machines':
+    if ask.path == '/machines':
         return Reply(200, json.dumps(machines(db)), JSON)
-    if path.startswith('/machine/'):
-        found = machine(db, unquote(path[len('/machine/'):]))
-        return Reply(200, json.dumps(found), JSON) if found else Reply(404, 'no such host\n', TEXT)
-    return Reply(404, 'not found\n', TEXT)
+    if not ask.path.startswith('/machine/'):
+        return Reply(404, 'not found\n', TEXT)
+    host = unquote(ask.path[len('/machine/'):])
+    found = machine(db, host)
+    if found is None:
+        return Reply(404, 'no such host\n', TEXT)
+    if ask.html:
+        return Reply(200, hub_pages.render_machine(host, found, machines(db), ask.every), PAGE)
+    return Reply(200, json.dumps(found), JSON)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -239,15 +251,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         self._answer(self._post)
 
-    def _post(self, db: sqlite3.Connection, path: str) -> Reply:
-        """POST /report: 204 stored, 400 malformed, 403 not through tailscale serve (unless --trust-local)."""
-        if path != '/report':
+    def _post(self, db: sqlite3.Connection, ask: Ask) -> Reply:
+        """POST /report: 204 stored (then its pending recipes go to Tasks when on), 400 malformed, 403 not through
+        tailscale serve (unless --trust-local)."""
+        if ask.path != '/report':
             return Reply(404, 'not found\n', TEXT)
         try:
             last, state = parse_report(self.headers, self.rfile)
             if not (self.headers.get('Tailscale-User-Login') or self.server.config.trust_local):
                 return Reply(403, 'check-ins come through tailscale serve\n', TEXT)
             store_report(db, last, state)
+            hub_tasks.file_in_background(self.server.config.tasks, last)
         except ValueError as exc:
             return Reply(400, '%s\n' % str(exc).splitlines()[0], TEXT)
         return Reply(204, '', TEXT)
@@ -256,7 +270,7 @@ class Handler(BaseHTTPRequestHandler):
         """Run a route on a fresh connection and send its reply; an unexpected error is one line to the client, a trace to the log."""
         try:
             with closing(connect(self.server.config.db)) as db:
-                reply = route(db, strip_prefix(urlsplit(self.path).path))
+                reply = route(db, self._ask())
         except Exception:  # noqa: BLE001 - never a stack trace to the client
             traceback.print_exc()
             reply = Reply(500, 'internal error\n', TEXT)
@@ -267,25 +281,33 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _ask(self) -> Ask:
+        """This request as an Ask."""
+        url = urlsplit(self.path)
+        every = parse_qs(url.query).get('all') == ['1']
+        return Ask(strip_prefix(url.path), every, 'text/html' in self.headers.get('Accept', ''))
+
     def log_message(self, format: str, *args) -> None:  # noqa: A002 - the base class's name
         """Access lines are noise in the journal; errors still print through log_error."""
 
 
-def make_server(port: int, config: HubConfig) -> ThreadingHTTPServer:
-    """Hub HTTP server on 127.0.0.1 (tailscale serve is the only way in from the tailnet); port 0 picks a free one."""
-    server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+def make_server(port: int, config: HubConfig, host: str = HOST) -> ThreadingHTTPServer:
+    """Hub HTTP server on 127.0.0.1 (tailscale serve is the only way in from the tailnet); port 0 picks a free one.
+    `host` is for the container tests only, which bind 0.0.0.0 inside their network."""
+    server = ThreadingHTTPServer((host, port), Handler)
     server.config = config
     return server
 
 
 def serve(args: argparse.Namespace) -> int:
     """Run the hub until killed, with the bridge thread unless --bridge none."""
-    config = HubConfig(Path(args.db), args.trust_local)
+    config = HubConfig(Path(args.db), args.trust_local, args.tasks)
     connect(config.db).close()  # create the schema before the first request
-    server = make_server(args.port, config)
+    server = make_server(args.port, config, args.host)
     if args.bridge != 'none':
         threading.Thread(target=bridge_loop, args=(config, args.bridge, args.bridge_interval), daemon=True).start()
-    print('converge hub on http://127.0.0.1:%d (db %s, bridge %s)' % (server.server_address[1], config.db, args.bridge), flush=True)
+    print('converge hub on http://%s:%d (db %s, bridge %s, tasks %s)' % (
+        args.host, server.server_address[1], config.db, args.bridge, config.tasks or 'off'), flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -294,7 +316,7 @@ def serve(args: argparse.Namespace) -> int:
 
 
 def parser() -> argparse.ArgumentParser:
-    """`hub.py serve` and `hub.py bridge-once`; CONVERGE_HUB_DB and CONVERGE_BRIDGE_REMOTE set the defaults."""
+    """`hub.py serve` and `hub.py bridge-once`; CONVERGE_HUB_DB, CONVERGE_BRIDGE_REMOTE and CONVERGE_TASKS set the defaults."""
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument('--db', default=os.environ.get('CONVERGE_HUB_DB') or str(Path.home() / DB), help='sqlite database')
     common.add_argument('--bridge', default=os.environ.get('CONVERGE_BRIDGE_REMOTE') or REMOTE,
@@ -304,6 +326,9 @@ def parser() -> argparse.ArgumentParser:
     run = commands.add_parser('serve', parents=[common], help='Serve check-ins and the fleet view on 127.0.0.1')
     run.add_argument('--port', type=int, default=PORT, help='0 picks a free port (printed on start)')
     run.add_argument('--bridge-interval', type=int, default=BRIDGE_INTERVAL_S, metavar='SECONDS')
+    run.add_argument('--host', default=HOST, help='bind address: 127.0.0.1 for the real hub, 0.0.0.0 in the container tests')
+    run.add_argument('--tasks', default=os.environ.get('CONVERGE_TASKS') or None, metavar='URL',
+                     help='Tasks server to file pending recipes in as chains (default off)')
     run.add_argument('--trust-local', action='store_true', help='Accept check-ins without the Tailscale-User-Login header (tests)')
     commands.add_parser('bridge-once', parents=[common], help='One bridge pass: import newer status/* branches, then exit')
     return p
@@ -315,7 +340,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == 'serve':
         return serve(args)
     with closing(connect(Path(args.db))) as db:
-        print('%d reports stored' % bridge_once(db, args.bridge, Path.home() / BRIDGE_DIR))
+        print('%d reports stored' % len(bridge_once(db, args.bridge, Path.home() / BRIDGE_DIR)))
     return 0
 
 
