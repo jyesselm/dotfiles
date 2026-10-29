@@ -7,6 +7,7 @@ import plistlib
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -76,6 +77,66 @@ class CollectTests(Base):
         self.assertEqual(sn.active_repos(self.root / 'missing.yml'), [])
         (self.root / 'a.yml').write_text("path_prefix: '~'\nrepos:\n- path: local/code/x\n  remote: r\n- path: 'local/code/y'\n")
         self.assertEqual(sn.active_repos(self.root / 'a.yml'), ['local/code/x', 'local/code/y'])
+
+
+class LoginTests(Base):
+    def test_gh_op_and_tailscale_logins(self):
+        self.calls['gh auth status'] = done('', 0, 'github.com\n  Logged in to github.com account jyesselm (keyring)\n')
+        (self.root / sn.OP_CLI_CONFIG).parent.mkdir(parents=True)
+        (self.root / sn.OP_CLI_CONFIG).write_text('{"accounts": [{"url": "x", "email": "a@b.org"}]}')
+        self.calls['tailscale status --json'] = done('{"BackendState": "Running", "Self": {"Online": true}}')
+        setup = self.setup('--profile', 'linux', tools=('gh', 'op', 'tailscale'))
+        self.assertEqual((sn.gh_login(setup), sn.op_account(setup), sn.tailscale_online(setup)), ('jyesselm', 'a@b.org', 'yes'))
+        self.calls['gh auth status'] = done('', 0, 'Logged in to github.com as old (oauth_token)\n')
+        self.calls['tailscale status --json'] = done('{"BackendState": "Stopped"}', 1)
+        (self.root / sn.OP_CLI_CONFIG).write_text('{"accounts": null}')
+        self.assertEqual((sn.gh_login(setup), sn.op_account(setup), sn.tailscale_online(setup)), ('old', 'none', 'no'))
+        self.calls['gh auth status'] = done('', 1, 'You are not logged into any GitHub hosts')
+        self.calls['tailscale status --json'] = done('not json')
+        self.assertEqual((sn.gh_login(setup), sn.tailscale_online(setup)), ('not logged in', 'no'))
+        bare = self.setup('--profile', 'linux', tools=())
+        self.assertEqual((sn.gh_login(bare), sn.op_account(bare), sn.tailscale_online(bare)), ('gh missing', 'none', 'absent'))
+        mac = self.setup('--profile', 'mac', tools=())
+        self.assertEqual(sn.op_account(mac), 'none')
+        settings = self.root / sn.OP_APP_SETTINGS
+        settings.parent.mkdir(parents=True)
+        settings.write_text('{"developers.cliSharedLockState.enabled": true}')
+        self.assertEqual(sn.op_account(mac), 'app')
+
+    def test_atuin_age_keys_and_keychain_secrets(self):
+        self.assertEqual(sn.atuin_synced(self.root), 'absent')
+        path = self.root / sn.ATUIN_SYNC
+        path.parent.mkdir(parents=True)
+        path.write_text((datetime.now(timezone.utc) - timedelta(hours=5)).strftime('%Y-%m-%dT%H:%M:%S.12345Z'))
+        self.assertEqual(sn.atuin_synced(self.root), 5.0)
+        path.write_text('garbage')  # falls back to the file's mtime: just written
+        self.assertEqual(sn.atuin_synced(self.root), 0.0)
+        self.assertEqual(sn.iso_time('2026-10-28T12:00:00.123456789+00:00').microsecond, 123456)
+        (self.root / '.ssh').mkdir()
+        (self.root / '.ssh/id_ecdsa.pub').write_text('')
+        self.assertEqual(sn.own_keys(self.root), ['id_ecdsa.pub'])
+        setup = self.setup('--profile', 'mac')
+        self.assertEqual(sn.secrets_missing(setup), 'absent')
+        (self.root / sn.SECRETS_REFS).parent.mkdir(parents=True)
+        (self.root / sn.SECRETS_REFS).write_text('# refs\nHAVE  op://Vault/item/field\nLACK  op://Vault/other/field\n')
+        self.calls['security find-generic-password -s zsh-keys -a HAVE'] = done('keychain: x')
+        self.assertEqual(sn.secrets_missing(setup), ['LACK'])
+
+    def test_linux_inventories_and_declared_keys(self):
+        assets = self.root / 'assets'
+        (assets / 'declared').mkdir(parents=True)
+        (assets / 'declared/apt.txt').write_text('git\nvim\n')
+        setup = m.Setup(m.parse(['sync', '--profile', 'linux']), root=self.root, assets=assets)
+        setup.find = lambda name: '/bin/' + name if name in ('apt-mark', 'snap') else None
+        setup.read = lambda argv, **kw: self.calls.get(' '.join(map(str, argv)), done('', 1, 'not stubbed'))
+        self.calls.update({'apt-mark showmanual': done('git\nzsh\n'), 'snap list': done('Name Version Rev\ncode 1.95 9\n'),
+                           'dpkg-query -W -f ${Package} ${Version}\n git zsh': done('git 1:2.43\nzsh 5.9\n')})
+        with patch.object(sn, '_module', return_value=m):  # the temp assets dir has no setup.py
+            state = sn.collect(setup)
+        self.assertEqual((state['apt.git'], state['apt.zsh'], state['snap.code']), ('1:2.43', '5.9', '1.95'))
+        self.assertNotIn('flatpak.x', state)
+        self.assertEqual((state['declared.apt.missing'], state['declared.apt.undeclared']), (['vim'], ['zsh']))
+        self.assertEqual(state['declared.flatpak.missing'], [])
 
 
 class CompareTests(Base):

@@ -1,8 +1,9 @@
 """Effective-state snapshot of this computer, sent with each check-in so `converge fleet --diff` can compare machines.
 
 Git already makes the tracked files identical everywhere; what differs between machines is untracked state (installed
-versions, loaded configs, keyboards, shortcut flags, login items). Every gatherer is cheap and read-only; one that fails
-records `error: ...` under its key instead of losing the whole snapshot. setup/compare.yml selects which keys are compared.
+versions, loaded configs, keyboards, shortcut flags, login items, logins, declared-vs-present). Every gatherer is cheap
+and read-only; one that fails records `error: ...` under its key instead of losing the whole snapshot. setup/compare.yml
+selects which keys are compared.
 """
 from __future__ import annotations
 
@@ -12,8 +13,11 @@ import platform
 import plistlib
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
+
+from layout import manifest_lines
 
 Value = object  # str or list of str
 GLOBAL_KEYS = ['AppleInterfaceStyle', 'KeyRepeat', 'InitialKeyRepeat', 'com.apple.keyboard.fnState',
@@ -22,7 +26,11 @@ SHORTCUTS = {28: 'screenshot-file', 29: 'screenshot-clipboard', 30: 'area-file',
              33: 'app-windows', 36: 'show-desktop', 60: 'input-source', 61: 'input-source-next', 64: 'spotlight', 65: 'finder-search',
              79: 'space-left', 81: 'space-right', 118: 'space-1', 119: 'space-2', 120: 'space-3', 121: 'space-4',
              160: 'launchpad', 162: 'notification-center', 163: 'do-not-disturb', 175: 'accessibility', 184: 'screenshot-options'}
-APP_DIRS = ['/Applications', '~/Applications']
+TAILSCALE_APP = '/Applications/Tailscale.app/Contents/MacOS/Tailscale'  # the Mac app's CLI; elsewhere `tailscale` on PATH
+ATUIN_SYNC = '.local/share/atuin/last_sync_time'
+OP_APP_SETTINGS = 'Library/Group Containers/2BUA8C4S2C.com.1password/Library/Application Support/1Password/Data/settings/settings.json'
+OP_CLI_CONFIG = '.config/op/config'  # accounts added with `op account add` (Linux); null under the Mac app integration
+SECRETS_REFS = '.zsh/secrets.refs'  # NAME  op://... references that `keys sync` copies into the zsh-keys Keychain service
 EVERY_KEY = {'compare': ['*'], 'ignore': []}  # rules for `fleet --diff --all`: compare every key
 
 
@@ -60,7 +68,9 @@ def _module(setup):
 
 def common(setup) -> Dict[str, Callable[[], Value]]:
     """Gatherers for every profile."""
+    import declared
     root, module = setup.root, _module(setup)
+
     def dotfiles() -> Dict[str, str]:
         yadm = setup.find('yadm')
         if not yadm:
@@ -74,8 +84,12 @@ def common(setup) -> Dict[str, Callable[[], Value]]:
         'os': lambda: '%s %s %s' % (platform.system(), platform.mac_ver()[0] or platform.release(), platform.machine()),
         'git.email': lambda: setup.read(['git', 'config', 'user.email']).stdout.strip() or 'unset',
         'ssh.keys': lambda: sorted(p.name for p in (root / '.ssh').glob('*.pub')),
-        'gh.auth': lambda: ('ok' if setup.read([setup.find('gh'), 'auth', 'status']).returncode == 0 else 'not logged in')
-        if setup.find('gh') else 'gh missing',
+        'gh.auth': lambda: gh_login(setup),
+        'atuin.synced': lambda: atuin_synced(root),
+        'op.account': lambda: op_account(setup),
+        'tailscale.online': lambda: tailscale_online(setup),
+        'keys.present': lambda: own_keys(root),
+        'declared': lambda: declared.snapshot(setup),  # declared.<kind>.missing / .undeclared, after this run's installs
     }
     for name in module.TOOLS:
         gatherers['tools.' + name] = (lambda n=name: _version(setup.read([setup.find(n), '-V' if n == 'tmux' else '--version']).stdout)
@@ -94,6 +108,92 @@ def common(setup) -> Dict[str, Callable[[], Value]]:
         return {p.name: _git_head(setup, p) for p in sorted(paths) if (p / '.git').exists()}
     gatherers['checkouts'] = checkouts
     return gatherers
+
+
+def gh_login(setup) -> str:
+    """The GitHub account `gh` is logged in as, `not logged in`, or `gh missing`."""
+    gh = setup.find('gh')
+    if not gh:
+        return 'gh missing'
+    done = setup.read([gh, 'auth', 'status'])
+    if done.returncode:
+        return 'not logged in'
+    found = re.search(r'Logged in to \S+ (?:account|as) (\S+)', done.stdout + done.stderr)  # gh 2.40+ says "account", older "as"
+    return found.group(1) if found else 'logged in'
+
+
+def iso_time(text: str) -> datetime:
+    """Parse an ISO timestamp that may end in Z and carry 1-9 fractional digits (Python 3.9 accepts only 3 or 6)."""
+    text = re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], text.strip().replace('Z', '+00:00'))
+    when = datetime.fromisoformat(text)
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def atuin_synced(root: Path) -> Value:
+    """Hours since Atuin last synced (the timestamp in last_sync_time, else its mtime), or `absent`."""
+    path = root / ATUIN_SYNC
+    if not path.exists():
+        return 'absent'
+    try:
+        when = iso_time(path.read_text())
+    except ValueError:
+        when = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+    return round((datetime.now(timezone.utc) - when).total_seconds() / 3600, 1)
+
+
+def op_account(setup) -> str:
+    """How the 1Password CLI signs in here, without running `op` (which waits on the app's unlock prompt): `app` when the
+    Mac app's "Integrate with 1Password CLI" is on, else the first account email in ~/.config/op/config, else `none`."""
+    settings = setup.root / OP_APP_SETTINGS
+    if setup.profile == 'mac' and settings.exists() and _json_file(settings).get('developers.cliSharedLockState.enabled'):
+        return 'app'
+    accounts = _json_file(setup.root / OP_CLI_CONFIG).get('accounts') or []
+    emails = [account.get('email') for account in accounts if account.get('email')]
+    return emails[0] if emails else 'none'
+
+
+def _json_file(path: Path) -> dict:
+    """A JSON object read from a file; {} when the file is absent or not a JSON object."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def tailscale_online(setup) -> str:
+    """`yes` when Tailscale runs and this node is online, `no` otherwise, `absent` without a Tailscale CLI."""
+    mac_app = setup.profile == 'mac' and Path(TAILSCALE_APP).exists()
+    binary = TAILSCALE_APP if mac_app else setup.find('tailscale')
+    if not binary:
+        return 'absent'
+    try:  # a stopped daemon still prints JSON, with a non-zero exit
+        status = json.loads(setup.read([binary, 'status', '--json'], timeout_s=20).stdout)
+    except ValueError:
+        return 'no'
+    online = status.get('BackendState') == 'Running' and (status.get('Self') or {}).get('Online')
+    return 'yes' if online else 'no'
+
+
+def own_keys(root: Path) -> List[str]:
+    """Which of this computer's own public keys (sync.OWN_KEYS) exist in ~/.ssh."""
+    from sync import OWN_KEYS
+    return [name for name in OWN_KEYS if (root / '.ssh' / name).exists()]
+
+
+def secrets_missing(setup) -> Value:
+    """Names in secrets.refs with no zsh-keys Keychain entry (`security` without -w never prompts); `absent` without the file."""
+    path = setup.root / SECRETS_REFS
+    if not path.exists():
+        return 'absent'
+    names = [line.split()[0] for _, line in manifest_lines(path.read_text())]
+    return [name for name in names if setup.read(['security', 'find-generic-password', '-s', 'zsh-keys', '-a', name]).returncode]
+
+
+def login_items(setup) -> Value:
+    """Names of the login items System Events reports, or `unavailable`."""
+    done = setup.read(['osascript', '-e', 'tell application "System Events" to get the name of every login item'])
+    return sorted(x.strip() for x in done.stdout.split(',') if x.strip()) if done.returncode == 0 else 'unavailable'
 
 
 def shortcut_flags(plist: bytes) -> Dict[str, str]:
@@ -156,10 +256,6 @@ def mac(setup, applications: Path) -> Dict[str, Callable[[], Value]]:
                  'problems': problems or 'none'}
         return state
 
-    def login_items() -> Value:
-        done = setup.read(['osascript', '-e', 'tell application "System Events" to get the name of every login item'])
-        return sorted(x.strip() for x in done.stdout.split(',') if x.strip()) if done.returncode == 0 else 'unavailable'
-
     return {
         'brew': brew,
         'apps': lambda: {k[len('apps.'):]: v for k, v in app_versions([applications] + [root / 'Applications']).items()},
@@ -170,7 +266,27 @@ def mac(setup, applications: Path) -> Dict[str, Callable[[], Value]]:
         'karabiner': karabiner,
         'launchagents': lambda: sorted(p.name for p in (root / 'Library/LaunchAgents').glob('*.plist')),
         'fonts': lambda: sorted(p.name for p in (root / 'Library/Fonts').iterdir()) if (root / 'Library/Fonts').is_dir() else [],
-        'login_items': login_items,
+        'login_items': lambda: login_items(setup),
+        'secrets.missing': lambda: secrets_missing(setup),
+    }
+
+
+def linux(setup) -> Dict[str, Callable[[], Value]]:
+    """Package inventories on a Linux workstation, mirroring brew.* on the Mac: apt (manual set), snap, flatpak, GNOME extensions."""
+    import declared
+
+    def apt() -> Dict[str, str]:
+        manual = declared.apt_manual(setup)
+        if not manual:
+            return {}
+        out = setup.read(['dpkg-query', '-W', '-f', '${Package} ${Version}\n', *manual]).stdout  # apt list --installed is slow
+        return dict(line.split(' ', 1) for line in out.splitlines() if ' ' in line)
+
+    return {
+        'apt': apt,
+        'snap': lambda: declared.snap_versions(setup),
+        'flatpak': lambda: declared.flatpak_versions(setup),
+        'gnome_extensions': lambda: declared.gnome_enabled(setup),
     }
 
 
@@ -181,6 +297,8 @@ def collect(setup, applications: Path = Path('/Applications')) -> Dict[str, Valu
         gatherers = common(setup)
         if setup.profile == 'mac':
             gatherers.update(mac(setup, applications))
+        if setup.profile == 'linux':
+            gatherers.update(linux(setup))
     except Exception as exc:  # noqa: BLE001 - a snapshot problem must never fail the sync that just ran
         return {'error': str(exc).splitlines()[0][:100]}
     for key, gather in gatherers.items():

@@ -149,6 +149,16 @@ class BootstrapTests(unittest.TestCase):
             self.assertEqual(m.main(['--sync', '--plan', '--profile', 'linux']), 3)
             self.assertEqual(m.main(['schedule', '--profile', 'linux']), 4)
 
+    def test_main_dispatches_adopt_and_recipe_commands(self):
+        import declared, recipes
+        with patch.object(declared, 'adopt', return_value=0) as adopt, patch.object(recipes, 'show', return_value=1) as show:
+            for argv in (['adopt', 'apps'], ['adopt-extras'], ['--adopt-extras'], ['recipes'], ['recipe', 'gh-login']):
+                m.main(argv + ['--profile', 'mac'])
+        self.assertEqual([c.args[1] for c in adopt.call_args_list], ['apps', 'extras', 'extras'])
+        self.assertEqual([c.args[1] for c in show.call_args_list], [None, 'gh-login'])
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            m.main(['adopt'])  # KIND is required
+
     def test_run_env_override(self):
         setup = self.setup('--profile', 'linux')
         with patch.object(m.subprocess, 'run') as run:

@@ -27,20 +27,14 @@ PHASES = [('layout', 'Directory layout'),
           ('packages', 'Packages'),
           ('repos', 'Repositories (grc)'),
           ('apps', 'Home-made apps'),
+          ('declared', 'Declared apps and packages'),  # after packages and apps: report what they could not install
           ('defaults', 'Mac defaults'),
           ('hotkeys', 'Hotkey clash check'),
-          ('doctor', 'Doctor')]
+          ('doctor', 'Doctor'),
+          ('recipes', 'Manual steps')]  # last: its checks read every other phase's status
 SELF_PRINTING = {'layout', 'doctor'}  # these phases already print their own detail lines
 GIT_TIMEOUT, BREW_TIMEOUT, NET_TIMEOUT = 300, 1800, 600  # seconds, for mutating subprocesses
 GRC_FALLBACK = 'micromamba/envs/py3/bin/grc'
-HINTS = {  # printed by --status under a warn/failed phase: how to clear it
-    'layout': 'move stray entries out of ~, or add "<glob>  ignore" to setup/layout.txt for folders another program owns',
-    'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with converge adopt-extras',
-    'dotfiles': 'yadm status, then yadm pull --rebase origin main',
-    'repos': 'fix the repo named above, then converge sync',
-    'keys': 'ssh-keygen -t ed25519 and ssh-keygen -t ecdsa -b 256 create this computer\'s keys; the next sync publishes them',
-    'doctor': 'converge doctor reruns the checks',
-}
 GLYPHS = {'ok': ('✓', '32'), 'changed': ('✓', '36'), 'skipped': ('-', '2'), 'warn': ('!', '33'), 'failed': ('✗', '31')}  # calm first
 DETAIL_LIMIT = 12  # detail lines per group in converge status; --all lifts it
 OWN_KEYS = ('id_ed25519.pub', 'id_ecdsa.pub')  # both: MDM-managed Macs accept only ECDSA P-256 keys
@@ -206,7 +200,8 @@ def format_details(details: List[str], limit=None, width: int = 100, indent: str
 
 
 def print_status(root: Path, schedule_installed: bool, show_all: bool = False) -> int:
-    """Print the last sync: phases with problems last, then each problem's details and how to clear it. Returns its exit code."""
+    """Print the last sync: phases with problems last, then each problem's details and every pending recipe's steps
+    (how to clear it). Returns its exit code."""
     path = Path(root) / STATE_DIR / 'last.json'
     if not path.exists():
         print('No sync has run yet; try converge sync --plan')
@@ -225,15 +220,26 @@ def print_status(root: Path, schedule_installed: bool, show_all: bool = False) -
     problems = sorted(((k, r) for k, r in phases.items() if r.status in ('warn', 'failed')), key=lambda kv: kv[1].status != 'failed')
     if problems:
         print('\n' + paint('Needs attention', '1', color))
-    cut = False
-    for key, result in problems:
-        print('\n  %s  %s' % (paint(key, GLYPHS[result.status][1], color), tilde(result.summary, root)))
-        lines, cut_here = format_details([tilde(d, root) for d in result.details], None if show_all else DETAIL_LIMIT)
-        cut |= cut_here
-        print('\n'.join(lines + textwrap.wrap(HINTS[key], 110, initial_indent='    fix: ', subsequent_indent=' ' * 9, break_on_hyphens=False) if key in HINTS else lines))
+    cut = print_problems(problems, root, color, show_all)
+    import recipes
+    for line in recipes.pending_lines(data.get('pending', [])):
+        print(tilde(line, root))
     if cut:
         print('\n  Full lists: converge status --all')
     return int(data['exit'])
+
+
+def print_problems(problems: List[Tuple[str, PhaseResult]], root: Path, color: bool, show_all: bool) -> bool:
+    """Each warn/failed phase with its grouped details (the recipes phase's steps print below instead); whether any were cut."""
+    cut = False
+    for key, result in problems:
+        print('\n  %s  %s' % (paint(key, GLYPHS[result.status][1], color), tilde(result.summary, root)))
+        if key == 'recipes' and result.status == 'warn':
+            continue
+        lines, cut_here = format_details([tilde(d, root) for d in result.details], None if show_all else DETAIL_LIMIT)
+        cut |= cut_here
+        print('\n'.join(lines))
+    return cut
 
 
 def age(finished: str) -> str:
@@ -389,6 +395,8 @@ class Sync:
         self.root = setup.root
         self.applications = Path(applications)
         self.results: Dict[str, PhaseResult] = {}
+        self.state: Optional[dict] = None  # this run's snapshot, taken by the recipes phase and reused by _save
+        self.pending: List[Any] = []  # recipes.Pending from the recipes phase
 
     def machine_label(self) -> str:
         """class@host, used in commit messages and the state file."""
@@ -420,10 +428,11 @@ class Sync:
     def _save(self, started: datetime, code: int) -> None:
         """Record this run in last.json and this computer's effective state in state.json."""
         meta = {'started': started.isoformat(), 'finished': datetime.now(timezone.utc).isoformat(),
-                'machine': self.machine_label(), 'profile': self.setup.profile, 'exit': code}
+                'machine': self.machine_label(), 'profile': self.setup.profile, 'exit': code,
+                'pending': [asdict(p) for p in self.pending]}
         write_state(self.root, self.results, meta)
         import snapshot
-        state = snapshot.collect(self.setup, self.applications)
+        state = self.state if self.state is not None else snapshot.collect(self.setup, self.applications)
         (self.root / STATE_DIR / 'state.json').write_text(json.dumps(state, indent=1, sort_keys=True))
 
     def execute(self) -> int:
@@ -684,6 +693,11 @@ class Sync:
         marker.write_text(digest + '\n')
         return True, '%s reinstalled from %s' % (command, checkout)
 
+    def declared(self) -> PhaseResult:
+        """GUI apps, launch agents, login items and Linux packages against setup/declared/ (declared.py)."""
+        import declared
+        return declared.declared(self.setup, self.setup.machine_class(), self.setup.profile)
+
     def defaults(self) -> PhaseResult:
         """Apply the saved allowlisted macOS preferences (restore semantics, backup first)."""
         snapshot = self.root / '.config/yadm/macos/preferences.plist'
@@ -723,3 +737,11 @@ class Sync:
         homes = [f for f in failures if f.startswith('Absolute home path')]
         summary = '%d items need attention, %d absolute home paths' % (len(failures), len(homes))
         return PhaseResult('warn', summary, failures)
+
+    def recipes(self) -> PhaseResult:
+        """Snapshot this machine, then list the recipes whose checks fail (recipes.py); _save writes the snapshot and `pending`."""
+        import recipes
+        import snapshot
+        self.state = snapshot.collect(self.setup, self.applications)
+        result, self.pending = recipes.phase(self.setup, self.state, {k: r.status for k, r in self.results.items()})
+        return result

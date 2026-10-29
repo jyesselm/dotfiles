@@ -1,0 +1,6 @@
+# python:<version>-slim plus git, which test_hub.py's bridge tests run.
+ARG PYTHON=3.9
+FROM python:${PYTHON}-slim
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/*

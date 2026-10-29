@@ -282,6 +282,19 @@ class StateTests(Base):
         self.assertTrue(data['machine'].startswith('laptop@'))
         self.assertEqual(list(data['phases'].values())[0]['details'], ['d'])
 
+    def test_recipes_phase_snapshot_is_saved_once_with_its_pending_steps(self):
+        sync = self.make()
+        phases = {k: MagicMock(return_value=sy.PhaseResult('ok', k)) for k, _ in sy.PHASES if k != 'recipes'}
+        with patch.multiple(sy.Sync, **phases), patch('snapshot.collect', return_value={'gh.auth': 'not logged in'}) as collect:
+            sync.execute()
+        collect.assert_called_once()
+        directory = self.root / sy.STATE_DIR
+        self.assertEqual(json.loads((directory / 'state.json').read_text()), {'gh.auth': 'not logged in'})
+        data = json.loads((directory / 'last.json').read_text())
+        login = [p for p in data['pending'] if p['name'] == 'gh-login'][0]
+        self.assertEqual(login['steps'][0], 'gh auth login --hostname github.com --git-protocol https --web')
+        self.assertEqual(data['phases']['recipes']['status'], 'warn')
+
     def test_status_prints_last_result_and_missing_file_returns_1(self):
         self.assertEqual(sy.print_status(self.root, False), 1)
         self.assertIn('No sync has run yet', self.output.getvalue())
@@ -293,16 +306,22 @@ class StateTests(Base):
         self.assertIn('layout fine', text)
         self.assertIn('schedule installed', text)
 
-    def test_status_lists_details_and_fix_hints_under_warn_phases(self):
+    def test_status_lists_details_and_pending_recipe_steps_under_warn_phases(self):
         phases = {'layout': sy.PhaseResult('warn', 'unplanned 2', ['unplanned:Google Drive', 'unplanned:stray'] + ['created:%d' % i for i in range(13)]),
                   'apps': sy.PhaseResult('warn', '1 app', ['Hotkeys absent: build locally']),
-                  'doctor': sy.PhaseResult('ok', 'all checks passed', ['hidden'])}
-        meta = {'started': 'x', 'finished': datetime.now(timezone.utc).isoformat(), 'machine': 'laptop@h', 'profile': 'linux', 'exit': 1}
+                  'doctor': sy.PhaseResult('ok', 'all checks passed', ['hidden']),
+                  'recipes': sy.PhaseResult('warn', '1 pending', ['Tidy the home directory: converge status --all'])}
+        pending = [{'name': 'layout', 'title': 'Tidy the home directory', 'steps': ['converge status --all', 'mv %s/stray /tmp' % self.root]}]
+        meta = {'started': 'x', 'finished': datetime.now(timezone.utc).isoformat(), 'machine': 'laptop@h', 'profile': 'linux', 'exit': 1,
+                'pending': pending}
         sy.write_state(self.root, phases, meta)
         self.assertEqual(sy.print_status(self.root, True), 1)
         lines = self.output.getvalue().splitlines()
         self.assertIn('    unplanned (2): Google Drive, stray', lines)
-        self.assertTrue(any(l.startswith('    fix: ' + sy.HINTS['layout'][:40]) for l in lines))
+        self.assertIn('  Tidy the home directory  (converge recipe layout)', lines)
+        self.assertEqual(lines[lines.index('  Tidy the home directory  (converge recipe layout)') + 1:][:2],
+                         ['    1. converge status --all', '    2. mv ~/stray /tmp'])
+        self.assertNotIn('    Tidy the home directory: converge status --all', lines)  # the recipes phase shows steps, not its details
         self.assertIn('    Hotkeys absent: build locally', lines)
         self.assertNotIn('    hidden', lines)
         self.assertEqual(len(sy.format_details(['cask:' + 'x' * 20] * 12)[0]), 4)

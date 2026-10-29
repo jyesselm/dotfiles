@@ -1,6 +1,6 @@
 # Packages some computers have that are not wanted everywhere: never installed, not reported as extras.
 # One per line, formula:<name> or cask:<name>; "#" starts a comment.
-# Append this computer's current extras with: dotfiles-setup --adopt-extras   (the next sync commits and pushes it).
+# Append this computer's current extras with: converge adopt extras   (the next sync commits and pushes it).
 # Move anything wanted on every Mac into a Brewfile instead.
 # studio, adopted 2026-10-17
 cask:1password-cli

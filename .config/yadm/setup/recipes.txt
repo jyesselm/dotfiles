@@ -1,0 +1,119 @@
+# Recipes: manual steps converge cannot take itself, each with a check (see README, Recipes).
+#
+# Records are separated by blank lines; each line is `key: value`.
+#   recipe:  slug (converge recipe <slug> prints it)
+#   title:   what to do, shown in converge status and on the hub
+#   on:      profiles and/or classes, comma-separated (mac, linux, cluster, laptop, studio, server); default every machine
+#   check:   one per line, describing the GOOD state; the recipe is pending when ANY check fails.
+#            <key> <op> [value] against the snapshot (converge fleet --keys) or phase.<key> = a sync phase's status.
+#            ops: == != (a list matches when any element does), < > (numbers; 30m 24h 1d 2w are hours),
+#                 has <item> (list contains), empty (empty list), present (key exists and is not `absent`)
+#   step:    repeated, in order; each is one exact action: a command, a menu path (A > B > "Button") or a URL.
+# No secrets in any line: this repo is public.
+
+recipe: gh-login
+title: Sign in to the GitHub CLI
+check: gh.auth == jyesselm
+step: gh auth login --hostname github.com --git-protocol https --web
+step: Browser: paste the one-time code > "Continue" > "Authorize github"
+step: converge sync
+
+recipe: atuin-sync
+title: Sign in to Atuin shell-history sync
+on: mac, linux
+check: atuin.synced < 2d
+step: atuin login (username, password and encryption key are in 1Password)
+step: atuin sync
+step: converge sync
+
+recipe: op-signin
+title: Sign in to the 1Password CLI
+on: mac, linux
+check: op.account != none
+step: Mac: 1Password > Settings > Developer > "Integrate with 1Password CLI" on
+step: Linux: op account add --address my.1password.com --email jyesselm@unl.edu
+step: op account list
+step: converge sync
+
+recipe: tailscale-up
+title: Connect this machine to the tailnet
+on: mac, linux
+check: tailscale.online == yes
+step: Mac: Tailscale menu-bar icon > "Log in..." (or "Connect")
+step: Linux: sudo tailscale up
+step: tailscale status
+step: converge sync
+
+recipe: ssh-keys
+title: Create this machine's ed25519 key
+check: keys.present has id_ed25519.pub
+step: ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+step: converge sync (publishes it to setup/ssh-keys.txt)
+
+recipe: ssh-keys-ecdsa
+title: Create this Mac's ECDSA key (MDM-managed Macs accept only P-256)
+on: mac
+check: keys.present has id_ecdsa.pub
+step: ssh-keygen -t ecdsa -b 256 -N "" -f ~/.ssh/id_ecdsa
+step: converge sync (publishes it to setup/ssh-keys.txt)
+
+recipe: keychain-secrets
+title: Copy the shell secrets into the Keychain
+on: mac
+check: secrets.missing empty
+step: op account list (sign in first: converge recipe op-signin)
+step: keys sync
+step: converge sync
+
+recipe: karabiner-input-monitoring
+title: Let Karabiner read the keyboard
+on: laptop, studio, server
+check: karabiner.keyboards != none
+step: Open Karabiner-Elements once and allow its system extension when asked
+step: System Settings > Privacy & Security > Input Monitoring > "Karabiner-Core-Service" on
+step: System Settings > General > Login Items & Extensions > Driver Extensions > ".Karabiner-VirtualHIDDevice-Manager" on
+step: converge sync
+
+recipe: layout
+title: Tidy the home directory
+check: phase.layout != warn
+step: converge status --all (lists the unplanned entries in ~)
+step: Move each stray entry out of ~
+step: Or add "<glob>  ignore" to ~/.config/yadm/setup/layout.txt for a folder another program owns
+step: converge sync
+
+recipe: hotkeys-clash
+title: Fix the hotkey clashes and Karabiner problems
+check: phase.hotkeys != warn
+step: converge status (lists the clashes and Karabiner problems)
+step: cd ~/local/code/web/hotkeys && node scripts/check.js
+step: Fix each clash in the hotkeys repo, commit it
+step: converge sync
+
+recipe: brew-extras
+title: Declare or allow the brew extras
+on: mac
+check: phase.packages != warn
+step: converge status --all (lists the extras)
+step: Add the ones wanted on every Mac to a Brewfile in ~/.config/yadm/setup
+step: converge adopt extras (allows the rest on this computer)
+
+recipe: dotfiles-pull
+title: Get the dotfiles back in sync with origin
+check: phase.dotfiles != warn
+step: yadm status
+step: yadm pull --rebase origin main
+step: converge sync
+
+recipe: repos-fix
+title: Fix the repository grc could not sync
+check: phase.repos != failed
+step: converge status (names the repository and grc's error)
+step: grc active sync --config ~/.config/git-repo-checker/active.yml
+step: converge sync
+
+recipe: doctor-checks
+title: Clear the doctor findings
+check: phase.doctor != warn
+step: converge doctor (reruns the checks and names each fix)
+step: converge sync

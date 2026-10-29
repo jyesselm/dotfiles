@@ -15,9 +15,9 @@ import tempfile
 import urllib.request
 import uuid
 
-import layout as lay
-
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))  # python3 -I (as launchd/cron run it) leaves the script's directory off the path
+import layout as lay  # noqa: E402
 MICROMAMBA = {
     'x86_64': ('linux-64', '366cd9cd8be14df1ab8ed50352a82111082a36686b2d389fdb79a92c3fafb3e3'),
     'aarch64': ('linux-aarch64', '9f93b974adcb4d166996af969b6cd371287d1a3e52733704727884d9b74cb7a7'),
@@ -63,6 +63,9 @@ class Setup:
         self.env = dict(os.environ, GIT_TERMINAL_PROMPT='0')
         extra = [str(self.shims), str(self.root / '.local/bin'), '/opt/homebrew/bin', '/usr/local/bin']
         self.env['PATH'] = os.pathsep.join(extra + [self.env.get('PATH', '')])
+        bus = Path('/run/user/%d/bus' % os.getuid())
+        if self.profile == 'linux' and bus.exists():  # cron has no session bus; gnome-extensions and gsettings need it
+            self.env.setdefault('DBUS_SESSION_BUS_ADDRESS', 'unix:path=%s' % bus)
         self.errors = []
         self._class = None
 
@@ -485,14 +488,21 @@ class Setup:
 COMMANDS = {  # subcommand -> (help, flag it replaces; `dotfiles-setup --flag` still works through normalize())
     'chrome-home': ('Prepare Chrome Home and optionally connect its local bridge', None),
     'setup': ('Bootstrap this computer (what yadm bootstrap runs); flags choose optional components', None),
-    'sync': ('Converge this computer: layout, dotfiles, packages, repos, apps, defaults, hotkeys, doctor', '--sync'),
-    'status': ("Last sync, each warning's details and how to clear it", '--status'),
+    'sync': ('Converge this computer: layout, dotfiles, keys, packages, repos, apps, declared, defaults, hotkeys, doctor, '
+             'recipes', '--sync'),
+    'status': ("Last sync, each warning's details and the steps of every pending recipe", '--status'),
     'doctor': ('Read-only tool/version/config/PATH checks', '--doctor'),
     'schedule': ('Install the daily launchd job (Mac) or crontab line (Linux)', '--install-schedule'),
     'fleet': ('Last check-in of every machine, from the hub; --diff shows what differs between them', '--fleet'),
     'checkin': ("Send this machine's last sync result to the hub now, then show the fleet (same as fleet --checkin)", '--checkin'),
-    'adopt-extras': ("Mac: allow this computer's current brew extras (appends to setup/extras.txt)", '--adopt-extras'),
+    'adopt': ("Allow what this computer has but no declaration lists: KIND is extras (brew, setup/extras.txt) or a "
+              "setup/declared/ kind", None),
+    'adopt-extras': ('Same as adopt extras (legacy name)', '--adopt-extras'),
+    'recipes': ('Pending manual steps from the last sync (setup/recipes.txt and generated ones)', None),
+    'recipe': ("One recipe's steps: converge recipe NAME", None),
 }
+POSITIONAL = {'adopt': ('kind', 'extras, or a setup/declared/*.txt file name without .txt (apps, agents, apt, ...)'),
+              'recipe': ('name', 'recipe name, as converge status or converge recipes shows it')}
 LEGACY = {flag: name for name, (_, flag) in COMMANDS.items() if flag}
 FLAGS = [('plan', 'Show actions without writing files, downloads or installs'),
          ('desktop', 'Also install iTerm2 and Cursor (Mac)'),
@@ -512,6 +522,8 @@ def parser():
     commands = p.add_subparsers(dest='command', metavar='command', required=True)
     for name, (help_text, _) in COMMANDS.items():
         sub = commands.add_parser(name, help=help_text, description=help_text, parents=[common])
+        if name in POSITIONAL:
+            sub.add_argument(POSITIONAL[name][0], help=POSITIONAL[name][1])
         if name == 'chrome-home':
             sub.add_argument('--extension-id', help='Chrome extension ID from chrome://extensions on this computer')
         if name == 'status':
@@ -559,9 +571,12 @@ def dispatch(args) -> int:
     if args.command == 'schedule':
         from sync_schedule import install
         return install(setup)
-    if args.command == 'adopt-extras':
-        from sync_mac import adopt_extras
-        return adopt_extras(setup, setup.machine_class(), Path('/Applications'))
+    if args.command in ('adopt', 'adopt-extras'):
+        from declared import adopt
+        return adopt(setup, getattr(args, 'kind', 'extras'))
+    if args.command in ('recipes', 'recipe'):
+        from recipes import show
+        return show(setup, getattr(args, 'name', None))
     if args.command == 'sync':
         from sync import Sync
         return Sync(setup).execute()

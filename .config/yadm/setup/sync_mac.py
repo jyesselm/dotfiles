@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from layout import manifest_lines
 from setup import version
 from sync import BREW_TIMEOUT, NET_TIMEOUT, STATE_DIR, PhaseResult
 
@@ -89,10 +90,7 @@ def _normal(name: str) -> str:
 def parse_extras(text: str) -> set:
     """Allowed 'formula:name' / 'cask:name' entries of extras.txt; '#' starts a comment."""
     entries = set()
-    for number, raw in enumerate(text.splitlines(), 1):
-        line = raw.split('#', 1)[0].strip()
-        if not line:
-            continue
+    for number, line in manifest_lines(text):
         kind, _, name = line.partition(':')
         if kind not in ('formula', 'cask') or not name:
             raise ValueError('%s line %d: expected formula:<name> or cask:<name>, got %r' % (EXTRAS_FILE, number, line))
@@ -203,7 +201,7 @@ def packages(setup, machine_class: str, applications: Path) -> PhaseResult:
 def adopt_extras(setup, machine_class: str, applications: Path) -> int:
     """Allow this computer's current extras by appending them to extras.txt; the next sync commits and pushes it."""
     if setup.profile != 'mac':
-        raise RuntimeError('--adopt-extras reads Homebrew; run it on a Mac.')
+        raise RuntimeError('converge adopt extras reads Homebrew; run it on a Mac.')
     brew = setup.find('brew')
     if not brew:
         raise RuntimeError('brew not on PATH')

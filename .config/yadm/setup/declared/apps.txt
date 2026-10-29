@@ -1,0 +1,116 @@
+# GUI apps on the Macs (/Applications, ~/Applications, /System/Applications).
+# Format: `entry  key:value ...  [allowed]` and `#` comments, as in layout.txt. The trailing tokens that contain ':'
+# or are `allowed` qualify the entry; everything before them is the entry, so names may contain spaces.
+# class:a,b = wanted only on those classes (default: every machine of the kind); allowed = may be present, never reported
+# (a name may have a wanted line and an allowed line). Sync reports missing and undeclared entries and never removes any;
+# `converge adopt apps` appends this machine's undeclared entries as allowed lines.
+# source: is required: brew (a Brewfile cask installs it; cask:<token> when the token is not the name lower-cased with
+# dashes), release (setup/apps.json and the Search CLI launcher: the apps phase), mas (App Store), manual
+# (url:https://... to download it), system (part of macOS). Apple's own apps (/System/Applications, Safari, iWork) are
+# never reported as undeclared.
+
+# Wanted
+1Password  source:brew  class:laptop,studio
+Alfred 5  source:brew  cask:alfred  class:laptop,studio
+Bartender 7  source:brew  cask:bartender  class:laptop,studio
+Karabiner-Elements  source:brew
+Karabiner-EventViewer  source:brew  cask:karabiner-elements
+Contexts  source:brew  class:laptop,studio
+iTerm  source:brew  cask:iterm2
+Cursor  source:brew  class:laptop,studio
+Google Chrome  source:brew  class:laptop,studio
+Claude  source:brew  class:laptop,studio
+ChatGPT  source:brew  class:laptop,studio
+Slack  source:brew  class:laptop,studio
+Zotero  source:brew  class:laptop,studio
+Fantastical  source:brew  class:laptop,studio
+Tailscale  source:brew  cask:tailscale-app  class:laptop,studio
+Dropbox  source:brew  class:laptop,studio
+Microsoft Word  source:brew  cask:microsoft-office  class:laptop,studio
+Microsoft Excel  source:brew  cask:microsoft-office  class:laptop,studio
+Microsoft PowerPoint  source:brew  cask:microsoft-office  class:laptop,studio
+Microsoft Outlook  source:brew  cask:microsoft-office  class:laptop,studio
+zoom.us  source:brew  cask:zoom  class:laptop,studio
+Spotify  source:brew  class:laptop,studio
+Caffeine  source:brew  class:laptop,studio
+Zed  source:brew  class:laptop,studio
+OrbStack  source:brew
+Clips  source:release  class:laptop,studio
+Hotkeys  source:release  class:laptop,studio
+notes  source:release  class:laptop,studio
+Tasks  source:release  class:laptop,studio
+Search CLI  source:release  class:laptop,studio
+Keynote  source:mas  class:laptop,studio
+Magnet  source:mas  class:laptop,studio
+Stockfish  source:mas  class:laptop,studio
+
+# seeded 2026-10-28 from laptop, studio, plex-server; prune by hand
+Google Chrome  source:manual  allowed  # also on the server, outside Homebrew
+Claude  source:manual  allowed  # also on the server, outside Homebrew
+ChatGPT  source:manual  allowed  # also on the server, outside Homebrew
+Tailscale  source:manual  allowed  # also on the server, outside Homebrew
+Clips  source:manual  allowed  # also on the server
+1Password 7  source:manual  allowed
+Anaconda-Navigator  source:manual  allowed
+Bartender 5  source:manual  allowed
+Bartender 6  source:manual  allowed
+BaseSpace Downloader  source:manual  allowed
+Battle.net  source:manual  allowed
+Chat  source:manual  allowed
+ChatGPT (Classic)  source:manual  allowed
+chessx  source:manual  allowed
+Claude Code URL Handler  source:manual  allowed
+Company Portal  source:manual  allowed
+Cortex XDR  source:manual  allowed
+Dashlane  source:manual  allowed
+Discord  source:manual  allowed
+Docker  source:manual  allowed
+Factorio  source:manual  allowed
+Firefox  source:manual  allowed
+FreeYourMusic  source:manual  allowed
+Ghostty  source:brew  allowed
+GlobalProtect  source:manual  allowed
+Godot  source:brew  allowed
+Google Docs  source:manual  allowed
+Google Drive  source:manual  allowed
+Google Sheets  source:manual  allowed
+Google Slides  source:manual  allowed
+Grammarly for Safari  source:mas  allowed
+iClicker Cloud  source:manual  allowed
+ImageJ  source:manual  allowed
+Jagex Launcher  source:manual  allowed
+Jellyfin  source:manual  allowed
+Microsoft 365 Copilot Shim  source:manual  allowed
+Microsoft OneNote  source:brew  cask:microsoft-office  allowed
+Microsoft Teams  source:manual  allowed
+NordVPN  source:mas  allowed
+NordVPN IKE  source:manual  allowed
+Obsidian  source:manual  allowed
+OneDrive  source:manual  allowed
+Open in Obsidian  source:manual  allowed
+OpenEmu  source:manual  allowed
+Overcooked! 2  source:manual  allowed
+Path of Exile  source:manual  allowed
+Plaud  source:manual  allowed
+Plex Media Server  source:manual  allowed
+Plexamp  source:manual  allowed
+PyMOL  source:manual  allowed
+RescueTime  source:manual  allowed
+RuneLite  source:brew  allowed
+Search  source:manual  allowed
+Self Service  source:manual  allowed
+Slay the Spire  source:manual  allowed
+Steam  source:manual  allowed
+Superhuman Go  source:manual  allowed
+TeamViewer  source:manual  allowed
+Thunderbird  source:brew  allowed
+Transmission  source:manual  allowed
+Transmit  source:manual  allowed
+Trilium Notes  source:brew  allowed
+Typora  source:manual  allowed
+Vienna  source:brew  allowed
+Visual Studio Code  source:manual  allowed
+VLC  source:manual  allowed
+WhatsApp  source:manual  allowed
+Windows App  source:manual  allowed
+XWord  source:manual  allowed
