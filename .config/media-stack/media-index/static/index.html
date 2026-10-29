@@ -60,6 +60,14 @@ button { font: inherit; cursor: pointer; }
 .btn:hover { background: var(--surface-2); }
 .btn.primary { background: var(--delete); border-color: var(--delete); color: #fff; font-weight: 600; }
 
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.tabs button { border: 0; background: none; color: var(--text-2); padding: 8px 14px; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button:hover { color: var(--text); }
+.tabs button.on { color: var(--text); font-weight: 600; border-bottom-color: var(--accent); }
+.drive .k { justify-content: space-between; }
+.drive .f { color: var(--muted); font-size: 12px; margin-top: 6px; overflow-wrap: anywhere; }
+.badge.main { background: var(--shrink-bg); color: var(--shrink); }
+.badge.cold { background: var(--keep-bg); color: var(--keep); }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
 .bar { display: flex; height: 22px; gap: 2px; border-radius: 6px; overflow: hidden; margin: 12px 0 14px; }
 .bar > div { height: 100%; min-width: 2px; cursor: pointer; transition: opacity .15s; }
@@ -164,6 +172,12 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
     </div>
   </header>
 
+  <nav class="tabs" aria-label="View">
+    <button class="on" data-tab="media">plex-media</button>
+    <button data-tab="drives">Drives</button>
+  </nav>
+
+  <div id="tab-media">
   <section class="card" aria-label="Disk usage by folder">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
       <strong>plex-media</strong><span class="sub" id="diskpct"></span>
@@ -194,6 +208,18 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
   <div class="list" id="list"><div class="empty">Loading…</div></div>
   <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>p</kbd> play song · <kbd>Enter</kbd> files</div>
+  </div>
+
+  <div id="tab-drives" hidden>
+    <div class="sub" style="margin-bottom:12px">Every drive <code>drives.py catalog</code> has seen, plugged in or not. Search a title to see which drives hold it. Click a drive to list only what's on it.</div>
+    <div class="tiles" id="drivecards"></div>
+    <div class="filters">
+      <input type="search" id="dq" placeholder="Where is…  ( / )">
+      <button class="chip" id="donly">Only on one drive</button>
+      <span class="count" id="dcount"></span>
+    </div>
+    <div class="list" id="dlist"><div class="empty">Loading…</div></div>
+  </div>
 </div>
 
 <div class="dock" id="dock"><span id="docktext"></span><button class="btn primary" id="trashbtn">Review &amp; move to trash</button></div>
@@ -289,7 +315,7 @@ function renderSummary() {
     ["trashed", "🗑 In _trash", t.trashed.items + " titles · restore any", gb(s.trash)],
   ];
   $("tiles").innerHTML = tiles.map(([key, label, n, v]) => `<button class="tile ${state.view === key ? "on" : ""}" data-view="${key}"><div class="k">${label}</div><div class="v">${v}</div><div class="n">${n}</div></button>`).join("");
-  for (const el of document.querySelectorAll(".tile")) el.onclick = () => { state.view = state.view === el.dataset.view ? null : el.dataset.view; reset(); renderSummary(); };
+  for (const el of document.querySelectorAll("#tiles .tile")) el.onclick = () => { state.view = state.view === el.dataset.view ? null : el.dataset.view; reset(); renderSummary(); };
 
   const del = t.delete;
   $("dock").classList.toggle("show", del.items > 0);
@@ -421,7 +447,7 @@ function play(it) {
 player.onplay = player.onpause = () => renderList();
 
 function bindRows(shown) {
-  for (const row of document.querySelectorAll(".row")) {
+  for (const row of document.querySelectorAll("#list .row")) {
     const i = +row.dataset.i, it = shown[i];
     row.querySelector(".title").onclick = () => toggleDetail(i);
     row.onclick = () => select(i);
@@ -439,7 +465,7 @@ function bindRows(shown) {
 
 function select(i) {
   state.sel = i;
-  document.querySelectorAll(".row").forEach((r) => r.classList.toggle("sel", +r.dataset.i === i));
+  document.querySelectorAll("#list .row").forEach((r) => r.classList.toggle("sel", +r.dataset.i === i));
 }
 
 async function decide(it, decision) {
@@ -469,9 +495,58 @@ async function openDetail(it, i) {
   if (note) note.onchange = async () => { it.note = note.value; await api("/api/decision", { item: it.item, decision: it.decision || "keep", note: it.note }); load(); };
 }
 
+// Drives tab: where every title lives, from the manifests drives.py keeps for plugged-in and unplugged drives.
+const dstate = { tab: "media", drives: [], drive: null, q: "", only: false, timer: null };
+const roleOf = (d) => {
+  if (d.main) return "main library";
+  const extra = d.folders.map(([f]) => f).filter((f) => !f.startsWith("_") && !d.scopes.some((s) => s.split("/")[0] === f));
+  const parts = [];
+  if (d.scopes.length) parts.push("backup of " + d.scopes.map((s) => s.split("/")[0]).filter((v, i, a) => a.indexOf(v) === i).join(", "));
+  if (extra.length) parts.push((d.scopes.length ? "also " : "holds ") + extra.join(", "));
+  return parts.join(" · ") || "catalogued only";
+};
+function showTab(tab) {
+  dstate.tab = tab;
+  for (const b of document.querySelectorAll(".tabs button")) b.classList.toggle("on", b.dataset.tab === tab);
+  $("tab-media").hidden = tab !== "media";
+  $("tab-drives").hidden = tab !== "drives";
+  if (tab === "drives" && !dstate.drives.length) loadDrives();
+}
+async function loadDrives() {
+  dstate.drives = await api("/api/drives");
+  renderDrives();
+  renderDriveItems();
+}
+function renderDrives() {
+  $("drivecards").innerHTML = dstate.drives.map((d) => `<button class="tile drive ${dstate.drive === d.drive ? "on" : ""}" data-drive="${esc(d.drive)}">
+      <div class="k"><span>${esc(d.drive)}</span><span>${ago(d.catalogued)}</span></div>
+      <div class="v">${gb(d.size)}</div>
+      <div class="n">${d.files.toLocaleString()} files · ${esc(roleOf(d))}</div>
+      <div class="f">${d.folders.slice(0, 5).map(([f, s]) => `${esc(f)} ${gb(s)}`).join(" · ")}</div></button>`).join("");
+  for (const el of $("drivecards").children) el.onclick = () => { dstate.drive = dstate.drive === el.dataset.drive ? null : el.dataset.drive; renderDrives(); renderDriveItems(); };
+}
+async function renderDriveItems() {
+  const params = new URLSearchParams({ q: dstate.q, drive: dstate.drive || "", only: dstate.only ? "1" : "0" });
+  const out = await api("/api/drive-items?" + params);
+  $("dcount").textContent = `${out.total.toLocaleString()} titles · ${gb(out.total_size)}${out.total > out.items.length ? ` · showing largest ${out.items.length}` : ""}`;
+  if (!out.items.length) { $("dlist").innerHTML = `<div class="empty">Nothing matches on any catalogued drive.</div>`; return; }
+  const main = dstate.drives.find((d) => d.main)?.drive;
+  $("dlist").innerHTML = out.items.map((it) => {
+    const [cat, ...name] = it.item.split("/");
+    const copies = Object.entries(it.drives).sort(([a], [b]) => (a === main ? -1 : b === main ? 1 : a.localeCompare(b)));
+    const badges = copies.map(([d, s]) => `<span class="badge ${d === main ? "main" : d.startsWith("plex-cold") ? "cold" : ""}">${esc(d)} · ${gb(s)}</span>`).join("");
+    const where = copies.length === 1 ? (copies[0][0] === main ? "only on the main disk, no backup" : `only on ${copies[0][0]}`) : `${copies.length} drives`;
+    return `<div class="row" style="grid-template-columns:1fr 150px"><div><div class="title"><small>${esc(cat)}</small>${esc(name.join("/") || cat)}</div>
+      <div class="meta">${esc(where)}</div><div class="badges">${badges}</div></div><div class="size">${gb(it.size)}</div></div>`;
+  }).join("");
+}
+for (const b of document.querySelectorAll(".tabs button")) b.onclick = () => showTab(b.dataset.tab);
+$("dq").oninput = (e) => { dstate.q = e.target.value; clearTimeout(dstate.timer); dstate.timer = setTimeout(renderDriveItems, 150); };
+$("donly").onclick = () => { dstate.only = !dstate.only; $("donly").classList.toggle("on", dstate.only); renderDriveItems(); };
+
 $("q").oninput = (e) => { state.q = e.target.value; reset(); };
 $("sort").onchange = (e) => { state.sort = e.target.value; reset(); };
-for (const chip of document.querySelectorAll(".chip")) chip.onclick = () => {
+for (const chip of document.querySelectorAll("#tab-media .chip")) chip.onclick = () => {
   const f = chip.dataset.flag;
   state.flags.has(f) ? state.flags.delete(f) : state.flags.add(f);
   chip.classList.toggle("on");
@@ -525,6 +600,7 @@ $("scancel").onclick = () => $("swapdlg").close();
 
 document.addEventListener("keydown", async (e) => {
   if (e.target.matches("input, select") || $("confirm").open || $("swapdlg").open) return;
+  if (dstate.tab === "drives") { if (e.key === "/") { e.preventDefault(); $("dq").focus(); } return; }
   const rows = visible().slice(0, state.shown);
   const keys = { j: () => select(Math.min(state.sel + 1, rows.length - 1)), k: () => select(Math.max(state.sel - 1, 0)),
     1: () => decide(rows[state.sel], "keep"), 2: () => decide(rows[state.sel], "shrink"), 3: () => decide(rows[state.sel], "delete"),

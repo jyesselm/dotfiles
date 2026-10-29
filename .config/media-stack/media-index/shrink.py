@@ -371,31 +371,37 @@ def run(args: argparse.Namespace) -> None:
     log.info("run finished")
 
 
+def install_agent(label: str, args: list[str], schedule: dict, log: Path, extra: dict | None = None) -> Path:
+    """Write and (re)load a launchd agent for one of this folder's scripts.
+
+    Args:
+        label: launchd label, e.g. com.yesselman.media-shrink.
+        args: ProgramArguments.
+        schedule: {"StartCalendarInterval": {...}} or {"StartInterval": seconds}.
+        log: File that gets stdout and stderr.
+        extra: Further plist keys (Nice, EnvironmentVariables, ...).
+
+    Returns:
+        The plist written.
+    """
+    plist = Path.home() / "Library/LaunchAgents" / f"{label}.plist"
+    data = {"Label": label, "ProgramArguments": args, "StandardOutPath": str(log), "StandardErrorPath": str(log)}
+    plist.write_bytes(plistlib.dumps({**data, **schedule, **(extra or {})}))
+    domain = f"gui/{os.getuid()}"
+    subprocess.run(["launchctl", "bootout", f"{domain}/{label}"], capture_output=True, check=False)
+    subprocess.run(["launchctl", "bootstrap", domain, str(plist)], check=True)
+    return plist
+
+
 def install() -> None:
     """Write and load the launchd agent: nightly at START_HOUR, kept awake, no new file after STOP_HOUR."""
-    plist = Path.home() / "Library/LaunchAgents" / f"{LABEL}.plist"
-    data = {
-        "Label": LABEL,
-        "ProgramArguments": [
-            "/usr/bin/caffeinate",
-            "-i",
-            "/usr/bin/python3",
-            str(Path(__file__).resolve()),
-            "run",
-            "--until",
-            str(STOP_HOUR),
-        ],
-        "StartCalendarInterval": {"Hour": START_HOUR, "Minute": 0},
+    args = ["/usr/bin/caffeinate", "-i", "/usr/bin/python3", str(Path(__file__).resolve()), "run", "--until", str(STOP_HOUR)]
+    extra = {
         "Nice": 10,
         "LowPriorityIO": True,
-        "StandardOutPath": str(LOG),
-        "StandardErrorPath": str(LOG),
         "EnvironmentVariables": {"PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"},
     }
-    plist.write_bytes(plistlib.dumps(data))
-    domain = f"gui/{os.getuid()}"
-    subprocess.run(["launchctl", "bootout", f"{domain}/{LABEL}"], capture_output=True, check=False)
-    subprocess.run(["launchctl", "bootstrap", domain, str(plist)], check=True)
+    plist = install_agent(LABEL, args, {"StartCalendarInterval": {"Hour": START_HOUR, "Minute": 0}}, LOG, extra)
     print(f"installed {plist}: nightly at {START_HOUR:02d}:00, log {LOG}")
 
 

@@ -22,9 +22,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
-import plistlib
-import subprocess
 import sys
 import time
 from functools import cache
@@ -32,7 +29,7 @@ from pathlib import Path
 
 import arr
 from index import title_key
-from shrink import STATE_DIR, read_env
+from shrink import STATE_DIR, install_agent, read_env
 
 API = "http://localhost:8687/api/v1"
 STATE = STATE_DIR / "music-upgrade.json"  # {"pending": {albumId: {...}}, "done": [albumId], "gave_up": [albumId]}
@@ -193,18 +190,8 @@ def status() -> None:
 
 def install() -> None:
     """Write and load the launchd agent: daily at RUN_HOUR."""
-    plist = Path.home() / "Library/LaunchAgents" / f"{LABEL}.plist"
-    data = {
-        "Label": LABEL,
-        "ProgramArguments": ["/usr/bin/python3", str(Path(__file__).resolve()), "run"],
-        "StartCalendarInterval": {"Hour": RUN_HOUR, "Minute": 0},
-        "StandardOutPath": str(LOG),
-        "StandardErrorPath": str(LOG),
-    }
-    plist.write_bytes(plistlib.dumps(data))
-    domain = f"gui/{os.getuid()}"
-    subprocess.run(["launchctl", "bootout", f"{domain}/{LABEL}"], capture_output=True, check=False)
-    subprocess.run(["launchctl", "bootstrap", domain, str(plist)], check=True)
+    args = ["/usr/bin/python3", str(Path(__file__).resolve()), "run"]
+    plist = install_agent(LABEL, args, {"StartCalendarInterval": {"Hour": RUN_HOUR, "Minute": 0}}, LOG)
     print(f"installed {plist}: daily at {RUN_HOUR:02d}:00, log {LOG}")
 
 

@@ -333,6 +333,7 @@ services:
     volumes:
       - ${DATA_ROOT}/dashboard:/host:ro
       - ${HOME}/backups/media-stack:/backups:ro
+      - ${DATA_ROOT}/plextraktsync:/trakt:ro  # Trakt sign-in for the Watch tab
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   # Up/down checks with history and phone alerts.

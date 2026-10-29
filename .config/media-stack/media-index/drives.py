@@ -13,6 +13,14 @@ RENAMED_MIN_BYTES) just the same size, which catches renames such as Radarr's "T
     python3 drives.py missing plex-backup-1 plex-media       # titles on the first drive with no copy on the second
     python3 drives.py status --notify                       # how far behind each full backup is (weekly reminder)
     python3 drives.py sync plex-tv-backups                  # bring one backup up to date, then re-catalog it
+    python3 drives.py cold plex-cold-1 "tv/The Office (US)" # move titles off plex-media onto a cold drive
+    python3 drives.py cold plex-cold-2 --csv picks.csv --dry-run
+
+`cold` copies each title to the same folder on the cold drive, checks the copy (file count and bytes), drops it from
+Radarr/Sonarr with an import-list exclusion so it isn't grabbed again, moves the original into plex-media/_trash,
+then re-catalogs the drive and has Plex refresh the library. The cold drive then holds the only copy: the next
+`sync` of the regular backup drives removes the title there too. Copy it back to plex-media and re-add it in the
+app to bring one home.
 """
 
 from __future__ import annotations
@@ -21,6 +29,7 @@ import argparse
 import csv
 import fnmatch
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -28,7 +37,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
+import urllib.request
+
+import arr
 import index  # only its walk and item_for are used; its container paths are never touched here
+import shrink  # host-side Radarr/Sonarr table and .env reader
 
 CATALOG_DIR = Path(os.environ.get("DRIVE_CATALOG_DIR", Path.home() / ".local/share/media-index/drives"))
 ON_DRIVE_NAME = ".media-manifest.tsv"  # hidden, so index.walk never lists it
@@ -43,11 +56,14 @@ BACKUPS = {
     "plex-tv-backups": [f"tv/[{TV_FIRST_HALF}]*", "audiobooks"],
     "plex-misc-backups": [f"tv/[!{TV_FIRST_HALF}]*", "anime", "other", "youtube", "music", "podcasts"],
 }
-# Second copy of what can't be re-downloaded (backup.sh's CLOUD_FOLDERS), kept away from the house. Two drives take
-# turns: one is always offsite while the other is home being synced.
+# Second copy of what can't be re-downloaded (backup.sh's CLOUD_FOLDERS). The same two drives also hold cold storage
+# (plex-cold-1/tv: shows moved off plex-media, copied back when wanted); sync never touches those folders, and the
+# drives stay unplugged and ejectable: nothing on the Mac or in a container depends on them.
 OFFSITE = ["other", "anime", "youtube", "music", "podcasts", "audiobooks"]
-BACKUPS |= {"plex-offsite-1": OFFSITE, "plex-offsite-2": OFFSITE}
+BACKUPS |= {"plex-cold-1": OFFSITE, "plex-cold-2": OFFSITE}
 SETTINGS_DIR = "_backups/settings"  # backup.sh's nightly archives; every backup drive gets a copy when synced
+PLEX = "http://localhost:32400"
+PLEX_SECTIONS = {"movies": 1, "tv": 2, "anime": 4}  # library id per top-level folder, for refreshes after `cold`
 
 
 @dataclass(frozen=True)
@@ -215,6 +231,115 @@ def sync(drive: str) -> None:
     print(f"{len(entries)} files, {gb(sum(e.size for e in entries)).strip()} on {drive}")
 
 
+def cold(drive: str, items: list[str], dry_run: bool) -> None:
+    """Move titles off MAIN_DRIVE onto a cold drive: copy, verify, drop from Radarr/Sonarr, original to _trash.
+
+    Args:
+        drive: Mounted cold drive, e.g. plex-cold-1.
+        items: Titles relative to the media root, e.g. "tv/The Office (US)".
+        dry_run: Only print what would move.
+    """
+    mount = Path("/Volumes") / drive
+    main = Path("/Volumes") / MAIN_DRIVE
+    if not mount.is_dir():
+        raise SystemExit(f"{mount} is not mounted")
+    moved: list[str] = []
+    for item in items:
+        src, dst, trash = main / item, mount / item, main / "_trash" / item
+        if not src.exists():
+            print(f"skip, not on {MAIN_DRIVE}: {item}")
+            continue
+        if trash.exists() or (dst.exists() and measure(dst) != measure(src)):
+            print(f"skip, already in _trash or a different copy is on {drive}: {item}")
+            continue
+        files, size = measure(src)
+        print(f"{gb(size)}  {files:5} files  {item}")
+        if dry_run:
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        source = f"{src}/" if src.is_dir() else str(src)
+        subprocess.run(["rsync", "-a", source, str(dst) + ("/" if src.is_dir() else "")], check=True)
+        if measure(dst) != (files, size):
+            print(f"   copy mismatch, original left in place: {item}")
+            continue
+        print(f"   {drop_from_arr(src) or 'not in Radarr/Sonarr'}; original -> _trash")
+        trash.parent.mkdir(parents=True, exist_ok=True)
+        src.rename(trash)
+        moved.append(item)
+    if dry_run or not moved:
+        return
+    entries = catalog(mount, drive)
+    print(f"{len(entries)} files, {gb(sum(e.size for e in entries)).strip()} on {drive}")
+    for category in {item.split("/")[0] for item in moved}:
+        plex_refresh(category)
+
+
+def measure(path: Path) -> tuple[int, int]:
+    """(file count, bytes) of a title, skipping the same hidden entries the index does."""
+    if path.is_file():
+        return 1, path.stat().st_size
+    stats = list(index.walk(path))
+    return len(stats), sum(f.size for f in stats)
+
+
+def drop_from_arr(path: Path) -> str:
+    """Remove the Radarr movie / Sonarr series at path, keeping files, and exclude it from import lists.
+
+    Returns:
+        A short message, or "" when neither app manages the path.
+    """
+    category = path.relative_to(Path("/Volumes") / MAIN_DRIVE).parts[0]
+    if category not in shrink.ARR:
+        return ""
+    base, kind, env_key, _ = shrink.ARR[category]
+    key = shrink.read_env().get(env_key, "")
+    match = next((e for e in arr.request(f"{base}/{kind}", key) if e.get("path") == str(path)), None)
+    if not match:
+        return ""
+    exclusion = "addImportExclusion" if kind == "movie" else "addImportListExclusion"
+    arr.request(f"{base}/{kind}/{match['id']}?deleteFiles=false&{exclusion}=true", key, method="DELETE")
+    return f"removed from {'Radarr' if kind == 'movie' else 'Sonarr'} (files kept, import-list exclusion added)"
+
+
+def plex_refresh(category: str) -> None:
+    """Have Plex rescan the library for a top-level folder and empty its trash, so moved titles disappear."""
+    section = PLEX_SECTIONS.get(category)
+    token = shrink.read_env().get("HOMEPAGE_VAR_PLEX_TOKEN", "")
+    if not section or not token:
+        return
+    plex(f"/library/sections/{section}/refresh?X-Plex-Token={token}")
+    for _ in range(60):  # a refresh is asynchronous; wait for it before emptying the trash
+        time.sleep(5)
+        library = re.search(rf'<Directory[^>]*\bkey="{section}"[^>]*>', plex(f"/library/sections?X-Plex-Token={token}"))
+        if library and 'refreshing="1"' not in library.group():
+            break
+    plex(f"/library/sections/{section}/emptyTrash?X-Plex-Token={token}", "PUT")
+    print(f"Plex library {section} refreshed, trash emptied")
+
+
+def plex(path: str, method: str = "GET") -> str:
+    """Call the local Plex server and return the response body."""
+    with urllib.request.urlopen(urllib.request.Request(PLEX + path, method=method), timeout=60) as resp:
+        return resp.read().decode(errors="replace")
+
+
+def csv_items(path: Path) -> list[str]:
+    """Titles from a move_candidates CSV (folder + show, or folder) as paths relative to the media root."""
+    root = Path("/Volumes") / MAIN_DRIVE
+    items = []
+    with path.open(newline="") as fh:
+        for row in csv.DictReader(fh):
+            full = Path(row["folder"]) / row["show"] if row.get("show") else Path(row["folder"])
+            rel = full.relative_to(root).as_posix()
+            if not full.exists():  # Plex titles don't always match folder names ("American Dad!" vs "American Dad")
+                category = rel.split("/")[0]
+                folders = {index.title_key(d.name): d.name for d in (root / category).iterdir() if d.is_dir()}
+                found = folders.get(index.title_key(full.name))
+                rel = f"{category}/{found}" if found else rel
+            items.append(rel)
+    return items
+
+
 def print_status(show_notification: bool) -> None:
     """Print how far each backup is behind, with the command that catches it up."""
     lines = []
@@ -260,6 +385,11 @@ def main() -> None:
     s.add_argument("--notify", action="store_true", help="also show a macOS notification")
     y = sub.add_parser("sync", help="bring a backup drive up to date and re-catalog it")
     y.add_argument("drive", choices=sorted(BACKUPS))
+    k = sub.add_parser("cold", help=f"move titles off {MAIN_DRIVE} onto a cold drive (originals go to _trash)")
+    k.add_argument("drive")
+    k.add_argument("items", nargs="*", help='titles relative to the media root, e.g. "tv/The Office (US)"')
+    k.add_argument("--csv", type=Path, help="a move_candidates CSV (folder + show, or folder columns)")
+    k.add_argument("--dry-run", action="store_true", help="only list what would move")
     args = parser.parse_args()
 
     if args.command == "catalog":
@@ -280,6 +410,8 @@ def main() -> None:
         print_status(args.notify)
     elif args.command == "sync":
         sync(args.drive)
+    elif args.command == "cold":
+        cold(args.drive, args.items + (csv_items(args.csv) if args.csv else []), args.dry_run)
     else:
         for item, size in missing(load(args.source), load(args.target)).items():
             print(f"{gb(size)}  {item}")

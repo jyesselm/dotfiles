@@ -175,6 +175,93 @@ def requests_recent() -> list[dict]:
     return out
 
 
+TRAKT_AUTH = Path("/trakt/.pytrakt.json")  # PlexTraktSync's sign-in; that container keeps the token fresh
+# Trakt list slug -> tab label; a list that doesn't exist yet shows how to make it
+WATCH_LISTS = {"non-plex-watchlist": "By myself", "non-plex-watchlist-together": "Together"}
+REGION = "US"
+MINE = ["Netflix", "HBO Max", "Prime Video", "Disney+", "Hulu", "Apple TV"]  # subscriptions you pay for, in shelf order
+CHANNEL = re.compile(r"\s*(Amazon|Apple TV|Roku Premium) Channel\s*$", re.I)
+where: dict[tuple, dict] = {}  # (type, TMDB id) -> title/poster/services from Seerr, looked up daily
+
+
+def service(name: str) -> str:
+    """One name per subscription: drop the storefront channel and the plan tier."""
+    name = re.sub(r"( Standard| Premium Plus| Premium| Essential| Free)?( with Ads)?$", "", CHANNEL.sub("", name).strip())
+    return {"Amazon Prime Video": "Prime Video"}.get(name, re.sub(r" Plus$", "+", name))
+
+
+def watch_next() -> list[dict]:
+    """The Trakt lists of things to stream elsewhere, each as one shelf per service that has them."""
+    t = json.loads(TRAKT_AUTH.read_text())
+    th = {"trakt-api-key": t["CLIENT_ID"], "trakt-api-version": "2", "Authorization": "Bearer " + t["OAUTH_TOKEN"],
+          "User-Agent": "dashboard"}
+    have = {lst["ids"]["slug"] for lst in get_json("https://api.trakt.tv/users/me/lists", th)}
+    return [{"slug": slug, "name": name, "missing": slug not in have,
+             "shelves": by_service(get_json(f"https://api.trakt.tv/users/me/lists/{slug}/items", th)) if slug in have else []}
+            for slug, name in WATCH_LISTS.items()]
+
+
+plex_seen: dict = {"at": 0, "ids": set()}
+
+
+def plex_ids() -> set[str]:
+    """Every external id in the Plex library ("tmdb:movie:603", "imdb:tt0133093", "tvdb:79126"), refreshed every 10 min.
+    Newer agents list them under Guid; legacy ones only carry a single com.plexapp.agents.* guid."""
+    if plex_seen["at"] < time.time() - 600:
+        ids = set()
+        for key in (1, 2, 4):
+            d = get_json(f"{PLEX}/library/sections/{key}/all?includeGuids=1&X-Plex-Token={PLEX_TOKEN}", {"Accept": "application/json"}, 20)
+            for m in d["MediaContainer"].get("Metadata", []):
+                for g in [x["id"] for x in m.get("Guid", [])] + [m.get("guid") or ""]:
+                    hit = re.match(r"(?:com\.plexapp\.agents\.)?(tmdb|themoviedb|imdb|tvdb|thetvdb)://([^?/]+)", g)
+                    if hit:
+                        src = {"themoviedb": "tmdb", "thetvdb": "tvdb"}.get(hit[1], hit[1])
+                        ids.add(f"tmdb:{m['type']}:{hit[2]}" if src == "tmdb" else f"{src}:{hit[2]}")
+        plex_seen.update(at=time.time(), ids=ids)
+    return plex_seen["ids"]
+
+
+def by_service(items: list[dict]) -> list[dict]:
+    """Group Trakt list items into In Plex, one shelf per MINE service, then everything else (TMDB, via Seerr)."""
+    h = {"X-Api-Key": ENV.get("SEERR_KEY", "")}
+    shelves: dict[str, dict] = {}
+    try:
+        library = plex_ids()
+    except Exception:  # Plex down: fall back to Seerr's last scan of it
+        library = None
+    for it in items:
+        m = it.get(it["type"]) or {}
+        ids = m.get("ids") or {}
+        tmdb = ids.get("tmdb")
+        if it["type"] not in ("movie", "show") or not tmdb:
+            continue
+        key = (it["type"], tmdb)
+        if key not in where or where[key]["at"] < time.time() - 86400:
+            d = get_json(f"http://seerr:5055/api/v1/{'movie' if it['type'] == 'movie' else 'tv'}/{tmdb}", h)
+            p = next((w for w in d.get("watchProviders") or [] if w["iso_3166_1"] == REGION), {})
+            subs = {}  # "AMC Plus Apple TV channel", "AMC+ Amazon Channel" and "AMC+" are one subscription
+            for s in sorted(p.get("flatrate", []) + p.get("free", []) + p.get("ads", []), key=lambda s: (bool(CHANNEL.search(s["name"])), s["displayPriority"])):
+                subs.setdefault(service(s["name"]), s.get("logoPath"))
+            where[key] = {"title": d.get("title") or d.get("name"), "year": (d.get("releaseDate") or d.get("firstAirDate") or "")[:4],
+                          "img": "/poster?p=" + quote(d["posterPath"]) if d.get("posterPath") else None,
+                          "kind": "Movie" if it["type"] == "movie" else "TV", "link": p.get("link"), "services": subs,
+                          "plex": (d.get("mediaInfo") or {}).get("status") in (4, 5), "at": time.time()}
+        w = where[key]
+        plex = w["plex"] if library is None else bool(library & {f"tmdb:{it['type']}:{tmdb}", f"imdb:{ids.get('imdb')}", f"tvdb:{ids.get('tvdb')}"})
+        mine = [n for n in MINE if n in w["services"]]
+        card = {k: w[k] for k in ("title", "year", "img", "kind", "link")} | {
+            "plex": plex, "mine": mine, "other": [n for n in w["services"] if n not in MINE]}
+        names = ["In Plex"] if plex else mine or (["Other services"] if w["services"] else ["Rent or buy only"])
+        for n in names:
+            shelves.setdefault(n, {"name": n, "logo": w["services"].get(n), "items": []})["items"].append(card)
+    rank = ["In Plex", *MINE, "Other services", "Rent or buy only"]
+    order = sorted(shelves.values(), key=lambda s: rank.index(s["name"]))
+    for s in order:
+        if s["logo"]:
+            s["logo"] = "/poster?p=" + quote(s["logo"])
+    return order
+
+
 def plex_counts() -> dict:
     n = {}
     for key, name in ((1, "movies"), (2, "shows"), (4, "anime")):
@@ -345,7 +432,7 @@ def collect() -> dict:
             out[name] = None
 
     with ThreadPoolExecutor(8) as ex:
-        jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("playing", now_playing), ("requests", requests_recent), ("counts", plex_counts), ("queue", queue),
+        jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("playing", now_playing), ("requests", requests_recent), ("watch", watch_next), ("counts", plex_counts), ("queue", queue),
                                                    ("arr", arr_counts), ("torrents", torrents), ("vpn", vpn),
                                                    ("storage", storage), ("nas", nas), ("sites", sites), ("host", host),
                                                    ("containers", containers), ("backups", backups))}

@@ -12,12 +12,14 @@ import os
 import shutil
 import threading
 import time
+from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import arr
+import drives
 import index
 import shrink
 
@@ -251,6 +253,23 @@ def move_to_trash() -> list[dict]:
     return results
 
 
+def trash_download(rel: str) -> dict:
+    """Move one leftover download folder (downloads/<category>/<name>) into _trash, for downloads_cap.py on the host.
+
+    Returns:
+        {"ok", "message"}.
+    """
+    parts = Path(rel).parts
+    src, dest = index.MEDIA_ROOT / rel, TRASH / rel
+    if len(parts) != 3 or parts[0] != "downloads" or ".." in parts or not src.exists():
+        return {"ok": False, "message": "not a downloads/<category>/<name> that exists"}
+    if dest.exists():
+        return {"ok": False, "message": "already in _trash"}
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    src.rename(dest)
+    return {"ok": True, "message": "moved"}
+
+
 def _trash_one(item: str) -> dict:
     src = index.MEDIA_ROOT / item
     if not src.exists():
@@ -359,6 +378,60 @@ def _record_swap(item: str, original: Path, release: dict) -> None:
 
 scan_lock = threading.Lock()
 
+# Drive manifests (drives.py catalogs) merged into title -> {drive: bytes}; rebuilt when any manifest changes.
+DRIVE_ITEMS_MAX = 400
+_drive_cache: dict = {"key": None, "items": [], "drives": []}
+drive_lock = threading.Lock()
+
+
+def _drive_data() -> dict:
+    """Catalogued drives and every title they hold, from the manifests on disk (cached by their mtimes)."""
+    names = drives.drives()
+    key = tuple((d, drives.catalog_path(d).stat().st_mtime) for d in names)
+    with drive_lock:
+        if _drive_cache["key"] == key:
+            return _drive_cache
+        held: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        summary = []
+        for d in names:
+            entries = drives.load(d)
+            folders: dict[str, int] = defaultdict(int)
+            for e in entries:
+                held[e.item][d] += e.size
+                folders[e.path.split("/", 1)[0]] += e.size
+            summary.append({
+                "drive": d, "files": len(entries), "size": sum(e.size for e in entries),
+                "catalogued": drives.catalog_path(d).stat().st_mtime, "main": d == drives.MAIN_DRIVE,
+                "scopes": drives.BACKUPS.get(d, []), "folders": sorted(folders.items(), key=lambda kv: -kv[1]),
+            })
+        items = [
+            {"item": item, "category": index.item_for(item)[1], "drives": dict(by), "size": max(by.values())}
+            for item, by in held.items()
+        ]
+        items.sort(key=lambda r: -r["size"])
+        _drive_cache.update(key=key, items=items, drives=summary)
+        return _drive_cache
+
+
+def drive_items(q: str, drive: str, only: bool) -> dict:
+    """Titles across all catalogued drives matching a search.
+
+    Args:
+        q: Case-insensitive text the title must contain ("" for all).
+        drive: Only titles present on this drive ("" for any).
+        only: Only titles held by a single drive (nothing else has a copy).
+
+    Returns:
+        {"total", "total_size", "items": first DRIVE_ITEMS_MAX rows, largest first}.
+    """
+    needle = q.lower()
+    rows = [
+        r for r in _drive_data()["items"]
+        if (not needle or needle in r["item"].lower()) and (not drive or drive in r["drives"])
+        and (not only or len(r["drives"]) == 1)
+    ]
+    return {"total": len(rows), "total_size": sum(r["size"] for r in rows), "items": rows[:DRIVE_ITEMS_MAX]}
+
 
 def run_scan() -> None:
     """Run one scan unless another is already running."""
@@ -396,6 +469,11 @@ class Handler(BaseHTTPRequestHandler):
             self._json(shrink_queue())
         elif url.path == "/api/audio":
             self._audio(parse_qs(url.query).get("item", [""])[0])
+        elif url.path == "/api/drives":
+            self._json(_drive_data()["drives"])
+        elif url.path == "/api/drive-items":
+            qs = parse_qs(url.query)
+            self._json(drive_items(qs.get("q", [""])[0], qs.get("drive", [""])[0], qs.get("only", ["0"])[0] == "1"))
         else:
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
 
@@ -411,6 +489,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(restore(body["item"]))
         elif path == "/api/swap":
             self._json(swap(body["item"], body["release"]))
+        elif path == "/api/trash-download":
+            self._json(trash_download(body["path"]))
         elif path == "/api/shrink-finish":
             self._json(shrink_finish(body["path"], bool(body.get("replace"))))
         elif path == "/api/scan":

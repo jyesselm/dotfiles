@@ -90,6 +90,14 @@ section { margin-bottom: 36px; }
 .poster .t { font-size: 13px; font-weight: 500; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .err { font-size: 12px; color: var(--text-3); margin: 0 4px; }
 .poster .s { font-size: 12px; color: var(--text-2); }
+.poster:focus { outline: none; }
+.poster:focus .art, .poster.sel .art { transform: scale(1.04); box-shadow: 0 0 0 3px var(--blue), 0 8px 22px rgba(0,0,0,.18); }
+#w-pick a:focus { outline: none; box-shadow: 0 0 0 2px var(--blue); }
+.where { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.where .b { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: color-mix(in srgb, var(--blue) 16%, transparent); color: var(--blue); white-space: nowrap; }
+.where .b.plex { background: color-mix(in srgb, #e5a00d 22%, transparent); color: #e5a00d; }
+.where .b.dim { background: var(--fill); color: var(--text-2); font-weight: 500; }
+h2 .logo { width: 26px; height: 26px; border-radius: 7px; vertical-align: -6px; margin-right: 10px; }
 
 /* app launchers */
 .apps { display: grid; gap: 14px 8px; padding: 18px 10px; }
@@ -229,6 +237,13 @@ section { margin-bottom: 36px; }
   </section>
 </div>
 
+<!-- WATCH -->
+<div class="view" id="v-watch">
+  <div class="hero"><div class="eyebrow">Your Trakt lists</div><h1>Watch Elsewhere</h1><p class="lead" id="w-lead"></p>
+    <nav class="tabs" id="w-pick" style="display:inline-flex;margin:18px 0 0"></nav></div>
+  <div id="w-shelves"></div>
+</div>
+
 <!-- DOWNLOADS -->
 <div class="view" id="v-downloads">
   <div class="hero"><div class="eyebrow">Downloads</div><h1 id="dl-title"></h1><div class="lead" id="dl-lead"></div></div>
@@ -292,7 +307,7 @@ const link = (port, path = "") => `http://${H}:${port}${path}`;
 const $ = (id) => document.getElementById(id);
 
 // tabs (hash-routed, remembered)
-const TABS = [["home", "Home", "⌂"], ["downloads", "Downloads", "↓"], ["storage", "Storage", "◔"], ["computers", "Computers", "▭"], ["admin", "Admin", "⚙"]];
+const TABS = [["home", "Home", "⌂"], ["watch", "Watch", "▶"], ["downloads", "Downloads", "↓"], ["storage", "Storage", "◔"], ["computers", "Computers", "▭"], ["admin", "Admin", "⚙"]];
 for (const id of ["tabs", "tabbar"]) $(id).innerHTML = TABS.map(([k, n, g]) => `<a href="#${k}" data-t="${k}"><span class="i">${g}</span>${n}</a>`).join("");
 function show(t) {
   if (!TABS.some(([k]) => k === t)) t = "home";
@@ -326,6 +341,32 @@ const tile = (t, color, ic, v, l) => `<a class="card tile" href="#${t}"><div cla
 const row = (g, meta, bar) => `<li><span class="tt">${esc(g.title)}<span class="ss">${g.kind}${g.n > 1 ? ` · ${g.n} episodes` : ""}</span></span><span class="meta ${g.warn && !g.active ? "warn" : ""}">${meta}</span>${bar ? `<div class="pbar"><i style="width:${Math.max(g.pct, 3)}%"></i></div>` : ""}</li>`;
 const COLORS = ["var(--blue)", "var(--purple)", "var(--orange)", "var(--text-3)", "var(--pink)", "var(--teal)", "var(--indigo)", "var(--green)", "var(--red)", "var(--text-2)"];
 let foldOpen = false;
+let lastWatch = null, watchLists = [], watchPick = null;
+try { watchPick = localStorage.getItem("watchList"); } catch {}
+function pickWatch(slug) {
+  watchPick = slug; try { localStorage.setItem("watchList", slug); } catch {}
+  renderWatch();
+  document.querySelector(`#w-pick [data-l="${slug}"]`)?.focus();
+}
+$("w-pick").onclick = (e) => { const a = e.target.closest("[data-l]"); if (a) { e.preventDefault(); pickWatch(a.dataset.l); } };
+function renderWatch() {
+  const W = watchLists.find((l) => l.slug === watchPick) || watchLists[0];
+  if (W) watchPick = W.slug;
+  const pick = watchLists.map((l) =>
+    `<a href="#watch" data-l="${l.slug}" class="${l.slug === watchPick ? "on" : ""}">${esc(l.name)}${l.missing ? "" : ` · ${new Set(l.shelves.flatMap((x) => x.items.map((i) => i.title))).size}`}</a>`).join("");
+  if (pick !== $("w-pick").innerHTML) $("w-pick").innerHTML = pick;
+  $("w-lead").textContent = !watchLists.length ? "Trakt or Seerr isn't answering." : W?.missing
+    ? `Make a Trakt list with the slug "${W.slug}" (trakt.tv → your profile → Lists → New list) to fill this one.`
+    : "In Plex first, then your services (Netflix, HBO Max, Prime Video, Disney+, Hulu, Apple TV), then everything else. Nothing here is downloaded.";
+  const wHtml = (W?.shelves || []).map((s) =>
+    `<section><h2><span>${s.logo ? `<img class="logo" src="${s.logo}" alt="">` : ""}${esc(s.name)}</span></h2><div class="shelf">${s.items.map((p) =>
+      `<a class="poster" href="${p.link || "#"}"><div class="art">${p.img ? `<img src="${p.img}" alt="" loading="lazy">` : ""}</div><div class="t">${esc(p.title)}</div><div class="s">${p.kind}${p.year ? " · " + p.year : ""}</div><div class="where">${
+        (p.plex ? `<span class="b plex">Plex</span>` : "") + p.mine.map((n) => `<span class="b">${esc(n)}</span>`).join("")
+        + (p.other.length ? `<span class="b dim" title="${esc(p.other.join(", "))}">${p.plex || p.mine.length ? "+" + p.other.length + " other" : esc(p.other[0]) + (p.other.length > 1 ? " +" + (p.other.length - 1) : "")}</span>` : "")
+        || `<span class="b dim">Rent or buy</span>`}</div></a>`).join("")}</div></section>`).join("")
+    || (W && !W.missing ? `<div class="err">The list is empty.</div>` : "");
+  if (wHtml !== lastWatch) $("w-shelves").innerHTML = lastWatch = wHtml;  // redrawing would drop the remote's focus
+}
 
 function render(D) {
   // ---- HOME ----
@@ -438,12 +479,45 @@ function render(D) {
   $("sites").innerHTML = (D.sites || []).map((s) =>
     `<li><span class="tt"><a href="${s.url}">${esc(s.name)}</a><span class="ss">${esc(s.url.replace(/^https?:\/\/|\/$/g, ""))}</span></span><span class="meta ${s.up ? "" : "warn"}">${s.up ? `<span class="dot"></span> Up · ${s.ms} ms` : `<span class="dot" style="background:var(--red)"></span> Down${s.code ? " · HTTP " + s.code : ""}`}</span></li>`).join("");
 
+  // ---- WATCH ----
+  watchLists = D.watch || [];
+  renderWatch();
+
   // ---- ADMIN ----
   const V = D.vpn;
   $("ad-lead").textContent = (V?.ip ? `Traffic leaves through NordVPN in ${V.city}, ${V.country} (${V.ip}). ` : "The VPN tunnel is down. ") + "You rarely need these.";
   $("svcs").innerHTML = (D.services || []).map((s) =>
     `<a class="svc" href="${s.port ? link(s.port, s.name === "Plex" ? "/web" : "") : "#"}">${img(s.icon)}<span class="n">${esc(s.name)}<span class="d">${esc(s.desc)}</span></span><span class="dot ${s.up ? "" : "off"}" ${s.up ? "" : 'style="background:var(--red)"'}></span></a>`).join("");
 }
+
+// TV remote: arrows step through the Watch posters (left/right in a row, up/down between rows);
+// up from the first row reaches the By myself / Together switch, where left/right changes list
+addEventListener("keydown", (e) => {
+  const step = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key];
+  if (!step || !$("v-watch").classList.contains("on")) return;
+  const pills = [...document.querySelectorAll("#w-pick [data-l]")];
+  if (pills.includes(document.activeElement) && step[0] <= 0) {
+    e.preventDefault();
+    const i = pills.indexOf(document.activeElement) + step[1];
+    if (step[1] && pills[i]) pickWatch(pills[i].dataset.l);
+    return;
+  }
+  const rows = [...document.querySelectorAll("#w-shelves .shelf")].map((r) => [...r.querySelectorAll(".poster")]);
+  if (!rows.length) return;
+  const cur = document.querySelector("#w-shelves .sel") || document.activeElement;
+  let r = rows.findIndex((x) => x.includes(cur)), c = r < 0 ? 0 : rows[r].indexOf(cur);
+  if (r === 0 && step[0] < 0 && pills.length) {
+    e.preventDefault();
+    document.querySelectorAll("#w-shelves .sel").forEach((x) => x.classList.remove("sel"));
+    return (pills.find((x) => x.classList.contains("on")) || pills[0]).focus();
+  }
+  if (r < 0) r = 0; else { r = Math.min(Math.max(r + step[0], 0), rows.length - 1); c = Math.min(Math.max(c + step[1], 0), rows[r].length - 1); }
+  e.preventDefault();
+  document.querySelectorAll("#w-shelves .sel").forEach((x) => x.classList.remove("sel"));
+  rows[r][c].classList.add("sel");
+  rows[r][c].focus();
+  rows[r][c].scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+});
 
 async function refresh() {
   try {

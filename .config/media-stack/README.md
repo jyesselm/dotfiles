@@ -19,11 +19,11 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers |
 | Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
-| Dashboard | 3000 | Home page: recently added, now playing, requests, downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
+| Dashboard | 3000 | Home page: recently added, now playing, requests, a Watch tab of what to stream elsewhere, downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
-| Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review (`media-index/`) |
+| Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review, Drives tab (which drive holds what) (`media-index/`) |
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
@@ -40,6 +40,12 @@ your Trakt watchlist; Radarr's import list "Trakt Watchlist" (Trakt User → Wat
 and searches them on its next list sync. PlexTraktSync also mirrors the Plex watchlist to Trakt, so a movie
 watchlisted in Plex is downloaded too. Clean Library Level stays Disabled, so watching a movie (Trakt then drops it
 from the watchlist) never deletes it.
+
+Shows and movies you'll stream on another service go on a Trakt list instead (trakt.tv → profile → Lists):
+**non-plex-watchlist** for yourself, **non-plex-watchlist-together** for things to watch together. Nothing
+imports them, so nothing downloads. The dashboard's Watch tab (`:3000/#watch`) shows either list (a switch at the top)
+with each title labelled In Plex (checked against the library by TMDB, IMDb or TVDB id) and the US services that
+stream it (TMDB data via Seerr): your subscriptions are `MINE` in `dashboard/server.py`. Readable on the Onn in any browser.
 
 Sign-ins live in `$DATA_ROOT/plextraktsync/` (`.env`, `.pytrakt.json`, `servers.yml`) and Radarr's database, so a
 moved or restored stack keeps them. Only a fresh install needs them again:
@@ -117,6 +123,15 @@ python3 media-index/shrink.py run --match "S02E05" --limit 1  # one file now
 python3 media-index/shrink.py install                       # nightly at 01:00; no new file starts after 08:00
 ```
 
+**Download folder cap**: `media-index/downloads_cap.py` (launchd, every 30 min) keeps `downloads/radarr` under
+150 GB and `downloads/sonarr` under 100 GB (`CAP_GB`). Finished torrents are hardlinked into the library and cost
+nothing; what grows the folders is downloads in progress (allocated in full up front) and leftovers, folders no
+torrent owns after Radarr/Sonarr dropped a stuck grab. Leftovers untouched for a day go to `_trash/downloads/`
+(via `POST /api/trash-download`, since launchd's Python can't change the disk; empty `_trash` by hand). When the
+folder's own bytes plus what the active torrents still have to fetch would pass the cap, the torrents with the
+most left are stopped and tagged `capped` in qBittorrent, and started again once there is room. Log:
+`~/.local/share/media-index/downloads-cap.log`; `python3 media-index/downloads_cap.py run --dry-run` shows a check.
+
 **Music upgrades** to 320 kbps go through Lidarr, run by `media-index/music_upgrade.py` (daily at 03:00). Lidarr only
 grabs whole albums, so the script monitors up to 10 albums holding your lowest-bitrate songs under an "Upgrade to 320"
 profile and searches them again each day. Once every song you had is at 320, it deletes the album's other tracks and
@@ -133,13 +148,22 @@ python3 media-index/music_upgrade.py run --dry-run          # what would start o
 unplugged. `media-index/drives.py catalog` writes one row per file (path, size, mtime) to
 `~/.local/share/media-index/drives/<drive>.tsv` and to `.media-manifest.tsv` on the drive itself. Re-run it
 after changing a drive. A file counts as copied when another drive has the same name and size (or the same size for
-files over 50 MB, which catches renames).
+files over 50 MB, which catches renames). The **Drives** tab on the Media Index page (8686) shows the same manifests:
+a card per drive, a search box for "where is …", and an "Only on one drive" filter for titles with no second copy.
 
 ```sh
 python3 media-index/drives.py catalog /Volumes/plex-backup-1      # after plugging a drive in
 python3 media-index/drives.py where supernatural               # which drives hold it
 python3 media-index/drives.py missing plex-backup-1 plex-media  # titles not yet copied
+python3 media-index/drives.py cold plex-cold-1 "tv/Fargo" "movies/First Man (2018)"   # move titles to cold storage
+python3 media-index/drives.py cold plex-cold-1 --csv picks.csv --dry-run             # from a move_candidates CSV
 ```
+
+`cold` copies each title to the same folder on the cold drive, checks file count and bytes, removes it from
+Radarr/Sonarr (files kept, import-list exclusion so it isn't grabbed again), moves the original to
+`plex-media/_trash`, re-catalogs the drive and has Plex refresh the library. The cold drive then holds the only
+copy once the regular backup drives are next synced. To bring a title home, copy its folder back and re-add it in
+Radarr/Sonarr.
 
 ## Backups
 
@@ -163,14 +187,14 @@ Everything except `downloads/` and `games/` is mirrored on three backup drives (
 |---|---|
 | `plex-movie-backups` (3 TB) | `movies` |
 | `plex-tv-backups` (3 TB) | `tv` shows starting 0–9 or A–S, `audiobooks` |
-| `plex-misc-backups` (2 TB) | `tv` shows starting T–Z, `anime`, `other`, `youtube`, `music`, `podcasts`; also `MaP2D_Data` (lab data; the other copy is on `plex-offsite-2`) |
-| `plex-offsite-1`, `plex-offsite-2` (3 TB each) | `other`, `anime`, `youtube`, `music`, `podcasts`, `audiobooks` (what can't be re-downloaded; also on Google Drive). They take turns away from the house: every month or two bring one home, sync it, take the other out. `plex-offsite-2` also keeps a copy of `MaP2D_Data` (lab data; not on `plex-media`, so sync leaves it alone) |
+| `plex-misc-backups` (2 TB) | `tv` shows starting T–Z, `anime`, `other`, `youtube`, `music`, `podcasts`; also `MaP2D_Data` (lab data; the other copy is on `plex-cold-2`) |
+| `plex-cold-1`, `plex-cold-2` (3 TB each; were `plex-offsite-1/-2`) | `other`, `anime`, `youtube`, `music`, `podcasts`, `audiobooks` (what can't be re-downloaded; also on Google Drive), plus cold storage: titles moved off `plex-media` with `drives.py cold` (not in Plex, Radarr or Sonarr; the Drives tab or `drives.py where` says which drive holds one). `plex-cold-2` also keeps a copy of `MaP2D_Data` (lab data; not on `plex-media`, so sync leaves it alone) and `_trash/Movies` (old pre-Radarr library, 1.3 TB) |
 
 Every Sunday at 10:00 `backup.sh remind` re-catalogs `plex-media` and shows a notification with how much each
 drive is behind. Plug the drive in and run `sync`; it mirrors deletions too and re-catalogs the drive:
 
 ```sh
-python3 media-index/drives.py sync plex-tv-backups   # or plex-movie-backups / plex-misc-backups / plex-offsite-1 / -2
+python3 media-index/drives.py sync plex-tv-backups   # or plex-movie-backups / plex-misc-backups / plex-cold-1 / -2
 python3 media-index/drives.py status                 # what the reminder checks
 ./backup.sh install                                  # (re)install both launchd jobs
 ```
