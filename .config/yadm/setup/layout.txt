@@ -30,7 +30,7 @@ cloud
 # Every cloud mount is reachable under ~/cloud. Google Drive mirrors "My Drive" straight into cloud/gdrive;
 # cloud/icloud is linked by hand because its target ("Mobile Documents") has a space.
 cloud/Dropbox  class:laptop,studio link:Library/CloudStorage/Dropbox
-cloud/gdrive  class:laptop,studio check
+cloud/gdrive  class:laptop,studio link:Library/CloudStorage/GoogleDrive-yesselmanlab@gmail.com
 cloud/onedrive  class:laptop,studio link:Library/CloudStorage/OneDrive-UniversityofNebraska-Lincoln
 
 # Folders other programs put in ~ on some computers.
@@ -38,5 +38,7 @@ Dropbox*  ignore
 Google*  unlink
 OneDrive*  unlink
 Claude  ignore
+OrbStack  ignore  # OrbStack mounts its VMs and containers here
+snap  ignore  profile:linux  # snapd's per-user data
 PrinterLogic  ignore
 iCloud*  ignore  # "iCloud Drive (Archive)" on the Plex server

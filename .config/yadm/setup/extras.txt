@@ -100,3 +100,6 @@ formula:seqtk
 formula:tldr
 formula:tree
 formula:virtualenv
+# laptop, adopted 2026-10-29
+formula:btop
+formula:htop

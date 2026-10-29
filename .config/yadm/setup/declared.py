@@ -364,7 +364,7 @@ def pending(setup, state: Dict[str, object]) -> List[Pending]:
             for subject, action in kind.hint(entries):
                 found.append(Pending('install-%s-%s' % (kind.name, slug(subject)), 'Install %s (%s)' % (subject, kind.name),
                                      [action, 'converge sync']))
-        if state.get('declared.%s.undeclared' % kind.name):
+        if isinstance(state.get('declared.%s.undeclared' % kind.name), list) and state['declared.%s.undeclared' % kind.name]:  # a str is an error
             found.append(adopt_recipe(kind))
     return found
 

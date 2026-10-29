@@ -9,8 +9,9 @@ from typing import Iterable, List, Optional, Tuple
 
 PROFILES = {'mac', 'linux', 'cluster'}
 CLASSES = {'laptop', 'studio', 'linux', 'cluster', 'server'}
-STANDARD_TOP_LEVEL = {'Desktop', 'Documents', 'Downloads', 'Library', 'Movies', 'Music', 'Pictures',
-                      'Public', 'Applications', 'go', 'micromamba', 'Zotero'}
+STANDARD_TOP_LEVEL = {'Desktop', 'Documents', 'Downloads', 'Library', 'Movies', 'Music', 'Pictures', 'Public', 'Applications',
+                      'Templates', 'Videos',  # XDG names on Linux
+                      'go', 'micromamba', 'miniconda3', 'Zotero'}
 # Written as (parent, user) pairs so this file does not trip its own scan.
 HOMES = [('/Users', 'jyesselman2'), ('/home', 'yesselman'), ('/home', 'jyesselm')]
 HOME_RE = re.compile('(' + '|'.join(re.escape(a + '/' + b) for a, b in HOMES) + r')(?![\w.-])')
