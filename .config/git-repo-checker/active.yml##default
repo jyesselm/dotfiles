@@ -162,7 +162,7 @@ repos:
   enabled: true
 - path: local/code/cpp/RNAMake.New
   remote: https://github.com/jyesselm/RNAMake.New.git
-  branch: main
+  branch: master
   enabled: true
 - path: local/code/javascript/master_protocol_sheet
   remote: https://github.com/YesselmanLab/lab_protocols.git
