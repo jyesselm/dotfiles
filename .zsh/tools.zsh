@@ -36,7 +36,7 @@ keys() {
     sync)
       while read -r n r; do
         [[ -z $n || $n == \#* ]] && continue
-        v=$(op read "$r") || { print -u2 "keys: cannot read $n from $r"; continue }
+        v=$(op read "$r" < /dev/null) || { print -u2 "keys: cannot read $n from $r"; continue }  # op must not read the refs file
         security add-generic-password -U -s zsh-keys -a "$n" -w "$v" && export "$n=$v" && print "synced $n"
       done < $_KEYS ;;
     add) [[ $2 =~ '^[A-Z_][A-Z0-9_]*$' ]] || { print -u2 'usage: keys add NAME [1Password item | op://vault/item/field]'; return 1 }
