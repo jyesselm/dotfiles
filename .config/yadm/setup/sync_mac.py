@@ -42,7 +42,6 @@ class Manifest:
     """Entries of a merged Brewfile."""
     formulae: List[str] = field(default_factory=list)
     casks: List[str] = field(default_factory=list)
-    mas_ids: List[int] = field(default_factory=list)
     present: Dict[str, str] = field(default_factory=dict)  # cask token -> "# present:" path
 
 
@@ -64,12 +63,11 @@ def merge_brewfiles(paths: List[Path]) -> str:
 
 
 def parse_brewfile(text: str) -> Manifest:
-    """Collect brew/cask/mas entries and '# present: <path>' hints."""
+    """Collect brew/cask entries and '# present: <path>' hints."""
     manifest = Manifest()
     for line in text.splitlines():
         brew = re.match(r'^brew "([^"]+)"', line)
         cask = re.match(r'^cask "([^"]+)"', line)
-        mas = re.match(r'^mas "[^"]+",\s*id:\s*(\d+)', line)
         if brew:
             manifest.formulae.append(brew.group(1))
         elif cask:
@@ -77,8 +75,6 @@ def parse_brewfile(text: str) -> Manifest:
             hint = re.search(r'#\s*present:\s*(.+?)\s*$', line)
             if hint:
                 manifest.present[cask.group(1)] = hint.group(1)
-        elif mas:
-            manifest.mas_ids.append(int(mas.group(1)))
     return manifest
 
 
