@@ -1,0 +1,21 @@
+# Enabled GNOME Shell extensions (gnome-extensions list --enabled), by UUID.
+# Format: `entry  key:value ...  [allowed]` and `#` comments, as in layout.txt. The trailing tokens that contain ':'
+# or are `allowed` qualify the entry; everything before them is the entry, so names may contain spaces.
+# class:a,b = wanted only on those classes (default: every machine of the kind); allowed = may be present, never reported
+# (a name may have a wanted line and an allowed line). Sync reports missing and undeclared entries and never removes any;
+# `converge adopt gnome-extensions` appends this machine's undeclared entries as allowed lines.
+# converge sync enables a missing one that is installed; one that is not becomes a recipe (extensions.gnome.org).
+
+# seeded 2026-10-28 from home-gpu (the only linux-class machine); prune by hand
+user-theme@gnome-shell-extensions.gcampax.github.com
+blur-my-shell@aunetx
+advanced-alt-tab@G-dH.github.com
+focused-window-dbus@flexagoon.com
+logomenu@aryan_k
+ding@rastersoft.com
+snapd-prompting@canonical.com
+snapd-search-provider@canonical.com
+tiling-assistant@ubuntu.com
+ubuntu-appindicators@ubuntu.com
+ubuntu-dock@ubuntu.com
+web-search-provider@ubuntu.com

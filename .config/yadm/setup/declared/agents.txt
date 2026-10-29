@@ -1,0 +1,36 @@
+# LaunchAgents in ~/Library/LaunchAgents, by Label.
+# Format: `entry  key:value ...  [allowed]` and `#` comments, as in layout.txt. The trailing tokens that contain ':'
+# or are `allowed` qualify the entry; everything before them is the entry, so names may contain spaces.
+# class:a,b = wanted only on those classes (default: every machine of the kind); allowed = may be present, never reported
+# (a name may have a wanted line and an allowed line). Sync reports missing and undeclared entries and never removes any;
+# `converge adopt agents` appends this machine's undeclared entries as allowed lines.
+# Homebrew services and vendor updaters (homebrew.mxcl.*, com.google.keystone.*, ...) are built in, never listed here.
+# Missing agents are reported only: their app or a tracked ##class plist provides them.
+
+# Wanted
+com.alfredapp.vitor.1password  class:laptop,studio
+com.yesselman.dotfiles-sync
+com.yesselman.search-cli-prewarm  class:laptop,studio
+
+# seeded 2026-10-28 from laptop, studio, plex-server; prune by hand
+com.git-repo-checker.active  allowed
+com.jyesselman.cloudflared  allowed
+com.jyesselman.data-index  allowed
+com.jyesselman.exams  allowed
+com.jyesselman.notes  allowed
+com.jyesselman.notes-filer  allowed
+com.jyesselman.notes-watchdog  allowed
+com.jyesselman.tasks  allowed
+com.jyesselman.tasks-backup  allowed
+com.rewind.Rewind  allowed
+com.yesselman.dashboard-host  allowed
+com.yesselman.downloads-cap  allowed
+com.yesselman.media-backup  allowed
+com.yesselman.media-backup-cloud  allowed
+com.yesselman.media-backup-remind  allowed
+com.yesselman.media-shrink  allowed
+com.yesselman.music-upgrade  allowed
+com.yesselman.search-cli-watch  allowed
+com.yesselman.search-home  allowed
+com.yesselman.search-home-publish  allowed
+local.plex.autostart  allowed

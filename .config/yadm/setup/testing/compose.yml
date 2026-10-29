@@ -1,0 +1,38 @@
+# converge e2e: a hub, a bare repo standing in for GitHub, two linux clients and one cluster client.
+# Run through e2e.sh, which seeds the remote volume and sets BRANCH.
+name: converge-e2e
+
+x-client: &client
+  build:
+    context: .
+    dockerfile: Dockerfile.client
+  image: converge-e2e-client
+  init: true
+  environment:
+    CONVERGE_HUB: http://hub:8790
+  volumes:
+    - remote:/remote
+
+services:
+  hub:
+    build:
+      context: .
+      dockerfile: Dockerfile.hub
+    image: converge-e2e-hub
+    init: true
+    environment:
+      BRANCH: ${BRANCH:?set BRANCH (e2e.sh does)}
+    volumes:
+      - remote:/remote:ro
+  linux-a:
+    <<: *client
+    hostname: linux-a
+  linux-b:
+    <<: *client
+    hostname: linux-b
+  swan:
+    <<: *client
+    hostname: swan-ci  # detect_profile(): 'swan' in the hostname -> cluster
+
+volumes:
+  remote:

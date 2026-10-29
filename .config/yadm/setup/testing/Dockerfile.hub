@@ -1,0 +1,18 @@
+# The converge hub, serving the code of BRANCH from the /remote bare repo.
+FROM ubuntu:24.04
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 git curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --shell /bin/bash joe \
+ && mkdir /state \
+ && chown joe /state
+USER joe
+RUN mkdir -p /home/joe/dotfiles/.config/yadm/setup
+WORKDIR /home/joe/dotfiles/.config/yadm/setup
+# Defaults for both `serve` and `docker compose exec hub python3 hub.py bridge-once`.
+ENV CONVERGE_HUB_DB=/state/hub.sqlite CONVERGE_BRIDGE_REMOTE=file:///remote
+# --host 0.0.0.0: inside a container 127.0.0.1 is unreachable from the clients.
+CMD git -C /home/joe/dotfiles init --quiet \
+ && git -C /home/joe/dotfiles fetch --quiet /remote "$BRANCH" \
+ && git -C /home/joe/dotfiles checkout --quiet --force FETCH_HEAD \
+ && exec python3 hub.py serve --host 0.0.0.0 --port 8790 --trust-local

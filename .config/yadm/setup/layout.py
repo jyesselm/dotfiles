@@ -5,7 +5,7 @@ import fnmatch
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 PROFILES = {'mac', 'linux', 'cluster'}
 CLASSES = {'laptop', 'studio', 'linux', 'cluster', 'server'}
@@ -45,6 +45,23 @@ def _home_relative(path: str) -> bool:
     return bool(path) and not path.startswith(('/', '~')) and '..' not in path.split('/')
 
 
+def manifest_lines(text: str) -> List[Tuple[int, str]]:
+    """(line number, content) of every non-blank line with its `#` comment removed: the line format shared by
+    layout.txt, extras.txt and setup/declared/*.txt."""
+    numbered = [(number, raw.split('#', 1)[0].strip()) for number, raw in enumerate(text.splitlines(), 1)]
+    return [(number, line) for number, line in numbered if line]
+
+
+def split_qualifiers(line: str, flags: Iterable[str]) -> Tuple[str, List[str]]:
+    """(entry, qualifiers): the trailing tokens that contain ':' or are one of `flags` qualify the entry;
+    everything before them is the entry, which may contain spaces (`Microsoft Word  source:brew`)."""
+    tokens = line.split()
+    cut = len(tokens)
+    while cut > 1 and (':' in tokens[cut - 1] or tokens[cut - 1] in flags):
+        cut -= 1
+    return ' '.join(tokens[:cut]), tokens[cut:]
+
+
 def _parse_line(number: int, line: str) -> Tuple[str, dict, bool, bool, Optional[str], bool]:
     """Return (path, filters, check, ignore, link, unlink) for one manifest line."""
     path, *tokens = line.split()
@@ -73,10 +90,7 @@ def _parse_line(number: int, line: str) -> Tuple[str, dict, bool, bool, Optional
 def parse_layout(text: str, profile: Optional[str], machine_class: Optional[str]) -> List[LayoutEntry]:
     """Entries matching profile/class; None for both disables filtering."""
     entries = []
-    for number, raw in enumerate(text.splitlines(), 1):
-        line = raw.split('#', 1)[0].strip()
-        if not line:
-            continue
+    for number, line in manifest_lines(text):
         path, filters, check, ignore, link, unlink = _parse_line(number, line)
         wanted = {'profile': profile, 'class': machine_class}
         if profile is None and machine_class is None or all(wanted[k] in v for k, v in filters.items()):

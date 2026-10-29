@@ -1,0 +1,25 @@
+# Snaps (snap list) on Linux workstations.
+# Format: `entry  key:value ...  [allowed]` and `#` comments, as in layout.txt. The trailing tokens that contain ':'
+# or are `allowed` qualify the entry; everything before them is the entry, so names may contain spaces.
+# class:a,b = wanted only on those classes (default: every machine of the kind); allowed = may be present, never reported
+# (a name may have a wanted line and an allowed line). Sync reports missing and undeclared entries and never removes any;
+# `converge adopt snap` appends this machine's undeclared entries as allowed lines.
+# Missing ones become one recipe: sudo snap install <all of them>.
+
+# seeded 2026-10-28 from home-gpu (the only linux-class machine); prune by hand
+bare
+core20
+core22
+core24
+desktop-security-center
+firefox
+firmware-updater
+gnome-42-2204
+gnome-46-2404
+gtk-common-themes
+mesa-2404
+prompting-client
+snap-store
+snapd
+snapd-desktop-integration
+thunderbird

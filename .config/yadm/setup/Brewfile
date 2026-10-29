@@ -44,6 +44,7 @@ brew "emscripten"   # C++ → WebAssembly for the rna_draw web editor (~/local/c
 brew "clang-format"
 brew "rust"
 brew "colima"
+cask "orbstack"   # Docker and Linux VMs (setup/testing)
 brew "ollama"
 brew "pymol"
 cask "android-platform-tools"   # `adb`, for the Onn 4K Pro travel kit (~/.config/media-stack/travel-onn.md)

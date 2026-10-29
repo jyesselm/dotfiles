@@ -1,5 +1,5 @@
 # What `converge fleet --diff` compares across computers. Each sync snapshots this computer's
-# effective state (everything `converge fleet --keys` lists) and pushes it with the check-in;
+# effective state (everything `converge fleet --keys` lists) and sends it with the check-in;
 # the diff prints only the selected keys whose values differ. Patterns are globs on the key.
 compare:
   - dotfiles.*      # yadm commit and clean/dirty: the tracked layer itself

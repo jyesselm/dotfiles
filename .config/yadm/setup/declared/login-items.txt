@@ -1,0 +1,24 @@
+# Login items (System Settings > General > Login Items).
+# Format: `entry  key:value ...  [allowed]` and `#` comments, as in layout.txt. The trailing tokens that contain ':'
+# or are `allowed` qualify the entry; everything before them is the entry, so names may contain spaces.
+# class:a,b = wanted only on those classes (default: every machine of the kind); allowed = may be present, never reported
+# (a name may have a wanted line and an allowed line). Sync reports missing and undeclared entries and never removes any;
+# `converge adopt login-items` appends this machine's undeclared entries as allowed lines.
+# A missing one becomes a recipe: System Settings > General > Login Items > "+".
+
+# Wanted
+Alfred 5  class:laptop,studio
+Contexts  class:laptop,studio
+Dropbox  class:laptop,studio
+Google Drive  class:laptop,studio
+Jamf Connect  class:laptop,studio
+Magnet  class:laptop,studio
+OneDrive Sync Service  class:laptop,studio
+
+# seeded 2026-10-28 from laptop, studio, plex-server; prune by hand
+Bartender 5  allowed
+Bartender 6  allowed
+Battle.net  allowed
+Caffeine  allowed
+OrbStack  allowed
+Plaud  allowed

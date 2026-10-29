@@ -19,9 +19,8 @@ cask "zotero"
 cask "fantastical"
 cask "tailscale-app"       # present: /Applications/Tailscale.app
 cask "dropbox"
-# App Store (needs the App Store signed in). Add more with: mas list
+# App Store apps are declared in declared/apps.txt (source:mas) and installed by hand via their recipe.
 brew "mas"
-mas "Magnet", id: 441258766
 # Standard
 cask "microsoft-office"    # present: /Applications/Microsoft Word.app
 cask "zoom"                # present: /Applications/zoom.us.app

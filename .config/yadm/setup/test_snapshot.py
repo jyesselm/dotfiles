@@ -7,7 +7,9 @@ import plistlib
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import snapshot as sn
 import sync as sy
@@ -77,6 +79,66 @@ class CollectTests(Base):
         self.assertEqual(sn.active_repos(self.root / 'a.yml'), ['local/code/x', 'local/code/y'])
 
 
+class LoginTests(Base):
+    def test_gh_op_and_tailscale_logins(self):
+        self.calls['gh auth status'] = done('', 0, 'github.com\n  Logged in to github.com account jyesselm (keyring)\n')
+        (self.root / sn.OP_CLI_CONFIG).parent.mkdir(parents=True)
+        (self.root / sn.OP_CLI_CONFIG).write_text('{"accounts": [{"url": "x", "email": "a@b.org"}]}')
+        self.calls['tailscale status --json'] = done('{"BackendState": "Running", "Self": {"Online": true}}')
+        setup = self.setup('--profile', 'linux', tools=('gh', 'op', 'tailscale'))
+        self.assertEqual((sn.gh_login(setup), sn.op_account(setup), sn.tailscale_online(setup)), ('jyesselm', 'a@b.org', 'yes'))
+        self.calls['gh auth status'] = done('', 0, 'Logged in to github.com as old (oauth_token)\n')
+        self.calls['tailscale status --json'] = done('{"BackendState": "Stopped"}', 1)
+        (self.root / sn.OP_CLI_CONFIG).write_text('{"accounts": null}')
+        self.assertEqual((sn.gh_login(setup), sn.op_account(setup), sn.tailscale_online(setup)), ('old', 'none', 'no'))
+        self.calls['gh auth status'] = done('', 1, 'You are not logged into any GitHub hosts')
+        self.calls['tailscale status --json'] = done('not json')
+        self.assertEqual((sn.gh_login(setup), sn.tailscale_online(setup)), ('not logged in', 'no'))
+        bare = self.setup('--profile', 'linux', tools=())
+        self.assertEqual((sn.gh_login(bare), sn.op_account(bare), sn.tailscale_online(bare)), ('gh missing', 'none', 'absent'))
+        mac = self.setup('--profile', 'mac', tools=())
+        self.assertEqual(sn.op_account(mac), 'none')
+        settings = self.root / sn.OP_APP_SETTINGS
+        settings.parent.mkdir(parents=True)
+        settings.write_text('{"developers.cliSharedLockState.enabled": true}')
+        self.assertEqual(sn.op_account(mac), 'app')
+
+    def test_atuin_age_keys_and_keychain_secrets(self):
+        self.assertEqual(sn.atuin_synced(self.root), 'absent')
+        path = self.root / sn.ATUIN_SYNC
+        path.parent.mkdir(parents=True)
+        path.write_text((datetime.now(timezone.utc) - timedelta(hours=5)).strftime('%Y-%m-%dT%H:%M:%S.12345Z'))
+        self.assertEqual(sn.atuin_synced(self.root), 5.0)
+        path.write_text('garbage')  # falls back to the file's mtime: just written
+        self.assertEqual(sn.atuin_synced(self.root), 0.0)
+        self.assertEqual(sn.iso_time('2026-10-28T12:00:00.123456789+00:00').microsecond, 123456)
+        (self.root / '.ssh').mkdir()
+        (self.root / '.ssh/id_ecdsa.pub').write_text('')
+        self.assertEqual(sn.own_keys(self.root), ['id_ecdsa.pub'])
+        setup = self.setup('--profile', 'mac')
+        self.assertEqual(sn.secrets_missing(setup), 'absent')
+        (self.root / sn.SECRETS_REFS).parent.mkdir(parents=True)
+        (self.root / sn.SECRETS_REFS).write_text('# refs\nHAVE  op://Vault/item/field\nLACK  op://Vault/other/field\n')
+        self.calls['security find-generic-password -s zsh-keys -a HAVE'] = done('keychain: x')
+        self.assertEqual(sn.secrets_missing(setup), ['LACK'])
+
+    def test_linux_inventories_and_declared_keys(self):
+        assets = self.root / 'assets'
+        (assets / 'declared').mkdir(parents=True)
+        (assets / 'declared/apt.txt').write_text('git\nvim\n')
+        setup = m.Setup(m.parse(['sync', '--profile', 'linux']), root=self.root, assets=assets)
+        setup.find = lambda name: '/bin/' + name if name in ('apt-mark', 'snap') else None
+        setup.read = lambda argv, **kw: self.calls.get(' '.join(map(str, argv)), done('', 1, 'not stubbed'))
+        self.calls.update({'apt-mark showmanual': done('git\nzsh\n'), 'snap list': done('Name Version Rev\ncode 1.95 9\n'),
+                           'dpkg-query -W -f ${Package} ${Version}\n git zsh': done('git 1:2.43\nzsh 5.9\n')})
+        with patch.object(sn, '_module', return_value=m):  # the temp assets dir has no setup.py
+            state = sn.collect(setup)
+        self.assertEqual((state['apt.git'], state['apt.zsh'], state['snap.code']), ('1:2.43', '5.9', '1.95'))
+        self.assertNotIn('flatpak.x', state)
+        self.assertEqual((state['declared.apt.missing'], state['declared.apt.undeclared']), (['vim'], ['zsh']))
+        self.assertEqual(state['declared.flatpak.missing'], [])
+
+
 class CompareTests(Base):
     def test_compare_yml_subset_and_selection(self):
         path = self.root / 'compare.yml'
@@ -103,7 +165,7 @@ class CompareTests(Base):
                                 ('apps.Tasks', {'book': '-', 'desk': '1'}),
                                 ('os', {'book': 'mac 26', 'desk': 'mac 26', 'plex': 'mac 26', 'gpu': 'linux 6'}),
                                 ('tools.git', {'book': '2.5', 'desk': '2.5', 'plex': '2.5', 'gpu': '2.4'})])
-        self.assertEqual([k for k, _ in sn.differences(statuses, rules, everything=True)], ['apps.CleanShot X', 'apps.Tasks', 'fonts', 'os', 'tools.git'])
+        self.assertEqual([k for k, _ in sn.differences(statuses, sn.EVERY_KEY)], ['apps.CleanShot X', 'apps.Tasks', 'fonts', 'os', 'tools.git'])
         lines = sn.table(rows, ['book', 'desk', 'gpu'])
         self.assertEqual(lines[0], 'key               book    desk    gpu')
         self.assertEqual(lines[1], 'apps.CleanShot X  4.7     -')
@@ -114,30 +176,33 @@ class CompareTests(Base):
         self.assertEqual(sn.show('x' * 60), 'x' * 49 + '…')
 
     def test_fleet_diff_prints_table_and_keys_lists_own_state(self):
-        setup = self.setup(tools=('git', 'yadm'))
+        setup = self.setup()
+        setup.args = m.parse(['fleet', '--diff'])
         fleet = self.root / 'fleet.txt'
         fleet.write_text('laptop\n')
         (self.root / 'compare.yml').write_text('compare:\n  - tools.*\n')
         setup.assets = self.root
-        refs = ['refs/remotes/origin/status/laptop-book', 'refs/remotes/origin/status/studio-desk']
-        self.calls['yadm fetch --quiet --prune origin +refs/heads/status/*:refs/remotes/origin/status/*'] = done()
-        self.calls['yadm for-each-ref --format=%(refname) refs/remotes/origin/status/'] = done('\n'.join(refs) + '\n')
-        for ref, host, git in zip(refs, ['book', 'desk'], ['2.5', '2.4']):
-            data = {'machine': 'x@' + host, 'profile': 'mac', 'finished': '2026-10-17T12:00:00+00:00', 'exit': 0, 'phases': {}}
-            self.calls['yadm show %s:last.json' % ref] = done(json.dumps(data))
-            self.calls['yadm show %s:state.json' % ref] = done(json.dumps({'tools.git': git, 'os': host}))
+        rows, states = [], []
+        for host, git in [('book', '2.5'), ('desk', '2.4')]:
+            rows.append({'host': host, 'class': 'x', 'finished': '2026-10-17T12:00:00+00:00', 'exit': 0, 'phases': {}, 'corrective': 0, 'stale': False})
+            states.append({'machine': 'x@' + host, 'profile': 'mac', 'state': {'tools.git': git, 'os': host}})
+        answers = {'/fleet': rows, '/machines': states}
         out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            sy.fleet(setup, fleet, diff=True)
+        with contextlib.redirect_stdout(out), patch.object(sy, 'request', lambda path, body=None: json.dumps(answers[path]).encode()):
+            sy.fleet(setup, fleet)
+            setup.args = m.parse(['fleet', '--diff', '--all'])
+            sy.fleet(setup, fleet)
         text = out.getvalue()
         self.assertIn('1 differences in 2 compared keys (setup/compare.yml)', text)
         self.assertIn('tools.git  2.5   2.4', text)
-        self.assertNotIn('os ', text.split('key')[1])
+        self.assertNotIn('os ', text.split('key')[1].split('differences')[0])
+        self.assertIn('2 differences in 4 compared keys (everything)', text)
+        setup.args = m.parse(['fleet', '--keys'])
         (self.root / sy.STATE_DIR).mkdir(parents=True)
         (self.root / sy.STATE_DIR / 'state.json').write_text(json.dumps({'fonts': ['a', 'b'], 'os': 'mac'}))
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            self.assertEqual(sy.fleet(setup, fleet, keys=True), 0)
+            self.assertEqual(sy.fleet(setup, fleet), 0)
         self.assertIn('fonts                                    a, b', out.getvalue())
         self.assertIn('2 keys', out.getvalue())
 

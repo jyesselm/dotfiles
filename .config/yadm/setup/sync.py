@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import hashlib
+import http.client
 import importlib.util
 import json
 import os
@@ -13,10 +14,11 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import urllib.request
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 STATE_DIR = '.local/state/dotfiles/sync'
 PHASES = [('layout', 'Directory layout'),
@@ -25,24 +27,19 @@ PHASES = [('layout', 'Directory layout'),
           ('packages', 'Packages'),
           ('repos', 'Repositories (grc)'),
           ('apps', 'Home-made apps'),
+          ('declared', 'Declared apps and packages'),  # after packages and apps: report what they could not install
           ('defaults', 'Mac defaults'),
           ('hotkeys', 'Hotkey clash check'),
-          ('doctor', 'Doctor')]
+          ('doctor', 'Doctor'),
+          ('recipes', 'Manual steps')]  # last: its checks read every other phase's status
 SELF_PRINTING = {'layout', 'doctor'}  # these phases already print their own detail lines
 GIT_TIMEOUT, BREW_TIMEOUT, NET_TIMEOUT = 300, 1800, 600  # seconds, for mutating subprocesses
 GRC_FALLBACK = 'micromamba/envs/py3/bin/grc'
-HINTS = {  # printed by --status under a warn/failed phase: how to clear it
-    'layout': 'move stray entries out of ~, or add "<glob>  ignore" to setup/layout.txt for folders another program owns',
-    'packages': 'add packages wanted everywhere to a Brewfile; allow the rest on this computer with converge adopt-extras',
-    'dotfiles': 'yadm status, then yadm pull --rebase origin main',
-    'repos': 'fix the repo named above, then converge sync',
-    'keys': 'ssh-keygen -t ed25519 and ssh-keygen -t ecdsa -b 256 create this computer\'s keys; the next sync publishes them',
-    'doctor': 'converge doctor reruns the checks',
-}
 GLYPHS = {'ok': ('✓', '32'), 'changed': ('✓', '36'), 'skipped': ('-', '2'), 'warn': ('!', '33'), 'failed': ('✗', '31')}  # calm first
 DETAIL_LIMIT = 12  # detail lines per group in converge status; --all lifts it
 OWN_KEYS = ('id_ed25519.pub', 'id_ecdsa.pub')  # both: MDM-managed Macs accept only ECDSA P-256 keys
-STATUS_REFS, STALE_DAYS = 'status/', 2  # each machine force-pushes its last.json to status/<class>-<host>
+STATUS_REFS = 'status/'  # the cluster (off the tailnet) force-pushes its last.json to status/<class>-<host>; the hub's bridge reads it
+HUB, HUB_TIMEOUT = 'https://home-gpu.tail2813f4.ts.net/converge', 20  # check-ins and fleet views; CONVERGE_HUB overrides
 
 
 @dataclass
@@ -129,16 +126,31 @@ def acquire_lock(path: Path):
     return handle
 
 
+def skip_list(text: str) -> List[str]:
+    """Phase keys from `--skip a,b`; RuntimeError naming the valid keys for an unknown one."""
+    keys = [k.strip() for k in text.split(',') if k.strip()]
+    unknown = [k for k in keys if k not in dict(PHASES)]
+    if unknown:
+        raise RuntimeError('--skip: unknown phase %s (phases: %s)' % (', '.join(unknown), ', '.join(k for k, _ in PHASES)))
+    return keys
+
+
 def format_results(phases: Dict[str, PhaseResult]) -> List[str]:
     """Aligned 'key status summary' lines."""
     return ['  %-9s %-8s %s' % (key, r.status, r.summary) for key, r in phases.items()]
+
+
+def corrective(statuses: Iterable[str]) -> int:
+    """How many phases had to change something (Puppet's corrective change): a machine that keeps re-fixing stands out."""
+    return sum(1 for status in statuses if status == 'changed')
 
 
 def write_state(root: Path, phases: Dict[str, PhaseResult], meta: dict) -> Path:
     """Atomically write last.json; a failed write leaves no temp file behind."""
     directory = Path(root) / STATE_DIR
     directory.mkdir(parents=True, exist_ok=True)
-    data = dict(meta, format=1, phases={k: asdict(v) for k, v in phases.items()})
+    data = dict(meta, format=1, corrective=corrective(r.status for r in phases.values()),
+                phases={k: asdict(v) for k, v in phases.items()})
     target = directory / 'last.json'
     temporary = None
     try:
@@ -188,7 +200,8 @@ def format_details(details: List[str], limit=None, width: int = 100, indent: str
 
 
 def print_status(root: Path, schedule_installed: bool, show_all: bool = False) -> int:
-    """Print the last sync: phases with problems last, then each problem's details and how to clear it. Returns its exit code."""
+    """Print the last sync: phases with problems last, then each problem's details and every pending recipe's steps
+    (how to clear it). Returns its exit code."""
     path = Path(root) / STATE_DIR / 'last.json'
     if not path.exists():
         print('No sync has run yet; try converge sync --plan')
@@ -207,15 +220,26 @@ def print_status(root: Path, schedule_installed: bool, show_all: bool = False) -
     problems = sorted(((k, r) for k, r in phases.items() if r.status in ('warn', 'failed')), key=lambda kv: kv[1].status != 'failed')
     if problems:
         print('\n' + paint('Needs attention', '1', color))
-    cut = False
-    for key, result in problems:
-        print('\n  %s  %s' % (paint(key, GLYPHS[result.status][1], color), tilde(result.summary, root)))
-        lines, cut_here = format_details([tilde(d, root) for d in result.details], None if show_all else DETAIL_LIMIT)
-        cut |= cut_here
-        print('\n'.join(lines + textwrap.wrap(HINTS[key], 110, initial_indent='    fix: ', subsequent_indent=' ' * 9, break_on_hyphens=False) if key in HINTS else lines))
+    cut = print_problems(problems, root, color, show_all)
+    import recipes
+    for line in recipes.pending_lines(data.get('pending', [])):
+        print(tilde(line, root))
     if cut:
         print('\n  Full lists: converge status --all')
     return int(data['exit'])
+
+
+def print_problems(problems: List[Tuple[str, PhaseResult]], root: Path, color: bool, show_all: bool) -> bool:
+    """Each warn/failed phase with its grouped details (the recipes phase's steps print below instead); whether any were cut."""
+    cut = False
+    for key, result in problems:
+        print('\n  %s  %s' % (paint(key, GLYPHS[result.status][1], color), tilde(result.summary, root)))
+        if key == 'recipes' and result.status == 'warn':
+            continue
+        lines, cut_here = format_details([tilde(d, root) for d in result.details], None if show_all else DETAIL_LIMIT)
+        cut |= cut_here
+        print('\n'.join(lines))
+    return cut
 
 
 def age(finished: str) -> str:
@@ -244,82 +268,123 @@ def publish_status(setup, yadm: str) -> None:
                   'push failed', timeout_s=GIT_TIMEOUT)  # read_ok: GitHub's pull-request hint stays out of the summary
 
 
-def fetch_statuses(setup, yadm: str) -> List[dict]:
-    """Fetch every status/* branch and return their last.json contents (with the state.json snapshot under 'state'), newest first."""
-    spec = '+refs/heads/%s*:refs/remotes/origin/%s*' % (STATUS_REFS, STATUS_REFS)
-    fetched = setup.read([yadm, 'fetch', '--quiet', '--prune', 'origin', spec], timeout_s=60)
-    if fetched.returncode:
-        raise RuntimeError('fetch failed: ' + (fetched.stderr.strip().splitlines() or ['no reply'])[-1])
-    refs = setup.read_ok([yadm, 'for-each-ref', '--format=%(refname)', 'refs/remotes/origin/' + STATUS_REFS],
-                         'for-each-ref failed').split()
-    statuses = []
-    for ref in refs:
-        data = json.loads(setup.read_ok([yadm, 'show', ref + ':last.json'], 'show failed'))
-        shown = setup.read([yadm, 'show', ref + ':state.json'])  # absent from check-ins made before snapshots existed
-        data['state'] = json.loads(shown.stdout) if shown.returncode == 0 else {}
-        statuses.append(data)
-    return sorted(statuses, key=lambda d: d['finished'], reverse=True)
-
-
-def stale(statuses: List[dict], days: int = STALE_DAYS) -> List[str]:
-    """Machines whose last check-in is older than `days`."""
-    limit = datetime.now(timezone.utc) - timedelta(days=days)
-    return [d['machine'] for d in statuses if datetime.fromisoformat(d['finished']) < limit]
-
-
-def print_differences(setup, statuses: List[dict], everything: bool = False) -> int:
-    """Table of the compared snapshot keys that differ between machines (setup/compare.yml selects them); its row count."""
-    import snapshot
-    rules = snapshot.load_compare(setup.assets / 'compare.yml')
-    rows = snapshot.differences(statuses, rules, everything)
-    hosts = [d['machine'].split('@', 1)[1] for d in statuses if d.get('state')]
-    compared = sum(1 for d in statuses for k in d.get('state') or {} if everything or snapshot.selected(k, rules))
-    setup.say('\n%d differences in %d compared keys (%s)' % (len(rows), compared, 'everything' if everything else 'setup/compare.yml'))
-    for line in snapshot.table(rows, hosts):
-        setup.say(line)
-    return len(rows)
-
-
-def fleet(setup, expected: Path, checkin: bool = False, diff: bool = False, keys: bool = False, everything: bool = False) -> int:
-    """One line per machine that ever checked in, plus never-seen classes from fleet.txt; 1 unless all clean.
-    --diff adds the state keys that differ between machines; --keys lists this machine's own snapshot instead."""
-    yadm = setup.find('yadm')
-    if not yadm:
-        raise RuntimeError('yadm not on PATH')
-    if keys:
-        path = setup.root / STATE_DIR / 'state.json'
-        state = json.loads(path.read_text()) if path.exists() else {}
-        for key, value in sorted(state.items()):
-            setup.say('%-40s %s' % (key, value if not isinstance(value, list) else ', '.join(map(str, value))))
-        setup.say('%d keys (from the last sync; select them in setup/compare.yml)' % len(state))
-        return 0
-    if checkin and setup.args.plan:
-        setup.say('plan: check-in not pushed')
-    elif checkin:
+def send_report(setup) -> None:
+    """Check this machine in: POST last.json and state.json to the hub, or on the cluster (off the tailnet) push its status branch."""
+    if setup.profile == 'cluster':
+        yadm = setup.find('yadm')
+        if not yadm:
+            raise RuntimeError('yadm not on PATH')
         publish_status(setup, yadm)
-    statuses = fetch_statuses(setup, yadm)
-    newest = {}  # one row per host: a stalled run once checked in under the fallback class
-    for data in statuses:
-        newest.setdefault(data['machine'].split('@', 1)[1], data)
-    statuses = list(newest.values())
-    code = 0
-    for data in statuses:
-        cls, host = data['machine'].split('@', 1)
-        bad = ' '.join('%s:%s' % (k, v['status']) for k, v in data['phases'].items() if v['status'] != 'ok')
-        setup.say('%-22s %-8s %-8s exit %-3d %s' % (host, cls, age(data['finished']), data['exit'], bad))
-        code |= int(data['exit'] != 0)
-    seen = {d['machine'].split('@', 1)[0] for d in statuses}
+        return
+    directory = setup.root / STATE_DIR
+    state = directory / 'state.json'
+    report = {'last': json.loads((directory / 'last.json').read_text()),
+              'state': json.loads(state.read_text()) if state.exists() else {}}
+    request('/report', report)
+
+
+def hub_url() -> str:
+    """Base URL of the hub, without a trailing slash."""
+    return os.environ.get('CONVERGE_HUB', HUB).rstrip('/')
+
+
+def request(path: str, body: Optional[dict] = None) -> bytes:
+    """GET a hub path, or POST `body` to it as JSON; RuntimeError naming the URL when the hub does not answer 2xx."""
+    url = hub_url() + path
+    data = None if body is None else json.dumps(body).encode()
+    asked = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(asked, timeout=HUB_TIMEOUT) as answer:
+            return answer.read()
+    except (OSError, http.client.HTTPException) as exc:  # URLError, HTTPError and timeouts are OSErrors
+        raise RuntimeError('%s: %s' % (url, getattr(exc, 'reason', None) or exc))
+
+
+def fetch(path: str) -> Any:
+    """Decoded JSON answer of a hub GET."""
+    try:
+        return json.loads(request(path))
+    except ValueError as exc:
+        raise RuntimeError('%s%s: not JSON (%s)' % (hub_url(), path, exc))
+
+
+def fetch_fleet() -> List[dict]:
+    """The hub's newest check-in per host, newest first (see hub.fleet_rows)."""
+    return fetch('/fleet')
+
+
+def fetch_machines() -> List[dict]:
+    """Every host's newest snapshot as {machine, profile, state}, the shape snapshot.differences compares."""
+    return fetch('/machines')
+
+
+def stale_lines(rows: List[dict]) -> List[str]:
+    """One line per machine the hub marked stale."""
+    return ['stale: %s@%s last checked in %s' % (r['class'], r['host'], age(r['finished'])) for r in rows if r['stale']]
+
+
+def fleet_lines(rows: List[dict]) -> List[str]:
+    """The fleet table: host, class, age, exit, phases changed (`fixed`), the phases that were not ok; then the stale machines."""
+    lines = []
+    for row in rows:
+        problems = ' '.join('%s:%s' % (key, status) for key, status in row['phases'].items() if status != 'ok')
+        lines.append('%-22s %-8s %-8s exit %-3d fixed %-2d %s' % (
+            row['host'], row['class'], age(row['finished']), row['exit'], row['corrective'], problems))
+    return [line.rstrip() for line in lines] + stale_lines(rows)
+
+
+def never_lines(rows: List[dict], expected: Path) -> List[str]:
+    """A `never` line for each class in fleet.txt that no machine has checked in as."""
+    seen = {row['class'] for row in rows}
     classes = [line.split('#')[0].strip() for line in expected.read_text().splitlines()]
-    for cls in filter(None, classes):
-        if cls not in seen:
-            setup.say('%-22s %-8s never' % ('?', cls))
-            code = 1
-    for machine in stale(statuses):
-        setup.say('stale: %s has not checked in for %d days' % (machine, STALE_DAYS))
-        code = 1
-    if diff:
-        print_differences(setup, statuses, everything)
-    return code
+    return ['%-22s %-8s never' % ('?', cls) for cls in classes if cls and cls not in seen]
+
+
+def difference_lines(states: List[dict], rules: Dict[str, List[str]]) -> List[str]:
+    """A count line, then the table of compared snapshot keys that differ between machines (snapshot.EVERY_KEY: every key)."""
+    import snapshot
+    rows = snapshot.differences(states, rules)
+    hosts = [d['machine'].split('@', 1)[1] for d in states if d.get('state')]
+    compared = sum(1 for d in states for key in d.get('state') or {} if snapshot.selected(key, rules))
+    source = 'everything' if rules == snapshot.EVERY_KEY else 'setup/compare.yml'
+    return ['%d differences in %d compared keys (%s)' % (len(rows), compared, source)] + snapshot.table(rows, hosts)
+
+
+def print_keys(setup) -> int:
+    """List this machine's own snapshot from the last sync, to pick compare.yml globs from."""
+    path = setup.root / STATE_DIR / 'state.json'
+    state = json.loads(path.read_text()) if path.exists() else {}
+    for key, value in sorted(state.items()):
+        setup.say('%-40s %s' % (key, value if not isinstance(value, list) else ', '.join(map(str, value))))
+    setup.say('%d keys (from the last sync; select them in setup/compare.yml)' % len(state))
+    return 0
+
+
+def fleet(setup, expected: Path) -> int:
+    """The hub's fleet table plus never-seen classes from fleet.txt: 0 when all clean, 1 otherwise, 2 when the hub is unreachable.
+    --checkin sends this machine's last sync first, --diff adds the differing snapshot keys, --keys lists this machine's own."""
+    args = setup.args
+    if args.keys:
+        return print_keys(setup)
+    try:
+        if args.checkin and args.plan:
+            setup.say('plan: check-in not sent')
+        elif args.checkin:
+            send_report(setup)
+        rows = fetch_fleet()
+        states = fetch_machines() if args.diff else []
+    except RuntimeError as exc:
+        print('converge fleet: %s' % exc, file=sys.stderr)
+        return 2
+    never = never_lines(rows, expected)
+    for line in fleet_lines(rows) + never:
+        setup.say(line)
+    if args.diff:
+        import snapshot
+        rules = snapshot.EVERY_KEY if args.all else snapshot.load_compare(setup.assets / 'compare.yml')
+        setup.say('\n' + '\n'.join(difference_lines(states, rules)))
+    unclean = any(r['exit'] or r['stale'] for r in rows)
+    return int(unclean or bool(never))
 
 
 class Sync:
@@ -330,6 +395,8 @@ class Sync:
         self.root = setup.root
         self.applications = Path(applications)
         self.results: Dict[str, PhaseResult] = {}
+        self.state: Optional[dict] = None  # this run's snapshot, taken by the recipes phase and reused by _save
+        self.pending: List[Any] = []  # recipes.Pending from the recipes phase
 
     def machine_label(self) -> str:
         """class@host, used in commit messages and the state file."""
@@ -348,10 +415,11 @@ class Sync:
             self.setup.say('  ' + line)
         self.setup.say('  => %s: %s' % (result.status, result.summary))
 
-    def _run_phases(self) -> int:
-        """Run all phases, print the summary; returns 1 if any phase failed."""
+    def _run_phases(self, skipped: List[str]) -> int:
+        """Run all phases except the skipped ones, print the summary; returns 1 if any phase failed."""
         for key, title in PHASES:
-            self.step(key, title, getattr(self, key))
+            action = (lambda: PhaseResult('skipped', '--skip')) if key in skipped else getattr(self, key)
+            self.step(key, title, action)
         self.setup.say('\nSummary')
         for line in format_results(self.results):
             self.setup.say(line)
@@ -360,15 +428,17 @@ class Sync:
     def _save(self, started: datetime, code: int) -> None:
         """Record this run in last.json and this computer's effective state in state.json."""
         meta = {'started': started.isoformat(), 'finished': datetime.now(timezone.utc).isoformat(),
-                'machine': self.machine_label(), 'profile': self.setup.profile, 'exit': code}
+                'machine': self.machine_label(), 'profile': self.setup.profile, 'exit': code,
+                'pending': [asdict(p) for p in self.pending]}
         write_state(self.root, self.results, meta)
         import snapshot
-        state = snapshot.collect(self.setup, self.applications)
+        state = self.state if self.state is not None else snapshot.collect(self.setup, self.applications)
         (self.root / STATE_DIR / 'state.json').write_text(json.dumps(state, indent=1, sort_keys=True))
 
     def execute(self) -> int:
         """Run every phase; returns 1 if any failed or another sync holds the lock."""
         plan = self.setup.args.plan
+        skipped = skip_list(self.setup.args.skip)
         started = datetime.now(timezone.utc)
         label = '%s/%s' % (self.setup.profile, self.setup.machine_class())
         self.setup.say(('SYNC PLAN' if plan else 'DOTFILES SYNC') + ' — ' + label)
@@ -378,7 +448,7 @@ class Sync:
             return 1
         code = 1  # stays 1 if interrupted
         try:
-            code = self._run_phases()
+            code = self._run_phases(skipped)
         finally:
             if not plan:
                 self._save(started, code)
@@ -389,21 +459,22 @@ class Sync:
         return code
 
     def checkin(self) -> None:
-        """Publish this run and warn about machines that have gone quiet; never changes the exit code."""
+        """Send this run to the hub and note machines that have gone quiet or differ; never changes the exit code."""
         try:
-            yadm = self.setup.find('yadm')
-            if not yadm:
-                raise RuntimeError('yadm not on PATH')
-            publish_status(self.setup, yadm)
-            statuses = fetch_statuses(self.setup, yadm)
-            for machine in stale(statuses):
-                self.setup.say('  stale: %s has not checked in for %d days' % (machine, STALE_DAYS))
-            import snapshot
-            rows = snapshot.differences(statuses, snapshot.load_compare(self.setup.assets / 'compare.yml'))
-            if rows:
-                self.setup.say('  differs from the other machines in %d compared keys: converge fleet --diff' % len(rows))
-        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            send_report(self.setup)
+            if self.setup.profile != 'cluster':  # the cluster cannot reach the hub; its status branch is the whole check-in
+                self._fleet_notes()
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:  # ValueError: unreadable last.json
             self.setup.say('  check-in skipped: %s' % exc)
+
+    def _fleet_notes(self) -> None:
+        """Summary lines from the hub's answer: stale machines, and how many compared keys differ."""
+        for line in stale_lines(fetch_fleet()):
+            self.setup.say('  ' + line)
+        import snapshot
+        rows = snapshot.differences(fetch_machines(), snapshot.load_compare(self.setup.assets / 'compare.yml'))
+        if rows:
+            self.setup.say('  differs from the other machines in %d compared keys: converge fleet --diff' % len(rows))
 
     def layout(self) -> PhaseResult:
         """Create missing directories; warn about expected-but-absent and unplanned entries."""
@@ -622,6 +693,11 @@ class Sync:
         marker.write_text(digest + '\n')
         return True, '%s reinstalled from %s' % (command, checkout)
 
+    def declared(self) -> PhaseResult:
+        """GUI apps, launch agents, login items and Linux packages against setup/declared/ (declared.py)."""
+        import declared
+        return declared.declared(self.setup, self.setup.machine_class(), self.setup.profile)
+
     def defaults(self) -> PhaseResult:
         """Apply the saved allowlisted macOS preferences (restore semantics, backup first)."""
         snapshot = self.root / '.config/yadm/macos/preferences.plist'
@@ -661,3 +737,11 @@ class Sync:
         homes = [f for f in failures if f.startswith('Absolute home path')]
         summary = '%d items need attention, %d absolute home paths' % (len(failures), len(homes))
         return PhaseResult('warn', summary, failures)
+
+    def recipes(self) -> PhaseResult:
+        """Snapshot this machine, then list the recipes whose checks fail (recipes.py); _save writes the snapshot and `pending`."""
+        import recipes
+        import snapshot
+        self.state = snapshot.collect(self.setup, self.applications)
+        result, self.pending = recipes.phase(self.setup, self.state, {k: r.status for k, r in self.results.items()})
+        return result

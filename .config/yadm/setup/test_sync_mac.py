@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import sync_mac as sm
 
@@ -60,10 +60,10 @@ class PureHelperTests(unittest.TestCase):
         self.assertEqual(text.count('# note'), 2)
         self.assertIn('# --- B ---', text)
 
-    def test_parse_brewfile_reads_brew_cask_mas_and_present_hints(self):
+    def test_parse_brewfile_reads_brew_cask_and_present_hints(self):
         manifest = sm.parse_brewfile('brew "git"\ncask "zoom"   # present: /Applications/zoom.us.app\n'
-                                     'cask "slack"\nmas "Magnet", id: 441258766\n')
-        self.assertEqual((manifest.formulae, manifest.casks, manifest.mas_ids), (['git'], ['zoom', 'slack'], [441258766]))
+                                     'cask "slack"\nmas "Magnet", id: 441258766\n')  # mas lines are ignored
+        self.assertEqual((manifest.formulae, manifest.casks), (['git'], ['zoom', 'slack']))
         self.assertEqual(manifest.present, {'zoom': '/Applications/zoom.us.app'})
 
     def test_extras_ignore_tap_prefix_and_version_suffix(self):
@@ -326,7 +326,7 @@ class AppTests(Base):
         with patch.object(setup, 'read', return_value=done('', 1, 'no auth')), patch.object(sm.platform, 'machine', return_value='arm64'):
             result = sm.apps(setup, 'laptop', self.root)
         self.assertEqual(result.status, 'failed')
-        self.assertEqual(len(result.details), 5)  # apps, Search bundle, and GUI/F4 convergence
+        self.assertEqual(len(result.details), len(sm.load_apps(Path(__file__).with_name('apps.json'))) + 2)  # apps, Search bundle, GUI/F4
 
     def search_icon(self, setup, data=b'icns'):
         icon = setup.checkout('s') / 'src/search_cli/assets/search-lens.icns'
@@ -357,7 +357,7 @@ class AppTests(Base):
         self.assertFalse((self.root / sm.SEARCH_APP).exists())
 
     def test_load_apps_validates(self):
-        self.assertEqual(len(sm.load_apps(Path(__file__).with_name('apps.json'))), 3)
+        self.assertEqual(len(sm.load_apps(Path(__file__).with_name('apps.json'))), 4)
         bad = self.root / 'a.json'
         bad.write_text('{"format": 1, "apps": [{"name": "x"}]}')
         with self.assertRaises(ValueError):
