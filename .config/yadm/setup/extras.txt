@@ -103,3 +103,5 @@ formula:virtualenv
 # laptop, adopted 2026-10-29
 formula:btop
 formula:htop
+# server, adopted 2026-10-29
+cask:vlc
