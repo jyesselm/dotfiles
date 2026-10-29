@@ -90,7 +90,7 @@ repos:
   enabled: true
 - path: local/code/python/developing/rna_secstruct_design
   remote: https://github.com/YesselmanLab/rna_secstruct_design.git
-  branch: jdy/mondernize
+  branch: main
   enabled: true
 - path: local/code/python/developing/py_x3dna
   remote: https://github.com/YesselmanLab/py_x3dna.git
@@ -130,7 +130,7 @@ repos:
   enabled: true
 - path: local/code/python/developing/obsidian_scripts
   remote: https://github.com/jyesselm/obsidian_scripts
-  branch: jdy/ai_updates
+  branch: main
   enabled: true
 - path: local/code/python/developing/pyrnamake
   remote: https://github.com/jyesselm/pyrnamake.git
@@ -212,3 +212,4 @@ ignored_repos: []
 approved_accounts:
 - jyesselm
 - yesselmanlab
+- jyesselm-archive
