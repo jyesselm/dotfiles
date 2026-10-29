@@ -36,8 +36,9 @@ configure() {
   vm "yadm config local.class linux && yadm config local.hostname home-gpu && yadm alt"
 }
 
+# The VM has no tailscale serve to add the identity header, so a drop-in (test only) adds --trust-local.
 hub_unit() {
-  vm "systemctl --user daemon-reload && systemctl --user enable --now converge-hub"
+  vm "mkdir -p ~/.config/systemd/user/converge-hub.service.d && printf '[Service]\\nExecStart=\\nExecStart=%%h/.config/yadm/setup/hub.py serve --trust-local\\n' > ~/.config/systemd/user/converge-hub.service.d/test.conf && systemctl --user daemon-reload && systemctl --user enable --now converge-hub"
 }
 
 hub_answers() {
