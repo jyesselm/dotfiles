@@ -1,8 +1,7 @@
 # converge test harness
 
 Each script prints `PASS <what>` / `FAIL <what>` per assertion and exits 1 if any failed. All are
-idempotent (they tear down or reset what they made). Assertions marked `[phase1]` need `hub.py` and
-the HTTP check-in (PLAN.md section 2).
+idempotent (they tear down or reset what they made).
 
 Shared by all: `lib.sh` builds `~/.cache/converge-testing/remote.git`, a bare repo holding the
 current yadm branch, by fetching from the yadm repo (refs there are never touched). `WORKTREE=1`
@@ -45,5 +44,4 @@ Details and known limits:
   pre-phase-1 status pushes from the VM fail (a note, not an error). No App Store, no Input
   Monitoring, so `mas` and Karabiner stay pending; cask installs make bootstrap slow.
 - The scripts share `remote.git`: do not run two at once with different `WORKTREE`/`BRANCH`.
-- PLAN.md items not asserted yet: `pending` recipes on `/machine/<host>` and `apps.txt` casks in
-  the Mac VM (phase 2).
+- Not asserted yet: `pending` recipes on `/machine/<host>` and `apps.txt` casks in the Mac VM.

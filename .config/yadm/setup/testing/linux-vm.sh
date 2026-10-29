@@ -64,13 +64,13 @@ check "yadm clone from the Mac bare repo" clone
 check "class linux, hostname home-gpu" configure
 check "bootstrap --plan" vm "~/.config/yadm/bootstrap --plan"
 check "yadm bootstrap" vm "yadm bootstrap"
-check "[phase1] converge-hub.service linked by yadm alt" vm "test -e ~/.config/systemd/user/converge-hub.service"
-check "[phase1] systemctl --user enable --now converge-hub" hub_unit
-check "[phase1] hub answers /fleet" hub_answers
+check "converge-hub.service linked by yadm alt" vm "test -e ~/.config/systemd/user/converge-hub.service"
+check "systemctl --user enable --now converge-hub" hub_unit
+check "hub answers /fleet" hub_answers
 check "converge sync --plan reaches the summary" vm "converge sync --plan | grep -q '^Summary'"
 check "converge sync writes last.json" vm "converge sync; test -f ~/.local/state/dotfiles/sync/last.json"
 check "converge status shows the sync" vm "converge status | grep -q '^Last sync'"
-check "[phase1] hub /fleet lists $VM" fleet_lists_vm
+check "hub /fleet lists $VM" fleet_lists_vm
 check "converge schedule" vm "converge schedule"
 check "crontab has the daily line" vm "crontab -l | grep -q 'dotfiles-sync'"
 stop

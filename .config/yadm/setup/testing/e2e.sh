@@ -43,8 +43,8 @@ client() {
   check "$service: yadm clone" on "$service" "yadm clone --no-bootstrap -b $BRANCH file:///remote && test -f ~/.config/yadm/setup/setup.py"
   check "$service: class $class" on "$service" "yadm config local.class $class && yadm alt && test \"\$(yadm config local.class)\" = $class"
   check "$service: converge sync --plan reaches the summary" on "$service" "converge sync --plan > /tmp/plan.log 2>&1; cat /tmp/plan.log; grep -q '^Summary' /tmp/plan.log"
-  check "[phase1] $service: converge sync --skip $SKIP exits 0" on "$service" "converge sync --skip $SKIP"
-  check "[phase1] $service: converge status shows the sync" on "$service" "converge status | grep -q '^Last sync'"
+  check "$service: converge sync --skip $SKIP exits 0" on "$service" "converge sync --skip $SKIP"
+  check "$service: converge status shows the sync" on "$service" "converge status | grep -q '^Last sync'"
 }
 
 fleet_lists() {
@@ -60,13 +60,13 @@ bridge_once() {
 }
 
 hub_checks() {
-  check "[phase1] hub /fleet lists linux-a with exit 0" fleet_lists linux-a 0
-  check "[phase1] hub /fleet lists linux-b with exit 0" fleet_lists linux-b 0
-  check "[phase1] hub bridge-once" bridge_once
-  check "[phase1] hub /fleet lists swan-ci after the bridge" fleet_lists swan-ci
-  check "[phase1] hub /machine/linux-a has last and state" machine_complete linux-a
-  check "[phase1] converge fleet on linux-a lists linux-b" on linux-a "converge fleet | grep -q linux-b"
-  check "[phase1] converge fleet --diff on linux-a lists linux-b" on linux-a "converge fleet --diff | grep -q linux-b"
+  check "hub /fleet lists linux-a with exit 0" fleet_lists linux-a 0
+  check "hub /fleet lists linux-b with exit 0" fleet_lists linux-b 0
+  check "hub bridge-once" bridge_once
+  check "hub /fleet lists swan-ci after the bridge" fleet_lists swan-ci
+  check "hub /machine/linux-a has last and state" machine_complete linux-a
+  check "converge fleet on linux-a lists linux-b" on linux-a "converge fleet | grep -q linux-b"
+  check "converge fleet --diff on linux-a lists linux-b" on linux-a "converge fleet --diff | grep -q linux-b"
 }
 
 stop() {

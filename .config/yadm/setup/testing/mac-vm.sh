@@ -121,7 +121,7 @@ write_askpass
 build_remote
 start_vm
 check "ssh admin@$IP" wait_ssh
-check "[phase1] hub on this Mac answers /fleet" start_hub
+check "hub on this Mac answers /fleet" start_hub
 check "Homebrew installed" install_homebrew
 check "brew install yadm python" mvm "brew install yadm python"
 check "yadm clone ($(clone_url))" clone
@@ -133,6 +133,6 @@ check "converge sync writes last.json" mvm "converge sync; test -f ~/.local/stat
 check "converge status shows the sync" mvm "converge status | grep -q '^Last sync'"
 check "converge schedule" mvm "converge schedule"
 check "launchd job loaded" mvm 'launchctl print "gui/$(id -u)/com.yesselman.dotfiles-sync" > /dev/null'
-check "[phase1] hub /fleet lists the VM" fleet_lists_vm
+check "hub /fleet lists the VM" fleet_lists_vm
 stop
 finish
