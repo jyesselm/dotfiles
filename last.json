@@ -1,0 +1,130 @@
+{
+  "started": "2026-10-29T15:00:05.509234+00:00",
+  "finished": "2026-10-29T15:09:04.644567+00:00",
+  "machine": "studio@LASCH-GW21NQ6QX-(2)",
+  "profile": "mac",
+  "exit": 0,
+  "format": 1,
+  "phases": {
+    "layout": {
+      "status": "warn",
+      "summary": "11 unplanned entries in ~",
+      "details": [
+        "unplanned:default_cursor.code-profile",
+        "unplanned:dotfiles-testing-guide.md",
+        "unplanned:dropbox_backup",
+        "unplanned:figures",
+        "unplanned:git-repo-checker.yml",
+        "unplanned:keybindings-cheatsheet.md",
+        "unplanned:rna_compare_pairs",
+        "unplanned:rna_real_pairs",
+        "unplanned:rna_unformed_allatom",
+        "unplanned:rna_unformed_pml",
+        "unplanned:zotero-empty-stubs.txt"
+      ]
+    },
+    "dotfiles": {
+      "status": "changed",
+      "summary": "committed 1, pulled, pushed",
+      "details": [
+        ".config/search-cli/dashboard.json"
+      ]
+    },
+    "keys": {
+      "status": "ok",
+      "summary": "5 keys authorized",
+      "details": []
+    },
+    "packages": {
+      "status": "ok",
+      "summary": "0 extras in no Brewfile or extras.txt (not removed), 14 casks present outside Homebrew, 4 Brewfiles",
+      "details": [
+        "present:iterm2",
+        "present:cursor",
+        "present:1password",
+        "present:alfred",
+        "present:contexts",
+        "present:google-chrome",
+        "present:claude",
+        "present:chatgpt",
+        "present:tailscale-app",
+        "present:dropbox",
+        "present:microsoft-office",
+        "present:zoom",
+        "present:spotify",
+        "present:caffeine"
+      ]
+    },
+    "repos": {
+      "status": "ok",
+      "summary": "grc active sync --apply",
+      "details": [
+        "grc up to date with /Users/jyesselman2/local/code/python/developing/git-repo-checker",
+        "\u2502                     \u2502                      \u2502           \u2502 Switch branches     \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 explicitly.         \u2502",
+        "\u2502 pyrnamake           \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 rna-int-barcode     \u2502 refactor/integrate-\u2026 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 jobsubmit           \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 rnamake_ens_gen     \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 seq_deposit         \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 pymerize            \u2502 main                 \u2502 attention \u2502 On master; expected \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 main. Switch        \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 branches            \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 explicitly.         \u2502",
+        "\u2502 computer-setup      \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 RNAMake.New         \u2502 main                 \u2502 attention \u2502 On master; expected \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 main. Switch        \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 branches            \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 explicitly.         \u2502",
+        "\u2502 master_protocol_sh\u2026 \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 zotero-cli          \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 search-cli          \u2502 main                 \u2502 dirty     \u2502 Uncommitted work;   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 left untouched      \u2502",
+        "\u2502 clips               \u2502 main                 \u2502 cloned    \u2502 Cloned configured   \u2502",
+        "\u2502                     \u2502                      \u2502           \u2502 branch              \u2502",
+        "\u2502 hotkeys             \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 typing-trainer      \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 dungeon_crawler     \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 notes               \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 tasks               \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 music_dl            \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2502 kodi-appletv-skin   \u2502 main                 \u2502 synced    \u2502 Up to date          \u2502",
+        "\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+        "s up to date with /Users/jyesselman2/local/code/python/developing/search-cli"
+      ]
+    },
+    "apps": {
+      "status": "changed",
+      "summary": "6 apps checked; Clips absent -> d32151b built; F4 and Spotlight key already open Search; Search GUI refreshed; next F4 loads the current checkout; No obsolete Alfred Search binding",
+      "details": [
+        "notes 0.2.0 up to date",
+        "Tasks 0.2.1 up to date",
+        "Hotkeys 0.1.0 up to date (built from 9499f1c)",
+        "Clips absent -> d32151b built",
+        "Search CLI launcher up to date",
+        "F4 and Spotlight key already open Search; Search GUI refreshed; next F4 loads the current checkout; No obsolete Alfred Search binding"
+      ]
+    },
+    "defaults": {
+      "status": "ok",
+      "summary": "0 preferences applied",
+      "details": []
+    },
+    "hotkeys": {
+      "status": "warn",
+      "summary": "0 clashes, 0 layer overlaps, 4 Karabiner problems",
+      "details": [
+        "karabiner.json was edited after Karabiner last loaded it (2026-10-26 13:18:09)",
+        "Karabiner error: shell_command stderr:Traceback (most recent call last):   File \"/Users/jyesselman2/local/code/python/developing/search-c",
+        "Karabiner error: shell_command stderr:f\"Searching contents\u2026 {page.checked_files:,} files checked \u00b7 {len(self.hits)} matches\",",
+        "Karabiner error: shell_command stderr:^^^^^^^^^^^^^^^^^^^^^^ TypeError: unsupported format string passed to NoneType.__format__",
+        "Karabiner grabs: K1-Keyboard"
+      ]
+    },
+    "doctor": {
+      "status": "ok",
+      "summary": "all checks passed",
+      "details": []
+    }
+  }
+}
