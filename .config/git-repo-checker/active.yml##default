@@ -82,11 +82,11 @@ repos:
   enabled: true
 - path: local/code/python/developing/cookiecutter-pypackage
   remote: https://github.com/jyesselm/cookiecutter-pypackage
-  branch: main
+  branch: master
   enabled: true
 - path: local/code/python/developing/rna_draw
   remote: https://github.com/YesselmanLab/rna_draw.git
-  branch: main
+  branch: master
   enabled: true
 - path: local/code/python/developing/rna_secstruct_design
   remote: https://github.com/YesselmanLab/rna_secstruct_design.git
@@ -98,7 +98,7 @@ repos:
   enabled: true
 - path: local/code/python/developing/py_dssr
   remote: https://github.com/YesselmanLab/py_dssr.git
-  branch: main
+  branch: master
   enabled: true
 - path: local/code/python/developing/key-binding-database
   remote: https://github.com/jyesselm/key-binding-database.git
@@ -154,7 +154,7 @@ repos:
   enabled: true
 - path: local/code/python/released/pymerize
   remote: https://github.com/YesselmanLab/pymerize.git
-  branch: main
+  branch: master
   enabled: true
 - path: local/code/other/computer-setup
   remote: https://github.com/jyesselm-archive/computer-setup
