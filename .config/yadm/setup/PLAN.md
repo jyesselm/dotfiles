@@ -87,7 +87,7 @@ check results. The hub only stores, compares across machines, renders and (optio
 
 ### 2.2 Serving on home-gpu
 
-- `~/.config/systemd/user/converge-hub.service##hostname.home-gpu` (yadm alternate, same shape as
+- `~/.config/systemd/user/converge-hub.service##hostname.home-gpu,template` (yadm alternate, same shape as
   `clips-relay.service`): `ExecStart=%h/.config/yadm/setup/hub.py serve`, `Restart=on-failure`,
   `RestartSec=5`, `WantedBy=default.target`, `Environment=PATH=%h/.local/bin:/usr/bin:/bin`.
 - `tailscale serve --bg --set-path /converge http://127.0.0.1:8790` (one-time, by hand; documented
