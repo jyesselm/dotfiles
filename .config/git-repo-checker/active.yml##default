@@ -157,11 +157,11 @@ repos:
   branch: main
   enabled: true
 - path: local/code/other/computer-setup
-  remote: https://github.com/jyesselm/computer-setup
+  remote: https://github.com/jyesselm-archive/computer-setup
   branch: main
   enabled: true
 - path: local/code/cpp/RNAMake.New
-  remote: https://github.com/jyesselm/RNAMake.New.git
+  remote: https://github.com/jyesselm-archive/RNAMake.New.git
   branch: master
   enabled: true
 - path: local/code/javascript/master_protocol_sheet
