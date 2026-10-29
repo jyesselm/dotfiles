@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import snapshot as sn
 import sync as sy
@@ -103,7 +104,7 @@ class CompareTests(Base):
                                 ('apps.Tasks', {'book': '-', 'desk': '1'}),
                                 ('os', {'book': 'mac 26', 'desk': 'mac 26', 'plex': 'mac 26', 'gpu': 'linux 6'}),
                                 ('tools.git', {'book': '2.5', 'desk': '2.5', 'plex': '2.5', 'gpu': '2.4'})])
-        self.assertEqual([k for k, _ in sn.differences(statuses, rules, everything=True)], ['apps.CleanShot X', 'apps.Tasks', 'fonts', 'os', 'tools.git'])
+        self.assertEqual([k for k, _ in sn.differences(statuses, sn.EVERY_KEY)], ['apps.CleanShot X', 'apps.Tasks', 'fonts', 'os', 'tools.git'])
         lines = sn.table(rows, ['book', 'desk', 'gpu'])
         self.assertEqual(lines[0], 'key               book    desk    gpu')
         self.assertEqual(lines[1], 'apps.CleanShot X  4.7     -')
@@ -114,30 +115,33 @@ class CompareTests(Base):
         self.assertEqual(sn.show('x' * 60), 'x' * 49 + '…')
 
     def test_fleet_diff_prints_table_and_keys_lists_own_state(self):
-        setup = self.setup(tools=('git', 'yadm'))
+        setup = self.setup()
+        setup.args = m.parse(['fleet', '--diff'])
         fleet = self.root / 'fleet.txt'
         fleet.write_text('laptop\n')
         (self.root / 'compare.yml').write_text('compare:\n  - tools.*\n')
         setup.assets = self.root
-        refs = ['refs/remotes/origin/status/laptop-book', 'refs/remotes/origin/status/studio-desk']
-        self.calls['yadm fetch --quiet --prune origin +refs/heads/status/*:refs/remotes/origin/status/*'] = done()
-        self.calls['yadm for-each-ref --format=%(refname) refs/remotes/origin/status/'] = done('\n'.join(refs) + '\n')
-        for ref, host, git in zip(refs, ['book', 'desk'], ['2.5', '2.4']):
-            data = {'machine': 'x@' + host, 'profile': 'mac', 'finished': '2026-10-17T12:00:00+00:00', 'exit': 0, 'phases': {}}
-            self.calls['yadm show %s:last.json' % ref] = done(json.dumps(data))
-            self.calls['yadm show %s:state.json' % ref] = done(json.dumps({'tools.git': git, 'os': host}))
+        rows, states = [], []
+        for host, git in [('book', '2.5'), ('desk', '2.4')]:
+            rows.append({'host': host, 'class': 'x', 'finished': '2026-10-17T12:00:00+00:00', 'exit': 0, 'phases': {}, 'corrective': 0, 'stale': False})
+            states.append({'machine': 'x@' + host, 'profile': 'mac', 'state': {'tools.git': git, 'os': host}})
+        answers = {'/fleet': rows, '/machines': states}
         out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            sy.fleet(setup, fleet, diff=True)
+        with contextlib.redirect_stdout(out), patch.object(sy, 'request', lambda path, body=None: json.dumps(answers[path]).encode()):
+            sy.fleet(setup, fleet)
+            setup.args = m.parse(['fleet', '--diff', '--all'])
+            sy.fleet(setup, fleet)
         text = out.getvalue()
         self.assertIn('1 differences in 2 compared keys (setup/compare.yml)', text)
         self.assertIn('tools.git  2.5   2.4', text)
-        self.assertNotIn('os ', text.split('key')[1])
+        self.assertNotIn('os ', text.split('key')[1].split('differences')[0])
+        self.assertIn('2 differences in 4 compared keys (everything)', text)
+        setup.args = m.parse(['fleet', '--keys'])
         (self.root / sy.STATE_DIR).mkdir(parents=True)
         (self.root / sy.STATE_DIR / 'state.json').write_text(json.dumps({'fonts': ['a', 'b'], 'os': 'mac'}))
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            self.assertEqual(sy.fleet(setup, fleet, keys=True), 0)
+            self.assertEqual(sy.fleet(setup, fleet), 0)
         self.assertIn('fonts                                    a, b', out.getvalue())
         self.assertIn('2 keys', out.getvalue())
 

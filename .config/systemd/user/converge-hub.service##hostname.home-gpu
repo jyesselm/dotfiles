@@ -1,0 +1,11 @@
+[Unit]
+Description=converge hub: fleet check-ins on 127.0.0.1:8790 (tailscale serve --set-path /converge)
+
+[Service]
+ExecStart=%h/.config/yadm/setup/hub.py serve
+Environment=PATH=%h/.local/bin:/usr/bin:/bin
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -7,11 +7,14 @@ import plistlib
 import subprocess
 import tempfile
 import unittest
+import urllib.error
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import sync as sy
+
+REAL_REQUEST = sy.request  # Base replaces sy.request with a fake hub
 
 spec = importlib.util.spec_from_file_location('bootstrap_setup', Path(__file__).with_name('setup.py'))
 m = importlib.util.module_from_spec(spec)
@@ -40,6 +43,20 @@ class Base(unittest.TestCase):
         self.remote = done('abc refs/heads/main\n')
         self.runs = []
         self.run_kwargs = []
+        self.hub = {'/fleet': [], '/machines': []}  # the fake hub's GET answers; POSTs land in self.posts
+        self.posts = []
+        self.hub_error = None
+        hub = patch.object(sy, 'request', self.fake_request)  # no test opens a socket
+        hub.start()
+        self.addCleanup(hub.stop)
+
+    def fake_request(self, path, body=None):
+        if self.hub_error:
+            raise RuntimeError(self.hub_error)
+        if body is not None:
+            self.posts.append((path, body))
+            return b''
+        return json.dumps(self.hub[path]).encode()
 
     def tearDown(self):
         self.quiet.__exit__(None, None, None)
@@ -59,7 +76,9 @@ class Base(unittest.TestCase):
         self.run_kwargs.append(kwargs)
 
     def make(self, *argv):
-        setup = m.Setup(m.parse(list(argv) or ['--profile', 'linux']), root=self.root)
+        """A Sync on a fake yadm; argv is `converge sync` flags unless it starts with another command."""
+        argv = list(argv) or ['--profile', 'linux']
+        setup = m.Setup(m.parse(argv if argv[0] in m.COMMANDS else ['sync'] + argv), root=self.root)
         setup._class = 'laptop'
         for name, fake in [('find', lambda n: n), ('read', self.read), ('run', self.run_cmd), ('editors', MagicMock(return_value=[]))]:
             setattr(setup, name, fake)
@@ -253,13 +272,13 @@ class StateTests(Base):
                 patches[method] = MagicMock(return_value=sy.PhaseResult('ok', method + ' fine', ['d']))
         return patch.multiple(sy.Sync, **patches)
 
-    def test_last_json_written_with_all_phases(self):
+    def test_last_json_written_with_all_phases_and_corrective_count(self):
         sync = self.make()
-        with self.stub_phases():
+        with self.stub_phases(), patch.object(sy.Sync, 'keys', MagicMock(return_value=sy.PhaseResult('changed', 'fixed'))):
             self.assertEqual(sync.execute(), 0)
         data = json.loads((self.root / sy.STATE_DIR / 'last.json').read_text())
         self.assertEqual(list(data['phases']), [k for k, _ in sy.PHASES])
-        self.assertEqual((data['format'], data['exit'], data['profile']), (1, 0, 'linux'))
+        self.assertEqual((data['format'], data['exit'], data['profile'], data['corrective']), (1, 0, 'linux', 1))
         self.assertTrue(data['machine'].startswith('laptop@'))
         self.assertEqual(list(data['phases'].values())[0]['details'], ['d'])
 
@@ -297,89 +316,112 @@ class StateTests(Base):
         sy.print_status(self.root, True, show_all=True)
         self.assertNotIn('Full lists', self.output.getvalue().split('Full lists: converge status --all', 1)[1])
 
-    def fake_remote(self, statuses):
-        """Stub fetch/for-each-ref/show so the remote holds these last.json dicts."""
-        refs = ['refs/remotes/origin/' + sy.status_ref(d['machine']) for d in statuses]
-        self.git['fetch --quiet --prune origin +refs/heads/status/*:refs/remotes/origin/status/*'] = ''
-        self.git['for-each-ref --format=%(refname) refs/remotes/origin/status/'] = '\n'.join(refs) + '\n'
-        for ref, data in zip(refs, statuses):
-            self.git['show %s:last.json' % ref] = json.dumps(data)
-
     @staticmethod
-    def status(machine, hours_ago, exit_code=0, phases=None):
+    def row(machine, hours_ago, exit_code=0, phases=None, stale=False):
+        """A /fleet row as the hub sends it."""
+        cls, host = machine.split('@')
+        phases = phases or {'layout': 'ok'}
         finished = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).isoformat()
-        return {'machine': machine, 'finished': finished, 'exit': exit_code,
-                'phases': phases or {'layout': {'status': 'ok', 'summary': '', 'details': []}}}
+        return {'host': host, 'class': cls, 'profile': 'linux', 'finished': finished, 'exit': exit_code, 'received': finished,
+                'phases': phases, 'corrective': sy.corrective(phases.values()), 'stale': stale}
 
     def test_status_ref_is_ref_safe(self):
         self.assertEqual(sy.status_ref("laptop@Joseph\u2019s-MacBook-Pro"), 'status/laptop-Joseph-s-MacBook-Pro')
         self.assertEqual(sy.status_ref('cluster@login.swan'), 'status/cluster-login.swan')
 
-    def test_sync_checks_in_and_warns_about_stale_machines(self):
+    def test_sync_posts_last_and_state_and_notes_stale_and_differing_machines(self):
         sync = self.make()
-        self.git.update({'commit-tree t -m status laptop@%s' % sync.machine_label().split('@')[1]: 'c\n', 'mktree': 't\n',
+        self.hub['/fleet'] = [self.row('studio@studio', 3 * 24, stale=True), self.row('linux@gpu', 1)]
+        self.hub['/machines'] = [{'machine': 'laptop@a', 'profile': 'linux', 'state': {'os': 'x'}},
+                                 {'machine': 'linux@gpu', 'profile': 'linux', 'state': {'os': 'y'}}]
+        with self.stub_phases():
+            self.assertEqual(sync.execute(), 0)
+        directory = self.root / sy.STATE_DIR
+        expected = {'last': json.loads((directory / 'last.json').read_text()), 'state': json.loads((directory / 'state.json').read_text())}
+        self.assertEqual(self.posts, [('/report', expected)])
+        text = self.output.getvalue()
+        self.assertIn('  stale: studio@studio last checked in 3d ago', text)
+        self.assertNotIn('gpu last', text)
+        self.assertIn('differs from the other machines in 1 compared keys', text)
+
+    def test_checkin_failure_is_a_note_not_an_error(self):
+        self.hub_error = 'https://hub/converge/report: connection refused'
+        with self.stub_phases():
+            self.assertEqual(self.make().execute(), 0)
+        self.assertIn('check-in skipped: https://hub/converge/report: connection refused', self.output.getvalue())
+        with self.stub_phases():
+            self.make('--plan', '--profile', 'linux').execute()
+        self.assertEqual(self.output.getvalue().count('check-in skipped'), 1)
+
+    def test_cluster_checks_in_through_its_status_branch_not_the_hub(self):
+        sync = self.make('--profile', 'cluster')
+        directory = self.root / sy.STATE_DIR
+        self.git.update({'hash-object -w %s' % (directory / 'last.json'): 'b\n', 'hash-object -w %s' % (directory / 'state.json'): 's\n',
+                         'mktree': 't\n', 'commit-tree t -m status ' + sync.machine_label(): 'c\n',
                          'push --force --quiet origin c:refs/heads/' + sy.status_ref(sync.machine_label()): ''})
-        self.fake_remote([self.status('studio@studio', 3 * 24), self.status('linux@gpu', 1)])
+        self.hub_error = 'the cluster must not call the hub'
         with self.stub_phases(), patch.object(sync.setup, 'read_ok', wraps=sync.setup.read_ok) as read_ok:
-            self.git['hash-object -w %s' % (self.root / sy.STATE_DIR / 'last.json')] = 'b\n'
-            self.git['hash-object -w %s' % (self.root / sy.STATE_DIR / 'state.json')] = 's\n'
             self.assertEqual(sync.execute(), 0)
         self.assertEqual(read_ok.call_args_list[2].kwargs['input'], '100644 blob b\tlast.json\n100644 blob s\tstate.json\n')
         push = read_ok.call_args_list[4].args[0]
-        self.assertEqual(push[:5], ['yadm', 'push', '--force', '--quiet', 'origin'])
-        self.assertEqual(push[5], 'c:refs/heads/' + sy.status_ref(sync.machine_label()))
-        text = self.output.getvalue()
-        self.assertIn('stale: studio@studio has not checked in for 2 days', text)
-        self.assertNotIn('linux@gpu has not', text)
+        self.assertEqual(push[:6], ['yadm', 'push', '--force', '--quiet', 'origin', 'c:refs/heads/' + sy.status_ref(sync.machine_label())])
+        self.assertNotIn('check-in skipped', self.output.getvalue())
 
-    def test_checkin_failure_is_a_note_not_an_error(self):
-        sync = self.make()
-        with self.stub_phases():
-            self.assertEqual(sync.execute(), 0)
-        self.assertIn('check-in skipped: hash-object failed', self.output.getvalue())
-        sync = self.make('--plan', '--profile', 'linux')
-        with self.stub_phases():
-            sync.execute()
-        self.assertEqual(self.output.getvalue().count('check-in skipped'), 1)
-
-    def test_fleet_lists_every_checkin_newest_first_and_missing_classes(self):
+    def test_fleet_lists_every_host_newest_first_and_missing_classes(self):
         fleet = self.root / 'fleet.txt'
         fleet.write_text('# expected\nlaptop\nstudio\nlinux\ncluster\n')
-        failed = {'dotfiles': {'status': 'failed', 'summary': 'x', 'details': []},
-                  'doctor': {'status': 'warn', 'summary': 'y', 'details': []},
-                  'apps': {'status': 'ok', 'summary': '', 'details': []}}
-        self.fake_remote([self.status('studio@studio', 60, 1, failed), self.status('laptop@book', 2), self.status('mac@studio', 90, 1)])  # mac@studio: older stalled run
-        sync = self.make()
-        self.assertEqual(sy.fleet(sync.setup, fleet), 1)
+        failed = {'dotfiles': 'failed', 'doctor': 'warn', 'apps': 'ok', 'keys': 'changed'}
+        self.hub['/fleet'] = [self.row('laptop@book', 2), self.row('studio@studio', 60, 1, failed, stale=True)]
+        self.assertEqual(sy.fleet(self.make('fleet', '--profile', 'linux').setup, fleet), 1)
         lines = self.output.getvalue().splitlines()
-        self.assertEqual(lines[0].split(), ['book', 'laptop', '2h', 'ago', 'exit', '0'])
-        self.assertEqual(lines[1].split(), ['studio', 'studio', '2d', 'ago', 'exit', '1', 'dotfiles:failed', 'doctor:warn'])
-        self.assertEqual([l.split() for l in lines[2:4]], [['?', 'linux', 'never'], ['?', 'cluster', 'never']])
-        self.assertEqual(lines[4], 'stale: studio@studio has not checked in for 2 days')
-        self.assertEqual(len(lines), 5)
+        self.assertEqual(lines[0].split(), ['book', 'laptop', '2h', 'ago', 'exit', '0', 'fixed', '0'])
+        self.assertEqual(lines[1].split(), ['studio', 'studio', '2d', 'ago', 'exit', '1', 'fixed', '1', 'dotfiles:failed', 'doctor:warn', 'keys:changed'])
+        self.assertEqual(lines[2], 'stale: studio@studio last checked in 2d ago')
+        self.assertEqual([l.split() for l in lines[3:]], [['?', 'linux', 'never'], ['?', 'cluster', 'never']])
+        self.assertEqual(self.posts, [])
 
-    def test_fleet_checkin_publishes_first_and_is_clean_when_all_ok(self):
+    def test_fleet_checkin_posts_first_and_is_clean_when_all_ok(self):
         fleet = self.root / 'fleet.txt'
         fleet.write_text('laptop\n')
         with self.stub_phases():
             self.make().execute()
-        sync = self.make()
-        self.git.update({'hash-object -w %s' % (self.root / sy.STATE_DIR / 'last.json'): 'b\n', 'mktree': 't\n',
-                         'hash-object -w %s' % (self.root / sy.STATE_DIR / 'state.json'): 's\n',
-                         'commit-tree t -m status ' + sync.machine_label(): 'c\n',
-                         'push --force --quiet origin c:refs/heads/' + sy.status_ref(sync.machine_label()): ''})
-        self.fake_remote([self.status('laptop@book', 5)])
-        with patch.object(sync.setup, 'read', wraps=sync.setup.read) as read:
-            self.assertEqual(sy.fleet(sync.setup, fleet, checkin=True), 0)
-        self.assertEqual(read.call_args_list[4].args[0][1:3], ['push', '--force'])  # two hash-objects, mktree, commit-tree, push
+        self.posts.clear()
+        self.hub['/fleet'] = [self.row('laptop@book', 5)]
+        for argv in (['fleet', '--checkin'], ['checkin']):
+            self.assertEqual(sy.fleet(self.make(*argv, '--profile', 'linux').setup, fleet), 0)
+        self.assertEqual([path for path, _ in self.posts], ['/report', '/report'])
         self.assertEqual(self.output.getvalue().splitlines()[-1].split()[:2], ['book', 'laptop'])
+        self.assertEqual(sy.fleet(self.make('fleet', '--checkin', '--plan', '--profile', 'linux').setup, fleet), 0)
+        self.assertEqual(len(self.posts), 2)
 
-    def test_fleet_offline_fetch_is_an_error(self):
-        self.git['fetch --quiet --prune origin +refs/heads/status/*:refs/remotes/origin/status/*'] = done('', 128, 'fatal: unable to access')
-        with self.assertRaises(RuntimeError) as caught:
-            sy.fleet(self.make().setup, self.root / 'fleet.txt')
-        self.assertIn('fetch failed: fatal: unable to access', str(caught.exception))
+    def test_fleet_offline_hub_is_exit_2_naming_the_url(self):
+        self.hub_error = 'https://hub/converge/fleet: timed out'
+        errors = io.StringIO()
+        with contextlib.redirect_stderr(errors):
+            self.assertEqual(sy.fleet(self.make('fleet', '--profile', 'linux').setup, self.root / 'fleet.txt'), 2)
+        self.assertIn('https://hub/converge/fleet: timed out', errors.getvalue())
 
+    def test_request_posts_json_to_converge_hub_and_names_the_url_on_failure(self):
+        seen = []
+
+        def urlopen(asked, timeout):
+            seen.append((asked.full_url, asked.data, asked.get_header('Content-type'), timeout))
+            raise urllib.error.URLError('refused')
+        with patch.dict(sy.os.environ, {'CONVERGE_HUB': 'http://hub.test/converge/'}), patch.object(sy.urllib.request, 'urlopen', urlopen):
+            with self.assertRaisesRegex(RuntimeError, '^http://hub.test/converge/report: refused$'):
+                REAL_REQUEST('/report', {'a': 1})
+        self.assertEqual(seen, [('http://hub.test/converge/report', b'{"a": 1}', 'application/json', sy.HUB_TIMEOUT)])
+
+    def test_skip_records_phases_as_skipped_and_rejects_unknown_keys(self):
+        sync = self.make('--profile', 'linux', '--skip', 'packages, repos')
+        with self.stub_phases():
+            self.assertEqual(sync.execute(), 0)
+            sy.Sync.packages.assert_not_called()
+        self.assertEqual(sync.results['packages'], sy.PhaseResult('skipped', '--skip'))
+        self.assertEqual(sync.results['repos'].status, 'skipped')
+        self.assertEqual(sync.results['layout'].status, 'ok')
+        with self.assertRaisesRegex(RuntimeError, r'unknown phase brew \(phases: layout, dotfiles, '):
+            self.make('--skip', 'brew').execute()
     def test_failed_phase_does_not_stop_later_phases(self):
         sync = self.make()
         with self.stub_phases(failing='dotfiles'):
@@ -640,7 +682,7 @@ class PlanTests(Base):
         self.seed()
         before = self.tree()
         for profile in ['mac', 'linux', 'cluster']:
-            sync = self.make('--sync', '--plan', '--profile', profile)
+            sync = self.make('--plan', '--profile', profile)
             sync.setup.read = self.fake_read
             sync.setup.run = m.Setup.run.__get__(sync.setup)
             sync.setup.editors = m.Setup.editors.__get__(sync.setup)

@@ -1,0 +1,14 @@
+# A Linux converge client: what README "Onboard a computer" needs on Linux (Python 3.9+, Git, yadm).
+FROM ubuntu:24.04
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 git yadm curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --shell /bin/bash joe \
+ && rm -f /home/joe/.bashrc /home/joe/.profile /home/joe/.bash_logout
+USER joe
+WORKDIR /home/joe
+# Identity for status commits without writing ~/.gitconfig (the dotfiles track it).
+ENV PATH=/home/joe/.local/bin:/usr/local/bin:/usr/bin:/bin \
+    GIT_AUTHOR_NAME=converge-test GIT_AUTHOR_EMAIL=test@localhost \
+    GIT_COMMITTER_NAME=converge-test GIT_COMMITTER_EMAIL=test@localhost
+CMD ["sleep", "infinity"]

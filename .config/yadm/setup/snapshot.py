@@ -1,4 +1,4 @@
-"""Effective-state snapshot of this computer, pushed with each check-in so `converge fleet --diff` can compare machines.
+"""Effective-state snapshot of this computer, sent with each check-in so `converge fleet --diff` can compare machines.
 
 Git already makes the tracked files identical everywhere; what differs between machines is untracked state (installed
 versions, loaded configs, keyboards, shortcut flags, login items). Every gatherer is cheap and read-only; one that fails
@@ -23,6 +23,7 @@ SHORTCUTS = {28: 'screenshot-file', 29: 'screenshot-clipboard', 30: 'area-file',
              79: 'space-left', 81: 'space-right', 118: 'space-1', 119: 'space-2', 120: 'space-3', 121: 'space-4',
              160: 'launchpad', 162: 'notification-center', 163: 'do-not-disturb', 175: 'accessibility', 184: 'screenshot-options'}
 APP_DIRS = ['/Applications', '~/Applications']
+EVERY_KEY = {'compare': ['*'], 'ignore': []}  # rules for `fleet --diff --all`: compare every key
 
 
 def _version(text: str) -> str:
@@ -216,12 +217,12 @@ def selected(key: str, rules: Dict[str, List[str]]) -> bool:
     return any(fnmatch.fnmatch(key, p) for p in rules['compare']) and not any(fnmatch.fnmatch(key, p) for p in rules['ignore'])
 
 
-def differences(statuses: List[dict], rules: Dict[str, List[str]], everything: bool = False) -> List[Tuple[str, Dict[str, Value]]]:
+def differences(statuses: List[dict], rules: Dict[str, List[str]]) -> List[Tuple[str, Dict[str, Value]]]:
     """(key, {host: value}) for each selected key whose value differs among machines of the same profile that have that group."""
     machines = [(d['machine'].split('@', 1)[1], d.get('profile', '?'), d.get('state') or {}) for d in statuses]
     rows = []
     for key in sorted({k for _, _, state in machines for k in state}):
-        if not everything and not selected(key, rules):
+        if not selected(key, rules):
             continue
         group = key.split('.')[0]
         profiles = {profile for _, profile, state in machines if key in state}
