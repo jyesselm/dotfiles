@@ -102,43 +102,8 @@ alias pip='pip3'
 alias venv='python3 -m venv'
 alias activate='source venv/bin/activate'
 
-# NRP-hosted LLMs (https://nrp.ai): OpenAI-compatible at https://ellm.nrp-nautilus.io/v1, non-commercial use only.
-# Key: create one at https://nrp.ai/llmtoken, then `keys add NRP_API_KEY` (lands in 1Password + Keychain, exported as $NRP_API_KEY).
-# `nrp models` lists models; `nrp ask [model] "question"` streams a one-shot answer (default qwen3, thinking off;
-# NRP_THINK=1 nrp ask ... for full reasoning on hard questions);
-# `nrp claude [model] [claude args]` runs Claude Code against an NRP model (glm-5, deepseek-v4-flash, minimax are the coding picks).
-nrp() {
-  local base=https://ellm.nrp-nautilus.io m
-  [[ $1 == models ]] || [[ -n $NRP_API_KEY ]] || { print -u2 'nrp: no NRP_API_KEY; create one at https://nrp.ai/llmtoken, then `keys add NRP_API_KEY`'; return 1 }
-  case $1 in
-    models) curl -sf $base/v1/models | python3 -c "import json,sys; print('\n'.join(sorted(m['id'] for m in json.load(sys.stdin)['data'])))" ;;
-    ask) shift; if (( $# >= 2 )); then m=$1; shift; else m=qwen3; fi
-      python3 - "$base" "$m" "$*" <<'EOF'
-import json, os, sys, urllib.request
-base, model, q = sys.argv[1:4]
-body = {"model": model, "messages": [{"role": "user", "content": q}], "max_tokens": 4096, "stream": True}
-if os.environ.get("NRP_THINK") != "1":  # quick mode: reasoning models otherwise think for 30-60 s before the first word
-    body.update({"reasoning_effort": "low", "chat_template_kwargs": {"enable_thinking": False}})
-req = urllib.request.Request(f"{base}/v1/chat/completions", data=json.dumps(body).encode(),
-    headers={"Authorization": "Bearer " + os.environ["NRP_API_KEY"], "Content-Type": "application/json"})
-try:
-    with urllib.request.urlopen(req) as resp:
-        for line in resp:
-            if not line.startswith(b"data: ") or line.strip() == b"data: [DONE]": continue
-            choices = json.loads(line[6:]).get("choices") or [{}]
-            delta = choices[0].get("delta", {}).get("content")
-            if delta: print(delta, end="", flush=True)
-    print()
-except urllib.error.HTTPError as e: sys.exit(f"nrp: HTTP {e.code} from {model} ({'bad key?' if e.code in (401, 403) else e.read()[:300].decode()})")
-EOF
-      ;;
-    claude) shift; m=${1:-qwen3}; (( $# )) && shift
-      ANTHROPIC_BASE_URL=$base/anthropic ANTHROPIC_AUTH_TOKEN=$NRP_API_KEY ANTHROPIC_MODEL=$m \
-      ANTHROPIC_DEFAULT_OPUS_MODEL=$m ANTHROPIC_DEFAULT_SONNET_MODEL=$m ANTHROPIC_DEFAULT_HAIKU_MODEL=$m \
-      CLAUDE_CODE_SUBAGENT_MODEL=$m command claude "$@" ;;
-    *) print -u2 'usage: nrp models | nrp ask [model] "question" | nrp claude [model] [args]'; return 1 ;;
-  esac
-}
+# NRP-hosted LLMs: the `nrp` command (package ~/local/code/python/developing/nrp; `nrp --help`).
+# Key: https://nrp.ai/llmtoken, then `keys add NRP_API_KEY`. Interactive coding agent: `opencode` (~/.config/opencode/opencode.json).
 
 # Tmux
 alias mux='tmuxinator'

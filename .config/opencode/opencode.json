@@ -1,0 +1,271 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "nrp/deepseek-v4-flash",
+  "agents": {
+    "title": {
+      "model": "nrp/qwen3-small"
+    }
+  },
+  "providers": {
+    "nrp": {
+      "name": "nrp",
+      "env": [
+        "NRP_API_KEY"
+      ],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://ellm.nrp-nautilus.io/v1"
+      },
+      "models": {
+        "qwen3": {
+          "name": "qwen3",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 65536
+          },
+          "variants": [
+            {
+              "id": "low",
+              "body": {
+                "reasoning_effort": "low"
+              }
+            },
+            {
+              "id": "medium",
+              "body": {
+                "reasoning_effort": "medium"
+              }
+            },
+            {
+              "id": "instruct",
+              "body": {
+                "chat_template_kwargs": {
+                  "enable_thinking": false
+                }
+              }
+            }
+          ]
+        },
+        "qwen3-small": {
+          "name": "qwen3-small",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 65536
+          },
+          "variants": [
+            {
+              "id": "low",
+              "body": {
+                "reasoning_effort": "low"
+              }
+            },
+            {
+              "id": "medium",
+              "body": {
+                "reasoning_effort": "medium"
+              }
+            },
+            {
+              "id": "instruct",
+              "body": {
+                "chat_template_kwargs": {
+                  "enable_thinking": false
+                }
+              }
+            }
+          ]
+        },
+        "glm-5": {
+          "name": "glm-5",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          },
+          "variants": [
+            {
+              "id": "low",
+              "body": {
+                "chat_template_kwargs": {
+                  "reasoning_effort": "low"
+                }
+              }
+            },
+            {
+              "id": "high",
+              "body": {
+                "chat_template_kwargs": {
+                  "reasoning_effort": "high"
+                }
+              }
+            }
+          ]
+        },
+        "deepseek-v4-flash": {
+          "name": "deepseek-v4-flash",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          },
+          "variants": [
+            {
+              "id": "low",
+              "body": {
+                "chat_template_kwargs": {
+                  "reasoning_effort": "low"
+                }
+              }
+            },
+            {
+              "id": "high",
+              "body": {
+                "chat_template_kwargs": {
+                  "reasoning_effort": "high"
+                }
+              }
+            },
+            {
+              "id": "instruct",
+              "body": {
+                "chat_template_kwargs": {
+                  "thinking": false
+                }
+              }
+            }
+          ]
+        },
+        "minimax": {
+          "name": "minimax",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          }
+        },
+        "gpt-oss": {
+          "name": "gpt-oss",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        },
+        "gemma": {
+          "name": "gemma",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          },
+          "variants": [
+            {
+              "id": "instruct",
+              "body": {
+                "chat_template_kwargs": {
+                  "enable_thinking": false
+                }
+              }
+            }
+          ]
+        },
+        "gemma-small": {
+          "name": "gemma-small",
+          "capabilities": {
+            "tools": true,
+            "input": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          },
+          "variants": [
+            {
+              "id": "instruct",
+              "body": {
+                "chat_template_kwargs": {
+                  "enable_thinking": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

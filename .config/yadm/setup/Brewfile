@@ -46,6 +46,7 @@ brew "rust"
 brew "colima"
 cask "orbstack"   # Docker and Linux VMs (setup/testing)
 brew "ollama"
+brew "opencode"   # terminal coding agent on NRP models; `nrp code` / `nrp serve` (~/.config/opencode/opencode.json)
 brew "pymol"
 cask "android-platform-tools"   # `adb`, for the Onn 4K Pro travel kit (~/.config/media-stack/travel-onn.md)
 cask "android-commandlinetools"   # `sdkmanager`, builds the Onn home launcher (~/local/code/other/onn-launcher); ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
