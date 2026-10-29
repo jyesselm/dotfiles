@@ -104,7 +104,8 @@ alias activate='source venv/bin/activate'
 
 # NRP-hosted LLMs (https://nrp.ai): OpenAI-compatible at https://ellm.nrp-nautilus.io/v1, non-commercial use only.
 # Key: create one at https://nrp.ai/llmtoken, then `keys add NRP_API_KEY` (lands in 1Password + Keychain, exported as $NRP_API_KEY).
-# `nrp models` lists models; `nrp ask [model] "question"` answers one-shot (default qwen3);
+# `nrp models` lists models; `nrp ask [model] "question"` streams a one-shot answer (default qwen3, thinking off;
+# NRP_THINK=1 nrp ask ... for full reasoning on hard questions);
 # `nrp claude [model] [claude args]` runs Claude Code against an NRP model (glm-5, deepseek-v4-flash, minimax are the coding picks).
 nrp() {
   local base=https://ellm.nrp-nautilus.io m
@@ -115,10 +116,19 @@ nrp() {
       python3 - "$base" "$m" "$*" <<'EOF'
 import json, os, sys, urllib.request
 base, model, q = sys.argv[1:4]
-req = urllib.request.Request(f"{base}/v1/chat/completions",
-    data=json.dumps({"model": model, "messages": [{"role": "user", "content": q}], "max_tokens": 4096}).encode(),
+body = {"model": model, "messages": [{"role": "user", "content": q}], "max_tokens": 4096, "stream": True}
+if os.environ.get("NRP_THINK") != "1":  # quick mode: reasoning models otherwise think for 30-60 s before the first word
+    body.update({"reasoning_effort": "low", "chat_template_kwargs": {"enable_thinking": False}})
+req = urllib.request.Request(f"{base}/v1/chat/completions", data=json.dumps(body).encode(),
     headers={"Authorization": "Bearer " + os.environ["NRP_API_KEY"], "Content-Type": "application/json"})
-try: print(json.load(urllib.request.urlopen(req))["choices"][0]["message"]["content"])
+try:
+    with urllib.request.urlopen(req) as resp:
+        for line in resp:
+            if not line.startswith(b"data: ") or line.strip() == b"data: [DONE]": continue
+            choices = json.loads(line[6:]).get("choices") or [{}]
+            delta = choices[0].get("delta", {}).get("content")
+            if delta: print(delta, end="", flush=True)
+    print()
 except urllib.error.HTTPError as e: sys.exit(f"nrp: HTTP {e.code} from {model} ({'bad key?' if e.code in (401, 403) else e.read()[:300].decode()})")
 EOF
       ;;
