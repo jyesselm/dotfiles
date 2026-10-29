@@ -1,0 +1,77 @@
+{
+  "started": "2026-10-29T15:00:05.535467+00:00",
+  "finished": "2026-10-29T15:01:21.212619+00:00",
+  "machine": "server@plex-server",
+  "profile": "mac",
+  "exit": 1,
+  "format": 1,
+  "phases": {
+    "layout": {
+      "status": "warn",
+      "summary": "2 unplanned entries in ~",
+      "details": [
+        "unplanned:OrbStack",
+        "unplanned:backups"
+      ]
+    },
+    "dotfiles": {
+      "status": "failed",
+      "summary": "Dotfiles (yadm): push failed (Command '['/opt/homebrew/bin/yadm', 'push', 'origin', 'main']' returned non-zero exit status 1.); local commits kept, rerun after fixing",
+      "details": []
+    },
+    "keys": {
+      "status": "ok",
+      "summary": "4 keys authorized",
+      "details": [
+        "missing id_ed25519.pub, id_ecdsa.pub: ssh-keygen -t ed25519 and -t ecdsa -b 256 (managed Macs accept only ECDSA)"
+      ]
+    },
+    "packages": {
+      "status": "warn",
+      "summary": "1 extras in no Brewfile or extras.txt (not removed), 0 casks present outside Homebrew, 2 Brewfiles",
+      "details": [
+        "cask:vlc"
+      ]
+    },
+    "repos": {
+      "status": "ok",
+      "summary": "grc active sync --apply",
+      "details": [
+        "grc up to date with /Users/jyesselm/local/code/python/developing/git-repo-checker",
+        "\u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2533\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2533\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2533\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513",
+        "\u2503 Repository \u2503 Branch \u2503 State  \u2503 Details    \u2503",
+        "\u2521\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2547\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2547\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2547\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2529",
+        "\u2502 hotkeys    \u2502 main   \u2502 synced \u2502 Up to date \u2502",
+        "\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+        "search-cli checkout absent; s left alone"
+      ]
+    },
+    "apps": {
+      "status": "skipped",
+      "summary": "class server has no apps; set: yadm config local.class laptop",
+      "details": []
+    },
+    "defaults": {
+      "status": "skipped",
+      "summary": "macOS preference snapshot not applicable",
+      "details": []
+    },
+    "hotkeys": {
+      "status": "warn",
+      "summary": "0 clashes, 5 layer overlaps, 1 Karabiner problems",
+      "details": [
+        "Karabiner grabs no keyboard: allow Input Monitoring for karabiner_grabber in System Settings > Privacy & Security",
+        "Global       \u21e7\u23183        layer      macOS: Screenshot to file",
+        "Global       \u21e7\u23184        layer      macOS: Screenshot area to file",
+        "Global       \u2318Space     layer      macOS: Spotlight",
+        "Global       \u2325\u2318Space    layer      macOS: Finder search window",
+        "Global       \u21e7\u23185        layer      macOS: Screenshot and recording options"
+      ]
+    },
+    "doctor": {
+      "status": "ok",
+      "summary": "all checks passed",
+      "details": []
+    }
+  }
+}
