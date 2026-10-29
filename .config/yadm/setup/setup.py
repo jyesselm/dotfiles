@@ -66,6 +66,7 @@ class Setup:
         bus = Path('/run/user/%d/bus' % os.getuid())
         if self.profile == 'linux' and bus.exists():  # cron has no session bus; gnome-extensions and gsettings need it
             self.env.setdefault('DBUS_SESSION_BUS_ADDRESS', 'unix:path=%s' % bus)
+        self.env.setdefault('SHLVL', '1')  # launchd sets none; without it Tailscale's Mac CLI tries to launch the GUI and fails
         self.errors = []
         self._class = None
 
