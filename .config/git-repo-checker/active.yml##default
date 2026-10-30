@@ -24,6 +24,10 @@ repos:
   remote: https://github.com/jyesselm/file-norm
   branch: main
   enabled: true
+- path: local/code/python/developing/nrp
+  remote: https://github.com/jyesselm/nrp.git
+  branch: main
+  enabled: true
 - path: local/code/python/developing/git-repo-checker
   remote: https://github.com/jyesselm/git-repo-checker.git
   branch: main
