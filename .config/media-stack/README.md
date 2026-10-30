@@ -23,7 +23,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
-| Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review, Drives tab (which drive holds what) (`media-index/`) |
+| Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review, Drives tab (which drive holds what), ▦ Posters grid (posters from Radarr/Sonarr, cached in `~/.local/share/media-index/posters` so cold-storage titles keep theirs) (`media-index/`) |
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
@@ -40,6 +40,11 @@ your Trakt watchlist; Radarr's import list "Trakt Watchlist" (Trakt User → Wat
 and searches them on its next list sync. PlexTraktSync also mirrors the Plex watchlist to Trakt, so a movie
 watchlisted in Plex is downloaded too. Clean Library Level stays Disabled, so watching a movie (Trakt then drops it
 from the watchlist) never deletes it.
+
+**Quality: 1080p unless asked.** Seerr, the Trakt list and Sonarr all use the HD-1080p profile, which allows only
+1080p HDTV/WEB/Blu-ray encodes (no remuxes, no 4K). For a 4K copy, request it in Seerr and open **Advanced** →
+Quality Profile → **Ultra-HD** (or switch the movie's profile in Radarr and search). Ultra-HD takes Bluray-2160p
+and never upgrades past it.
 
 Shows and movies you'll stream on another service go on a Trakt list instead (trakt.tv → profile → Lists):
 **non-plex-watchlist** for yourself, **non-plex-watchlist-together** for things to watch together. Nothing
@@ -123,11 +128,12 @@ python3 media-index/shrink.py run --match "S02E05" --limit 1  # one file now
 python3 media-index/shrink.py install                       # nightly at 01:00; no new file starts after 08:00
 ```
 
-**Download folder cap**: `media-index/downloads_cap.py` (launchd, every 30 min) keeps `downloads/radarr` under
+**Download folder cap**: `media-index/downloads_cap.py` (launchd, every 30 min, run inside the media-index container since launchd's own
+Python can't touch the disk) keeps `downloads/radarr` under
 150 GB and `downloads/sonarr` under 100 GB (`CAP_GB`). Finished torrents are hardlinked into the library and cost
 nothing; what grows the folders is downloads in progress (allocated in full up front) and leftovers, folders no
 torrent owns after Radarr/Sonarr dropped a stuck grab. Leftovers untouched for a day go to `_trash/downloads/`
-(via `POST /api/trash-download`, since launchd's Python can't change the disk; empty `_trash` by hand). When the
+(empty `_trash` by hand). When the
 folder's own bytes plus what the active torrents still have to fetch would pass the cap, the torrents with the
 most left are stopped and tagged `capped` in qBittorrent, and started again once there is room. Log:
 `~/.local/share/media-index/downloads-cap.log`; `python3 media-index/downloads_cap.py run --dry-run` shows a check.
@@ -162,8 +168,17 @@ python3 media-index/drives.py cold plex-cold-1 --csv picks.csv --dry-run        
 `cold` copies each title to the same folder on the cold drive, checks file count and bytes, removes it from
 Radarr/Sonarr (files kept, import-list exclusion so it isn't grabbed again), moves the original to
 `plex-media/_trash`, re-catalogs the drive and has Plex refresh the library. The cold drive then holds the only
-copy once the regular backup drives are next synced. To bring a title home, copy its folder back and re-add it in
-Radarr/Sonarr.
+copy once the regular backup drives are next synced.
+
+**Click instead.** In Media Index (either tab), a title on `plex-media` has **❄ cold-1 / ❄ cold-2**
+buttons, and a title only on a cold drive has **← Bring back**. Clicking marks it (Keep titles, i.e. the repeat
+list and watchlist, are refused); the marks show at the top of the tab with their progress. The launchd agent
+`com.yesselman.cold-moves` (`python3 media-index/drives.py install`) runs `drives.py watch` every 10 minutes and whenever a drive is
+plugged in: for each plugged-in cold drive with marks it runs `drives.py queue <drive>` in a one-off media-index
+container (launchd can't write the media disk), which does the moves the same way as `cold`. Bringing one back copies
+it to `plex-media`, lifts the exclusion and re-adds it to Radarr/Sonarr (1080p profile, monitored, no search); the
+cold copy stays as a backup. Marks waiting for an unplugged drive get one reminder a day. Log:
+`~/.local/share/media-index/cold-moves.log`.
 
 ## Backups
 

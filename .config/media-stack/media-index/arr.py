@@ -10,8 +10,8 @@ import urllib.request
 from pathlib import Path
 
 ARR = {
-    "radarr": ("http://radarr:7878/api/v3", "movie", os.environ.get("RADARR_KEY", "")),
-    "sonarr": ("http://sonarr:8989/api/v3", "series", os.environ.get("SONARR_KEY", "")),
+    "radarr": ("http://radarr:7878/api/v3", "movie", os.environ.get("HOMEPAGE_VAR_RADARR_KEY", "")),
+    "sonarr": ("http://sonarr:8989/api/v3", "series", os.environ.get("HOMEPAGE_VAR_SONARR_KEY", "")),
 }
 RADARR_BASE, _, RADARR_KEY = ARR["radarr"]
 

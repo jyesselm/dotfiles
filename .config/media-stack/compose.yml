@@ -290,9 +290,16 @@ services:
     ports: ["8686:8686"]
     environment:
       TZ: ${TZ}
-      RADARR_KEY: ${HOMEPAGE_VAR_RADARR_KEY}
-      SONARR_KEY: ${HOMEPAGE_VAR_SONARR_KEY}
+      HOMEPAGE_VAR_RADARR_KEY: ${HOMEPAGE_VAR_RADARR_KEY}
+      HOMEPAGE_VAR_SONARR_KEY: ${HOMEPAGE_VAR_SONARR_KEY}
+      HOMEPAGE_VAR_PLEX_TOKEN: ${HOMEPAGE_VAR_PLEX_TOKEN}
       DRIVE_CATALOG_DIR: /data/drives  # = ~/.local/share/media-index/drives, where drives.py keeps manifests
+      # Host scripts (drives.py, downloads_cap.py) reach the services at localhost; in here they use these.
+      MEDIA_INDEX_API: http://media-index:8686/api
+      RADARR_URL: http://radarr:7878
+      SONARR_URL: http://sonarr:8989
+      PLEX_URL: http://host.docker.internal:32400
+      QB_URL: http://gluetun:8080/api/v2
     volumes:
       - ${DATA_ROOT}/media-index:/data
       - ${MEDIA_ROOT}:/Volumes/plex-media

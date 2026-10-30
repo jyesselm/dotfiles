@@ -7,11 +7,13 @@ moves a movie's file to _trash and has Radarr grab a smaller release. Emptying t
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
 import threading
 import time
+import urllib.request
 from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -253,23 +255,6 @@ def move_to_trash() -> list[dict]:
     return results
 
 
-def trash_download(rel: str) -> dict:
-    """Move one leftover download folder (downloads/<category>/<name>) into _trash, for downloads_cap.py on the host.
-
-    Returns:
-        {"ok", "message"}.
-    """
-    parts = Path(rel).parts
-    src, dest = index.MEDIA_ROOT / rel, TRASH / rel
-    if len(parts) != 3 or parts[0] != "downloads" or ".." in parts or not src.exists():
-        return {"ok": False, "message": "not a downloads/<category>/<name> that exists"}
-    if dest.exists():
-        return {"ok": False, "message": "already in _trash"}
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    src.rename(dest)
-    return {"ok": True, "message": "moved"}
-
-
 def _trash_one(item: str) -> dict:
     src = index.MEDIA_ROOT / item
     if not src.exists():
@@ -303,6 +288,66 @@ def restore(item: str) -> dict:
         conn.commit()
     threading.Thread(target=run_scan, daemon=True).start()
     return {"item": item, "ok": True, "message": "restored (re-monitor it in Radarr/Sonarr if you want upgrades)"}
+
+
+def cold_moves() -> list[dict]:
+    """Titles marked to move to or from a cold drive, newest first; done ones drop off the list after a week."""
+    sql = "select * from cold_moves where status != 'done' or updated_at > ? order by updated_at desc"
+    with db_lock:
+        return [dict(r) for r in conn.execute(sql, (time.time() - 7 * 86400,))]
+
+
+def mark_cold_move(item: str, drive: str, direction: str | None) -> dict:
+    """Mark a title to move out to a cold drive or back from one (drives.py queue does it), or unmark it.
+
+    Args:
+        item: Item key, e.g. "movies/Aquaman (2018)".
+        drive: One of drives.COLD_DRIVES.
+        direction: out | back, or None to unmark (not while it's running).
+
+    Returns:
+        {"ok", "message"}.
+    """
+    if direction is None:
+        with db_lock:
+            conn.execute("delete from cold_moves where item = ? and status != 'running'", (item,))
+            conn.commit()
+        return {"ok": True, "message": "unmarked"}
+    if drive not in drives.COLD_DRIVES or direction not in ("out", "back") or ".." in Path(item).parts:
+        return {"ok": False, "message": "unknown drive or direction"}
+    on_main = (index.MEDIA_ROOT / item).exists()
+    if direction == "out":
+        with db_lock:
+            # fetchall, not fetchone: an unfinished read keeps a lock that makes the insert below fail during a scan
+            rows = conn.execute("select decision, note from decisions where item = ?", (item,)).fetchall()
+            decision = rows[0] if rows else None
+        if not on_main:
+            return {"ok": False, "message": "not on plex-media"}
+        if decision and decision["decision"] == "keep":
+            return {"ok": False, "message": f"marked Keep ({decision['note'] or 'no note'}); clear that first"}
+    elif on_main:
+        return {"ok": False, "message": "already on plex-media"}
+    elif drive not in next((r["drives"] for r in _drive_data()["items"] if r["item"] == item), {}):
+        return {"ok": False, "message": f"not in {drive}'s catalog"}
+    with db_lock:
+        conn.execute(
+            "insert or replace into cold_moves values (?, ?, ?, 'queued', '', ?)", (item, drive, direction, time.time())
+        )
+        conn.commit()
+    return {"ok": True, "message": f"queued; moves when {drive} is plugged in"}
+
+
+def cold_move_status(item: str, status: str, message: str) -> dict:
+    """Progress from drives.py queue. A finished move changes plex-media, so rescan it."""
+    with db_lock:
+        conn.execute(
+            "update cold_moves set status = ?, message = ?, updated_at = ? where item = ?",
+            (status, message, time.time(), item),
+        )
+        conn.commit()
+    if status == "done":
+        threading.Thread(target=run_scan, daemon=True).start()
+    return {"ok": True}
 
 
 def shrink_finish(rel: str, replace: bool) -> dict:
@@ -376,6 +421,80 @@ def _record_swap(item: str, original: Path, release: dict) -> None:
         conn.commit()
 
 
+# Posters for the grid view, from Radarr/Sonarr, cached by item so titles moved to a cold drive (and dropped from
+# Radarr/Sonarr) keep theirs. warm_posters fetches every one at startup and daily.
+POSTERS = index.DB_PATH.parent / "posters"
+_arr_paths: dict = {"at": 0.0, "paths": {}}
+
+
+def _poster_file(item: str) -> Path:
+    return POSTERS / (hashlib.sha1(item.encode()).hexdigest() + ".jpg")
+
+
+def _arr_index() -> dict[str, tuple[str, str, int]]:
+    """Library path -> (API base, key, id) for everything Radarr and Sonarr manage; refreshed every 10 minutes."""
+    if time.time() - _arr_paths["at"] > 600:
+        paths = {}
+        for base, kind, key in arr.ARR.values():
+            for entry in arr.request(f"{base}/{kind}", key):
+                paths[entry["path"]] = (base, key, entry["id"])
+        _arr_paths.update(at=time.time(), paths=paths)
+    return _arr_paths["paths"]
+
+
+def poster(item: str) -> bytes | None:
+    """A title's poster (250 px wide JPEG), or None when neither the cache nor Radarr/Sonarr has one."""
+    cached = _poster_file(item)
+    if cached.exists():
+        return cached.read_bytes()
+    try:
+        found = _arr_index().get(str(index.MEDIA_ROOT / item))
+        if not found:
+            return None
+        base, key, arr_id = found
+        req = urllib.request.Request(f"{base}/mediacover/{arr_id}/poster-250.jpg", headers={"X-Api-Key": key})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = resp.read()
+    except OSError:
+        return None
+    POSTERS.mkdir(parents=True, exist_ok=True)
+    cached.write_bytes(data)
+    return data
+
+
+def warm_posters() -> None:
+    """Cache the poster of every title Radarr/Sonarr manage, so it survives a later move to cold storage."""
+    root = str(index.MEDIA_ROOT) + "/"
+    for path in list(_arr_index()):
+        if path.startswith(root) and not _poster_file(path[len(root):]).exists():
+            poster(path[len(root):])
+    _poster_cold_titles()
+
+
+def _poster_cold_titles() -> None:
+    """Posters for titles moved to cold storage before they were cached: find each in the import-list exclusion
+    drives.py added when it dropped the title, and save the poster Radarr/Sonarr's lookup links to."""
+    sonarr = ("sonarr", "importlistexclusion", "title", "tvdb")
+    apps = {"movies": ("radarr", "exclusions", "movieTitle", "tmdb"), "tv": sonarr, "anime": sonarr}
+    for category, (app, endpoint, title_field, id_kind) in apps.items():
+        base, kind, key = arr.ARR[app]
+        wanted = {
+            index.title_key(r["item"]): r["item"] for r in _drive_data()["items"]
+            if r["category"] == category and drives.MAIN_DRIVE not in r["drives"]
+            and not _poster_file(r["item"]).exists()
+        }
+        for exclusion in arr.request(f"{base}/{endpoint}", key) if wanted else []:
+            item = wanted.get(index.title_key(exclusion[title_field]))
+            if not item:
+                continue
+            found = arr.request(f"{base}/{kind}/lookup?term={id_kind}:{exclusion[id_kind + 'Id']}", key)
+            url = next((f.get("remotePoster") for f in found if f.get("remotePoster")), None)
+            if url:
+                with urllib.request.urlopen(url, timeout=30) as resp:
+                    POSTERS.mkdir(parents=True, exist_ok=True)
+                    _poster_file(item).write_bytes(resp.read())
+
+
 scan_lock = threading.Lock()
 
 # Drive manifests (drives.py catalogs) merged into title -> {drive: bytes}; rebuilt when any manifest changes.
@@ -444,9 +563,13 @@ def run_scan() -> None:
 
 
 def scan_forever() -> None:
-    """Scan at startup and then daily."""
+    """Scan and cache posters at startup and then daily."""
     while True:
         run_scan()
+        try:
+            warm_posters()
+        except OSError as err:  # Radarr/Sonarr down: try again tomorrow, posters also load on demand
+            print(f"poster cache: {err}")
         time.sleep(RESCAN_EVERY_S)
 
 
@@ -471,6 +594,14 @@ class Handler(BaseHTTPRequestHandler):
             self._audio(parse_qs(url.query).get("item", [""])[0])
         elif url.path == "/api/drives":
             self._json(_drive_data()["drives"])
+        elif url.path == "/api/poster":
+            image = poster(parse_qs(url.query).get("item", [""])[0])
+            if image:
+                self._send(HTTPStatus.OK, image, "image/jpeg", cache=True)
+            else:
+                self._send(HTTPStatus.NOT_FOUND, b"no poster", "text/plain")
+        elif url.path == "/api/cold-moves":
+            self._json(cold_moves())
         elif url.path == "/api/drive-items":
             qs = parse_qs(url.query)
             self._json(drive_items(qs.get("q", [""])[0], qs.get("drive", [""])[0], qs.get("only", ["0"])[0] == "1"))
@@ -489,10 +620,12 @@ class Handler(BaseHTTPRequestHandler):
             self._json(restore(body["item"]))
         elif path == "/api/swap":
             self._json(swap(body["item"], body["release"]))
-        elif path == "/api/trash-download":
-            self._json(trash_download(body["path"]))
         elif path == "/api/shrink-finish":
             self._json(shrink_finish(body["path"], bool(body.get("replace"))))
+        elif path == "/api/cold-move":
+            self._json(mark_cold_move(body["item"], body.get("drive", ""), body.get("direction")))
+        elif path == "/api/cold-moves/status":
+            self._json(cold_move_status(body["item"], body["status"], body.get("message", "")))
         elif path == "/api/scan":
             threading.Thread(target=run_scan, daemon=True).start()
             self._json({"ok": True})
@@ -525,9 +658,11 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, value: object) -> None:
         self._send(HTTPStatus.OK, json.dumps(value).encode(), "application/json")
 
-    def _send(self, status: HTTPStatus, body: bytes, content_type: str) -> None:
+    def _send(self, status: HTTPStatus, body: bytes, content_type: str, cache: bool = False) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
+        if cache:
+            self.send_header("Cache-Control", "max-age=86400")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

@@ -19,8 +19,15 @@ RENAMED_MIN_BYTES) just the same size, which catches renames such as Radarr's "T
 `cold` copies each title to the same folder on the cold drive, checks the copy (file count and bytes), drops it from
 Radarr/Sonarr with an import-list exclusion so it isn't grabbed again, moves the original into plex-media/_trash,
 then re-catalogs the drive and has Plex refresh the library. The cold drive then holds the only copy: the next
-`sync` of the regular backup drives removes the title there too. Copy it back to plex-media and re-add it in the
-app to bring one home.
+`sync` of the regular backup drives removes the title there too.
+
+Or click instead: Media Index's "Cold" button marks a title to move out, and the Drives tab's "Bring back" marks one
+to copy home (re-added to Radarr/Sonarr, no search; the cold copy stays as a backup). `watch` runs from launchd
+every WATCH_MINUTES and whenever a drive is plugged in; for each plugged-in drive with marked titles it runs
+`queue <drive>` in a one-off media-index container (launchd itself can't write the media disk), which does the
+moves and reports each back to the page.
+
+    python3 drives.py install                               # launchd agent for watch
 """
 
 from __future__ import annotations
@@ -33,11 +40,12 @@ import re
 import shutil
 import subprocess
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-
-import urllib.request
 
 import arr
 import index  # only its walk and item_for are used; its container paths are never touched here
@@ -62,8 +70,14 @@ BACKUPS = {
 OFFSITE = ["other", "anime", "youtube", "music", "podcasts", "audiobooks"]
 BACKUPS |= {"plex-cold-1": OFFSITE, "plex-cold-2": OFFSITE}
 SETTINGS_DIR = "_backups/settings"  # backup.sh's nightly archives; every backup drive gets a copy when synced
-PLEX = "http://localhost:32400"
+PLEX = os.environ.get("PLEX_URL", "http://localhost:32400")
 PLEX_SECTIONS = {"movies": 1, "tv": 2, "anime": 4}  # library id per top-level folder, for refreshes after `cold`
+QUALITY_PROFILE = 4  # HD-1080p in both Radarr and Sonarr, for titles brought back from cold storage
+COLD_DRIVES = ["plex-cold-1", "plex-cold-2"]
+COMPOSE = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose"
+WATCH_LABEL = "com.yesselman.cold-moves"
+WATCH_MINUTES = 10
+REMINDED = shrink.STATE_DIR / "cold-moves-reminded"
 
 
 @dataclass(frozen=True)
@@ -239,38 +253,88 @@ def cold(drive: str, items: list[str], dry_run: bool) -> None:
         items: Titles relative to the media root, e.g. "tv/The Office (US)".
         dry_run: Only print what would move.
     """
-    mount = Path("/Volumes") / drive
-    main = Path("/Volumes") / MAIN_DRIVE
-    if not mount.is_dir():
-        raise SystemExit(f"{mount} is not mounted")
+    mount = mounted(drive)
     moved: list[str] = []
     for item in items:
-        src, dst, trash = main / item, mount / item, main / "_trash" / item
-        if not src.exists():
-            print(f"skip, not on {MAIN_DRIVE}: {item}")
-            continue
-        if trash.exists() or (dst.exists() and measure(dst) != measure(src)):
-            print(f"skip, already in _trash or a different copy is on {drive}: {item}")
-            continue
-        files, size = measure(src)
-        print(f"{gb(size)}  {files:5} files  {item}")
+        src = Path("/Volumes") / MAIN_DRIVE / item
         if dry_run:
+            files, size = measure(src) if src.exists() else (0, 0)
+            print(f"{gb(size)}  {files:5} files  {item}")
             continue
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        source = f"{src}/" if src.is_dir() else str(src)
-        subprocess.run(["rsync", "-a", source, str(dst) + ("/" if src.is_dir() else "")], check=True)
-        if measure(dst) != (files, size):
-            print(f"   copy mismatch, original left in place: {item}")
-            continue
-        print(f"   {drop_from_arr(src) or 'not in Radarr/Sonarr'}; original -> _trash")
-        trash.parent.mkdir(parents=True, exist_ok=True)
-        src.rename(trash)
-        moved.append(item)
-    if dry_run or not moved:
-        return
-    entries = catalog(mount, drive)
-    print(f"{len(entries)} files, {gb(sum(e.size for e in entries)).strip()} on {drive}")
-    for category in {item.split("/")[0] for item in moved}:
+        try:
+            print(f"{item}: {move_out(mount, item)}")
+            moved.append(item)
+        except MoveError as err:
+            print(f"skip {item}: {err}")
+    if moved:
+        finish(drive, moved)
+
+
+class MoveError(Exception):
+    """A title that can't be moved; the message says why, and nothing was changed."""
+
+
+def mounted(drive: str) -> Path:
+    mount = Path("/Volumes") / drive
+    if not mount.is_dir():
+        raise SystemExit(f"{mount} is not mounted")
+    return mount
+
+
+def move_out(mount: Path, item: str) -> str:
+    """Copy one title to the cold drive, verify it, drop it from Radarr/Sonarr and move the original to _trash.
+
+    Returns:
+        What happened, for the log or the page.
+
+    Raises:
+        MoveError: When the title isn't there, already moved, or the copy doesn't match.
+    """
+    main = Path("/Volumes") / MAIN_DRIVE
+    src, dst, trash = main / item, mount / item, main / "_trash" / item
+    if not src.exists():
+        raise MoveError(f"not on {MAIN_DRIVE}")
+    if trash.exists() or (dst.exists() and measure(dst) != measure(src)):
+        raise MoveError(f"already in _trash, or a different copy is on {mount.name}")
+    copy(src, dst)
+    dropped = drop_from_arr(src) or "not in Radarr/Sonarr"
+    trash.parent.mkdir(parents=True, exist_ok=True)
+    src.rename(trash)
+    return f"{gb(measure(dst)[1]).strip()} copied; {dropped}; original in _trash"
+
+
+def move_back(mount: Path, item: str) -> str:
+    """Copy one title from a cold drive back onto MAIN_DRIVE and re-add it to Radarr/Sonarr (no search).
+
+    The cold copy stays where it is, as a backup.
+
+    Raises:
+        MoveError: When the title isn't on the drive, is already on MAIN_DRIVE, or the copy doesn't match.
+    """
+    src, dst = mount / item, Path("/Volumes") / MAIN_DRIVE / item
+    if not src.exists():
+        raise MoveError(f"not on {mount.name}")
+    if dst.exists():
+        raise MoveError(f"already on {MAIN_DRIVE}")
+    copy(src, dst)
+    return f"{gb(measure(dst)[1]).strip()} copied back; {add_to_arr(dst)}"
+
+
+def copy(src: Path, dst: Path) -> None:
+    """rsync a title (folder or single file) and check file count and bytes match."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    source = f"{src}/" if src.is_dir() else str(src)
+    subprocess.run(["rsync", "-a", source, str(dst) + ("/" if src.is_dir() else "")], check=True)
+    if measure(dst) != measure(src):
+        raise MoveError(f"copy at {dst} doesn't match, original left in place")
+
+
+def finish(drive: str, items: list[str]) -> None:
+    """After moves: re-catalog both drives and have Plex pick up the change in each library touched."""
+    for name in (drive, MAIN_DRIVE):
+        entries = catalog(Path("/Volumes") / name, name)
+        print(f"{len(entries)} files, {gb(sum(e.size for e in entries)).strip()} on {name}")
+    for category in {item.split("/")[0] for item in items}:
         plex_refresh(category)
 
 
@@ -301,6 +365,46 @@ def drop_from_arr(path: Path) -> str:
     return f"removed from {'Radarr' if kind == 'movie' else 'Sonarr'} (files kept, import-list exclusion added)"
 
 
+def add_to_arr(path: Path) -> str:
+    """Re-add a title copied back to MAIN_DRIVE to Radarr/Sonarr: lift the exclusion drop_from_arr added, then add it
+    at its path, monitored, with no search (the files are already there; Radarr/Sonarr scan them on add).
+
+    Returns:
+        A short message.
+    """
+    category = path.relative_to(Path("/Volumes") / MAIN_DRIVE).parts[0]
+    if category not in shrink.ARR:
+        return "not a Radarr/Sonarr folder"
+    base, kind, env_key, _ = shrink.ARR[category]
+    key = shrink.read_env().get(env_key, "")
+    app = "Radarr" if kind == "movie" else "Sonarr"
+    wanted = index.title_key(path.name)
+    if kind == "movie":
+        exclusions, id_field, title_field = arr.request(f"{base}/exclusions", key), "tmdbId", "movieTitle"
+    else:
+        exclusions, id_field, title_field = arr.request(f"{base}/importlistexclusion", key), "tvdbId", "title"
+    exclusion = next((e for e in exclusions if index.title_key(e[title_field]) == wanted), None)
+    if exclusion:
+        arr.request(f"{base}/{'exclusions' if kind == 'movie' else 'importlistexclusion'}/{exclusion['id']}", key,
+                    method="DELETE")
+        term = f"{'tmdb' if kind == 'movie' else 'tvdb'}:{exclusion[id_field]}"
+    else:
+        term = path.name
+    found = arr.request(f"{base}/{kind}/lookup?term={urllib.parse.quote(term)}", key)
+    match = next((f for f in found if exclusion or index.title_key(f"{f['title']} ({f.get('year')})") == wanted), None)
+    if not match:
+        return f"not found in {app}'s lookup; add it there by hand"
+    if match.get("id"):
+        return f"already in {app}"
+    search = {"searchForMovie": False} if kind == "movie" else {"searchForMissingEpisodes": False, "monitor": "all"}
+    body = {**match, "path": str(path), "rootFolderPath": str(path.parent), "qualityProfileId": QUALITY_PROFILE,
+            "monitored": True, "addOptions": search}
+    if kind == "series":
+        body["seasonFolder"] = True
+    arr.request(f"{base}/{kind}", key, body, "POST")
+    return f"added back to {app}" + (" (exclusion lifted)" if exclusion else "")
+
+
 def plex_refresh(category: str) -> None:
     """Have Plex rescan the library for a top-level folder and empty its trash, so moved titles disappear."""
     section = PLEX_SECTIONS.get(category)
@@ -321,6 +425,57 @@ def plex(path: str, method: str = "GET") -> str:
     """Call the local Plex server and return the response body."""
     with urllib.request.urlopen(urllib.request.Request(PLEX + path, method=method), timeout=60) as resp:
         return resp.read().decode(errors="replace")
+
+
+def run_queue(drive: str) -> None:
+    """Do the moves marked in Media Index for one mounted cold drive, reporting each back to the page.
+
+    Runs in a one-off media-index container (`watch` starts it), which can write the media disk, unlike launchd.
+    """
+    mount = mounted(drive)
+    jobs = [j for j in arr.request(f"{shrink.API}/cold-moves", "") if j["drive"] == drive and j["status"] == "queued"]
+    done = []
+    for job in jobs:
+        report(job, "running", "copying")
+        try:
+            message = (move_out if job["direction"] == "out" else move_back)(mount, job["item"])
+        except (MoveError, OSError, subprocess.CalledProcessError, urllib.error.URLError) as err:
+            report(job, "failed", str(err))
+            continue
+        report(job, "done", message)
+        done.append(job["item"])
+    if done:
+        finish(drive, done)
+
+
+def report(job: dict, status: str, message: str) -> None:
+    print(f"{status}: {job['direction']} {job['item']}: {message}", flush=True)
+    body = {"item": job["item"], "status": status, "message": message}
+    arr.request(f"{shrink.API}/cold-moves/status", "", body, "POST")
+
+
+def watch() -> None:
+    """Host side, from launchd: when a drive with queued moves is plugged in, run the queue for it in a container.
+
+    The container mounts the drive only while it runs, so the drive stays ejectable. Queued moves whose drive isn't
+    plugged in get one reminder a day.
+    """
+    jobs = [j for j in arr.request(f"{shrink.API}/cold-moves", "") if j["status"] == "queued"]
+    needed = sorted({j["drive"] for j in jobs})
+    mounts = subprocess.run(["/sbin/mount"], capture_output=True, text=True, check=True).stdout
+    plugged = [d for d in needed if f" on /Volumes/{d} (" in mounts]
+    for drive in plugged:
+        volume = f"/Volumes/{drive}:/Volumes/{drive}"
+        command = [COMPOSE, "run", "--rm", "-T", "-v", volume, "media-index", "python", "-u", "drives.py", "queue"]
+        command.append(drive)
+        print(time.strftime("%F %T"), " ".join(command), flush=True)
+        subprocess.run(command, cwd=Path(__file__).resolve().parents[1], check=False)
+    waiting = [d for d in needed if d not in plugged]
+    reminded_recently = REMINDED.exists() and time.time() - REMINDED.stat().st_mtime < 86400
+    if waiting and not reminded_recently:
+        counts = ", ".join(f"{sum(j['drive'] == d for j in jobs)} for {d}" for d in waiting)
+        notify("Plug in a cold drive", f"Moves waiting in Media Index: {counts}")
+        REMINDED.touch()
 
 
 def csv_items(path: Path) -> list[str]:
@@ -354,9 +509,10 @@ def print_status(show_notification: bool) -> None:
 
 
 def notify(title: str, message: str) -> None:
-    """Show a macOS notification."""
+    """Show a macOS notification (inside a container there is no osascript; the caller's log has the message)."""
     script = f"display notification {applescript_str(message)} with title {applescript_str(title)}"
-    subprocess.run(["osascript", "-e", script], check=False)
+    if shutil.which("osascript"):
+        subprocess.run(["osascript", "-e", script], check=False)
 
 
 def applescript_str(text: str) -> str:
@@ -390,6 +546,10 @@ def main() -> None:
     k.add_argument("items", nargs="*", help='titles relative to the media root, e.g. "tv/The Office (US)"')
     k.add_argument("--csv", type=Path, help="a move_candidates CSV (folder + show, or folder columns)")
     k.add_argument("--dry-run", action="store_true", help="only list what would move")
+    q = sub.add_parser("queue", help="do the moves marked in Media Index for a mounted cold drive (in the container)")
+    q.add_argument("drive", choices=COLD_DRIVES)
+    sub.add_parser("watch", help="run the queue for any plugged-in cold drive (launchd, every WATCH_MINUTES)")
+    sub.add_parser("install", help="install the launchd agent that runs watch")
     args = parser.parse_args()
 
     if args.command == "catalog":
@@ -410,6 +570,16 @@ def main() -> None:
         print_status(args.notify)
     elif args.command == "sync":
         sync(args.drive)
+    elif args.command == "queue":
+        run_queue(args.drive)
+    elif args.command == "watch":
+        watch()
+    elif args.command == "install":
+        args = ["/usr/bin/python3", str(Path(__file__).resolve()), "watch"]
+        log = shrink.STATE_DIR / "cold-moves.log"
+        plist = shrink.install_agent(WATCH_LABEL, args, {"StartInterval": WATCH_MINUTES * 60}, log,
+                                     {"WatchPaths": ["/Volumes"]})
+        print(f"installed {plist}; log {log}")
     elif args.command == "cold":
         cold(args.drive, args.items + (csv_items(args.csv) if args.csv else []), args.dry_run)
     else:

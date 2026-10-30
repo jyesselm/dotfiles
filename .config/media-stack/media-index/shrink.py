@@ -27,7 +27,7 @@ from pathlib import Path
 import arr  # Radarr/Sonarr client shared with the container; only its request() is used here
 
 MEDIA_ROOT = Path("/Volumes/plex-media")
-API = "http://localhost:8686/api"
+API = os.environ.get("MEDIA_INDEX_API", "http://localhost:8686/api")  # env: inside a container
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 STATE_DIR = Path.home() / ".local/share/media-index"
 LOG = STATE_DIR / "encode.log"
@@ -39,9 +39,11 @@ QUALITY = 75
 MIN_SAVING = 0.2  # keep the original unless the encode is at least 20% smaller
 DURATION_TOLERANCE_S = 1.0
 PROBE_TIMEOUT_S = 120  # a probe blocked by a macOS privacy prompt nobody answers would otherwise hang for hours
+RADARR = os.environ.get("RADARR_URL", "http://localhost:7878")  # env: inside a container
+SONARR = os.environ.get("SONARR_URL", "http://localhost:8989")
 ARR = {
-    "movies": ("http://localhost:7878/api/v3", "movie", "HOMEPAGE_VAR_RADARR_KEY", "RescanMovie"),
-    "tv": ("http://localhost:8989/api/v3", "series", "HOMEPAGE_VAR_SONARR_KEY", "RescanSeries"),
+    "movies": (RADARR + "/api/v3", "movie", "HOMEPAGE_VAR_RADARR_KEY", "RescanMovie"),
+    "tv": (SONARR + "/api/v3", "series", "HOMEPAGE_VAR_SONARR_KEY", "RescanSeries"),
 }
 LABEL = "com.yesselman.media-shrink"
 START_HOUR, STOP_HOUR = 1, 8
@@ -231,7 +233,9 @@ def finish(rel: str, replace: bool) -> dict:
 
 
 def read_env(path: Path = ENV_FILE) -> dict[str, str]:
-    """KEY=VALUE pairs from the stack's .env (for the Radarr/Sonarr API keys)."""
+    """KEY=VALUE pairs from the stack's .env (for the Radarr/Sonarr API keys); inside a container, its environment."""
+    if not path.exists():
+        return dict(os.environ)
     pairs = (line.split("=", 1) for line in path.read_text().splitlines() if "=" in line and not line.startswith("#"))
     return {k.strip(): v.strip().strip("\"'") for k, v in pairs}
 
@@ -395,7 +399,8 @@ def install_agent(label: str, args: list[str], schedule: dict, log: Path, extra:
 
 def install() -> None:
     """Write and load the launchd agent: nightly at START_HOUR, kept awake, no new file after STOP_HOUR."""
-    args = ["/usr/bin/caffeinate", "-i", "/usr/bin/python3", str(Path(__file__).resolve()), "run", "--until", str(STOP_HOUR)]
+    script = str(Path(__file__).resolve())
+    args = ["/usr/bin/caffeinate", "-i", "/usr/bin/python3", script, "run", "--until", str(STOP_HOUR)]
     extra = {
         "Nice": 10,
         "LowPriorityIO": True,

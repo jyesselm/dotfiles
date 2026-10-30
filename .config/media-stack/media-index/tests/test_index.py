@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-os.environ.setdefault("INDEX_DB", "/tmp/media-index-test.db")
 
 import index  # noqa: E402
 

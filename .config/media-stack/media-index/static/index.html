@@ -68,6 +68,10 @@ button { font: inherit; cursor: pointer; }
 .drive .f { color: var(--muted); font-size: 12px; margin-top: 6px; overflow-wrap: anywhere; }
 .badge.main { background: var(--shrink-bg); color: var(--shrink); }
 .badge.cold { background: var(--keep-bg); color: var(--keep); }
+.coldbtns { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.coldbtns .btn { padding: 4px 9px; font-size: 12.5px; }
+#coldq .row { grid-template-columns: 1fr auto; }
+#coldq h3 { font-size: 13px; margin: 14px 0 6px; color: var(--text-2); }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
 .bar { display: flex; height: 22px; gap: 2px; border-radius: 6px; overflow: hidden; margin: 12px 0 14px; }
 .bar > div { height: 100%; min-width: 2px; cursor: pointer; transition: opacity .15s; }
@@ -99,6 +103,23 @@ input[type=search] { flex: 1 1 220px; min-width: 0; }
 .count { color: var(--muted); font-size: 13px; margin-left: auto; }
 
 .list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+/* Grid view: poster cards, like Plex */
+.list.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 14px 10px; padding: 16px; }
+.list.grid .more { grid-column: 1 / -1; }
+.row.card { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; align-items: stretch; }
+.row.card.sel { background: none; box-shadow: none; }
+.row.card.sel .poster { outline: 3px solid var(--accent); }
+.poster { position: relative; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; background: var(--surface-2); display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; color: var(--muted); font-size: 13px; }
+.poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.poster .tag { position: absolute; left: 6px; right: 6px; bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+.poster .tag span { background: rgba(0,0,0,.72); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px; }
+.row.card.d-keep .poster { box-shadow: inset 0 0 0 3px var(--keep); }
+.row.card.d-delete .poster img { opacity: .35; }
+.row.card .title { font-size: 12px; line-height: 1.25; }
+.row.card .meta { font-size: 11px; margin: 0; }
+.row.card .linkbtn, .row.card .badge { font-size: 10.5px; padding: 1px 5px; }
+.row.card .seg button { padding: 3px 7px; font-size: 12px; }
+.row.card .cardacts { display: flex; flex-wrap: wrap; gap: 4px; }
 .row { display: grid; grid-template-columns: 1fr 150px auto; gap: 16px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); }
 .row:first-child { border-top: 0; }
 .row.sel { background: var(--surface-2); box-shadow: inset 3px 0 var(--accent); }
@@ -203,6 +224,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
     <button class="chip" data-flag="dupe">Possible duplicate</button>
     <button class="chip" data-flag="old">Old format</button>
     <button class="chip" data-flag="big">Oversized movies</button>
+    <button class="chip gridbtn">▦ Posters</button>
     <span class="count" id="count"></span>
   </div>
 
@@ -216,8 +238,10 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
     <div class="filters">
       <input type="search" id="dq" placeholder="Where is…  ( / )">
       <button class="chip" id="donly">Only on one drive</button>
+      <button class="chip gridbtn">▦ Posters</button>
       <span class="count" id="dcount"></span>
     </div>
+    <div id="coldq"></div>
     <div class="list" id="dlist"><div class="empty">Loading…</div></div>
   </div>
 </div>
@@ -244,7 +268,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 const PAGE = 150;
 const OLD_CODECS = ["mpeg4", "msmpeg4v3", "mpeg2video", "mpeg1video", "wmv3", "vc1", "h263", "msmpeg4v2"];
 const SERIES = 7; // categorical slots; the rest fold into "Other folders"
-const state = { items: [], summary: null, view: "undecided", category: null, flags: new Set(), q: "", sort: "size", shown: PAGE, sel: 0, open: null };
+const state = { items: [], summary: null, view: "undecided", category: null, flags: new Set(), q: "", sort: "size", shown: PAGE, sel: 0, open: null, moves: {}, grid: (() => { try { return localStorage.getItem("grid") === "1"; } catch { return false; } })() };
 const $ = (id) => document.getElementById(id);
 
 const gb = (b) => {
@@ -275,9 +299,10 @@ async function api(path, body) {
 }
 
 async function load() {
-  const [summary, items] = await Promise.all([api("/api/summary"), api("/api/items")]);
+  const [summary, items, moves] = await Promise.all([api("/api/summary"), api("/api/items"), api("/api/cold-moves")]);
   state.summary = summary;
   state.items = items;
+  state.moves = Object.fromEntries(moves.map((m) => [m.item, m]));
   renderSummary();
   renderList();
 }
@@ -389,7 +414,8 @@ function renderList() {
   const total = rows.reduce((a, r) => a + r.size, 0);
   $("count").textContent = `${rows.length.toLocaleString()} titles · ${gb(total)}`;
   if (!rows.length) { $("list").innerHTML = `<div class="empty">Nothing here. Try clearing a filter.</div>`; return; }
-  $("list").innerHTML = shown.map((it, i) => rowHtml(it, i, max)).join("") +
+  $("list").classList.toggle("grid", state.grid);
+  $("list").innerHTML = shown.map((it, i) => (state.grid ? cardHtml : rowHtml)(it, i, max)).join("") +
     (rows.length > shown.length ? `<button class="more" id="more">Show ${Math.min(PAGE, rows.length - shown.length)} more of ${rows.length - shown.length}</button>` : "");
   bindRows(shown);
   if (state.open !== null) openDetail(shown[state.open], state.open);
@@ -413,19 +439,51 @@ function rowHtml(it, i, max) {
   if (it.swap) badges.push(`<span class="badge swap" title="${esc(it.swap.release)}">⇄ Swapped ${ago(it.swap.swapped_at)}: ${gb(it.swap.original_size)} → ${gb(it.swap.release_size)} (original in _trash)</span>`);
   if (it.freeable < it.size && !it.trashed_at) badges.push(`<span class="badge" title="Hardlinked with a torrent in downloads/; deleting frees space only once the torrent is removed too">Shared with torrent · frees ${gb(it.freeable)}</span>`);
   if (isSong(it) && !it.trashed_at) badges.push(`<button class="linkbtn" data-play>${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
+  badges.push(...coldBits(it));
   if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
   const d = status(it);
-  const actions = it.trashed_at
-    ? `<div class="seg"><button data-restore>↺ Restore</button></div>`
-    : `<div class="seg">
-        <button class="keep ${d === "keep" ? "on" : ""}" data-d="keep">✓ Keep</button>
-        ${isSong(it) ? "" : `<button class="shrink ${d === "shrink" ? "on" : ""}" data-d="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient' style='opacity:.45;cursor:default'"}>⇣ Shrink</button>`}
-        <button class="delete ${d === "delete" ? "on" : ""}" data-d="delete">✕ Delete</button></div>`;
+  const actions = actionsHtml(it, d);
   return `<div class="row d-${d} ${i === state.sel ? "sel" : ""}" data-i="${i}">
     <div><div class="title">${isSong(it) ? songTitle(name) : `<small>${esc(cat)}</small>${esc(name.join("/") || cat)}`}</div>
       <div class="meta">${meta.map(esc).join(" · ")}</div>${badges.length ? `<div class="badges">${badges.join("")}</div>` : ""}</div>
     <div class="size">${gb(it.size)}<div class="track"><div class="fill" style="width:${it.size / max * 100}%"></div></div></div>
     ${actions}</div>`;
+}
+
+// Poster card for the grid view: same data-* hooks as a row, so bindRows wires both.
+function cardHtml(it, i) {
+  const [cat, ...name] = it.item.split("/");
+  const d = status(it), label = isSong(it) ? songTitle(name) : esc(name.join("/") || cat);
+  const tags = [gb(it.size), d === "undecided" ? "" : d, it.shrink_saving > 0 && d !== "shrink" ? "⇣ " + gb(it.shrink_saving) : ""].filter(Boolean);
+  const watched = inPlex(it) ? (it.last_viewed ? `watched ${ago(it.last_viewed)}` : "never watched") : "";
+  return `<div class="row card d-${d} ${i === state.sel ? "sel" : ""}" data-i="${i}">
+    <div class="poster">${label}${isSong(it) ? "" : `<img loading="lazy" alt="" src="/api/poster?item=${encodeURIComponent(it.item)}" onerror="this.remove()">`}
+      <div class="tag">${tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div></div>
+    <div class="title">${label}</div><div class="meta">${esc(cat)}${watched ? " · " + esc(watched) : ""}</div>
+    <div class="cardacts">${actionsHtml(it, d, true)}${coldBits(it).join("")}</div></div>`;
+}
+
+// Cold storage: status of a marked move, or buttons to mark one (not for Keep titles).
+function coldBits(it) {
+  const move = state.moves[it.item];
+  if (move) return [`<span class="badge cold">❄ ${move.direction === "out" ? "→" : "←"} ${esc(move.drive)}: ${esc(move.status)}</span>${move.status === "running" ? "" : `<button class="linkbtn" data-cold="">Unmark</button>`}`];
+  if (!it.video_files || it.trashed_at || it.decision === "keep" || !["movies", "tv", "anime"].includes(it.category)) return [];
+  return ["plex-cold-1", "plex-cold-2"].map((dr) => `<button class="linkbtn" data-cold="${dr}" title="Move to ${dr} when it's plugged in">❄ ${dr.replace("plex-", "")}</button>`);
+}
+
+function actionsHtml(it, d, compact = false) {
+  const html = actionsFull(it, d);
+  // Cards are narrow: keep the symbols, drop the words (they stay as tooltips).
+  return compact ? html.replace(/>([↺✓⇣✕]) (\w+)</g, ' title="$2">$1<') : html;
+}
+
+function actionsFull(it, d) {
+  return it.trashed_at
+    ? `<div class="seg"><button data-restore>↺ Restore</button></div>`
+    : `<div class="seg">
+        <button class="keep ${d === "keep" ? "on" : ""}" data-d="keep">✓ Keep</button>
+        ${isSong(it) ? "" : `<button class="shrink ${d === "shrink" ? "on" : ""}" data-d="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient' style='opacity:.45;cursor:default'"}>⇣ Shrink</button>`}
+        <button class="delete ${d === "delete" ? "on" : ""}" data-d="delete">✕ Delete</button></div>`;
 }
 
 // music/<Artist>/<Album>/<Song>.mp3 → "Song" with "Artist · Album" above it.
@@ -456,6 +514,13 @@ function bindRows(shown) {
     if (pl) pl.onclick = (e) => { e.stopPropagation(); play(it); };
     const sw = row.querySelector("[data-swap]");
     if (sw) sw.onclick = (e) => { e.stopPropagation(); openSwap(it); };
+    for (const c of row.querySelectorAll("[data-cold]")) c.onclick = async (e) => {
+      e.stopPropagation();
+      const out = await api("/api/cold-move", { item: it.item, drive: c.dataset.cold, direction: c.dataset.cold ? "out" : null });
+      if (!out.ok) alert(out.message);
+      await loadMoves();
+      renderList();
+    };
     const r = row.querySelector("[data-restore]");
     if (r) r.onclick = async () => { const out = await api("/api/restore", { item: it.item }); alert(out.message); load(); };
   }
@@ -497,6 +562,7 @@ async function openDetail(it, i) {
 
 // Drives tab: where every title lives, from the manifests drives.py keeps for plugged-in and unplugged drives.
 const dstate = { tab: "media", drives: [], drive: null, q: "", only: false, timer: null };
+const COLD = ["plex-cold-1", "plex-cold-2"];
 const roleOf = (d) => {
   if (d.main) return "main library";
   const extra = d.folders.map(([f]) => f).filter((f) => !f.startsWith("_") && !d.scopes.some((s) => s.split("/")[0] === f));
@@ -513,8 +579,25 @@ function showTab(tab) {
   if (tab === "drives" && !dstate.drives.length) loadDrives();
 }
 async function loadDrives() {
-  dstate.drives = await api("/api/drives");
+  [dstate.drives] = await Promise.all([api("/api/drives"), loadMoves()]);
   renderDrives();
+  renderDriveItems();
+}
+// Cold moves: marked here, done by drives.py watch/queue once the drive is plugged in.
+async function loadMoves() {
+  const moves = await api("/api/cold-moves");
+  state.moves = Object.fromEntries(moves.map((m) => [m.item, m]));
+  const word = { running: "moving now:", done: "done:", failed: "failed:" };
+  $("coldq").innerHTML = moves.length ? `<h3>Marked for cold storage moves</h3><div class="list">${moves.map((m) => `<div class="row">
+      <div><div class="title"><small>${m.direction === "out" ? "→ " + esc(m.drive) : "← back from " + esc(m.drive)}</small>${esc(m.item)}</div>
+      <div class="meta">${m.status === "queued" ? `queued · runs while ${esc(m.drive)} is plugged in` : esc(word[m.status]) + " " + esc(m.message)} · ${ago(m.updated_at)}</div></div>
+      <div class="coldbtns">${m.status === "running" ? "" : `<button class="btn" data-unmark="${esc(m.item)}">${m.status === "queued" ? "Unmark" : "Clear"}</button>`}</div></div>`).join("")}</div>` : "";
+  for (const b of $("coldq").querySelectorAll("[data-unmark]")) b.onclick = () => markMove(b.dataset.unmark, "", null);
+}
+async function markMove(item, drive, direction) {
+  const out = await api("/api/cold-move", { item, drive, direction });
+  if (!out.ok) alert(out.message);
+  await loadMoves();
   renderDriveItems();
 }
 function renderDrives() {
@@ -531,22 +614,43 @@ async function renderDriveItems() {
   $("dcount").textContent = `${out.total.toLocaleString()} titles · ${gb(out.total_size)}${out.total > out.items.length ? ` · showing largest ${out.items.length}` : ""}`;
   if (!out.items.length) { $("dlist").innerHTML = `<div class="empty">Nothing matches on any catalogued drive.</div>`; return; }
   const main = dstate.drives.find((d) => d.main)?.drive;
+  $("dlist").classList.toggle("grid", state.grid);
   $("dlist").innerHTML = out.items.map((it) => {
     const [cat, ...name] = it.item.split("/");
     const copies = Object.entries(it.drives).sort(([a], [b]) => (a === main ? -1 : b === main ? 1 : a.localeCompare(b)));
     const badges = copies.map(([d, s]) => `<span class="badge ${d === main ? "main" : d.startsWith("plex-cold") ? "cold" : ""}">${esc(d)} · ${gb(s)}</span>`).join("");
     const where = copies.length === 1 ? (copies[0][0] === main ? "only on the main disk, no backup" : `only on ${copies[0][0]}`) : `${copies.length} drives`;
-    return `<div class="row" style="grid-template-columns:1fr 150px"><div><div class="title"><small>${esc(cat)}</small>${esc(name.join("/") || cat)}</div>
-      <div class="meta">${esc(where)}</div><div class="badges">${badges}</div></div><div class="size">${gb(it.size)}</div></div>`;
+    const m = state.moves[it.item], onCold = COLD.filter((d) => d in it.drives);
+    const btns = m ? `<span class="meta">${m.direction === "out" ? "→ " : "← "}${esc(m.drive)}: ${esc(m.status)}</span>`
+      : it.drives[main] ? COLD.map((d) => `<button class="btn" data-mark="out" data-drive="${d}" title="Move to ${d}">❄ ${d.replace("plex-", "")}</button>`).join("")
+      : onCold.length ? `<button class="btn" data-mark="back" data-drive="${onCold[0]}">← Bring back</button>` : "";
+    if (state.grid) return `<div class="row card" data-item="${esc(it.item)}"><div class="poster">${esc(name.join("/") || cat)}
+        <img loading="lazy" alt="" src="/api/poster?item=${encodeURIComponent(it.item)}" onerror="this.remove()"><div class="tag"><span>${gb(it.size)}</span></div></div>
+      <div class="title">${esc(name.join("/") || cat)}</div><div class="meta">${esc(where)}</div><div class="badges">${badges}</div><div class="cardacts">${btns}</div></div>`;
+    return `<div class="row" style="grid-template-columns:1fr 110px auto" data-item="${esc(it.item)}"><div><div class="title"><small>${esc(cat)}</small>${esc(name.join("/") || cat)}</div>
+      <div class="meta">${esc(where)}</div><div class="badges">${badges}</div></div><div class="size">${gb(it.size)}</div><div class="coldbtns">${btns}</div></div>`;
   }).join("");
+  for (const b of $("dlist").querySelectorAll("[data-mark]")) b.onclick = () => markMove(b.closest(".row").dataset.item, b.dataset.drive, b.dataset.mark);
 }
 for (const b of document.querySelectorAll(".tabs button")) b.onclick = () => showTab(b.dataset.tab);
+const gridBtns = document.querySelectorAll(".gridbtn");
+for (const b of gridBtns) {
+  b.classList.toggle("on", state.grid);
+  b.onclick = () => {
+    state.grid = !state.grid;
+    for (const g of gridBtns) g.classList.toggle("on", state.grid);
+    try { localStorage.setItem("grid", state.grid ? "1" : "0"); } catch {}
+    renderList();
+    if (dstate.drives.length) renderDriveItems();
+  };
+}
+setInterval(() => { if (dstate.tab === "drives") loadMoves(); }, 30000);
 $("dq").oninput = (e) => { dstate.q = e.target.value; clearTimeout(dstate.timer); dstate.timer = setTimeout(renderDriveItems, 150); };
 $("donly").onclick = () => { dstate.only = !dstate.only; $("donly").classList.toggle("on", dstate.only); renderDriveItems(); };
 
 $("q").oninput = (e) => { state.q = e.target.value; reset(); };
 $("sort").onchange = (e) => { state.sort = e.target.value; reset(); };
-for (const chip of document.querySelectorAll("#tab-media .chip")) chip.onclick = () => {
+for (const chip of document.querySelectorAll("#tab-media .chip[data-flag]")) chip.onclick = () => {
   const f = chip.dataset.flag;
   state.flags.has(f) ? state.flags.delete(f) : state.flags.add(f);
   chip.classList.toggle("on");

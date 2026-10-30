@@ -62,6 +62,14 @@ create table if not exists swaps (      -- movies replaced by a smaller release;
     release_size integer not null,
     swapped_at real not null
 );
+create table if not exists cold_moves (     -- titles marked in the page to move to/from a cold drive (drives.py queue)
+    item text primary key,
+    drive text not null,
+    direction text not null,    -- out (plex-media -> drive) | back (drive -> plex-media)
+    status text not null,       -- queued | running | done | failed
+    message text not null default '',
+    updated_at real not null
+);
 create table if not exists state (key text primary key, value text not null);
 """
 
