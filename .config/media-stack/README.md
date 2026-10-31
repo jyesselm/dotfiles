@@ -50,7 +50,12 @@ Shows and movies you'll stream on another service go on a Trakt list instead (tr
 **non-plex-watchlist** for yourself, **non-plex-watchlist-together** for things to watch together. Nothing
 imports them, so nothing downloads. The dashboard's Watch tab (`:3000/#watch`) shows either list (a switch at the top)
 with each title labelled In Plex (checked against the library by TMDB, IMDb or TVDB id) and the US services that
-stream it (TMDB data via Seerr): your subscriptions are `MINE` in `dashboard/server.py`. Readable on the Onn in any browser.
+stream it (TMDB data via Seerr): your subscriptions are `MINE` in `dashboard/server.py`. Clicking a poster opens its
+details. On the Onn, the Watch TV app (`tv-app/`; `./gradlew assembleDebug`, then `adb install` the debug APK; a new Mac
+needs `openjdk@21` and `android-commandlinetools` from the Brewfile, `sdkmanager "platforms;android-36" "build-tools;36.0.0"`
+and `tv-app/local.properties` with `sdk.dir=/opt/homebrew/share/android-commandlinetools`) loads
+`?tv=1`, the 10-foot layout: OK opens the details, Watch opens Plex directly or Google TV search for the title (one
+press to the service), and Trailer plays in YouTube. `?tv=1` works in any browser for testing.
 
 Sign-ins live in `$DATA_ROOT/plextraktsync/` (`.env`, `.pytrakt.json`, `servers.yml`) and Radarr's database, so a
 moved or restored stack keeps them. Only a fresh install needs them again:

@@ -1,3 +1,7 @@
 .zsh/secrets.zsh
 .zsh/local.zsh
 .config/yadm/.claude/
+.config/media-stack/tv-app/build/
+.config/media-stack/tv-app/app/build/
+.config/media-stack/tv-app/.gradle/
+.config/media-stack/tv-app/local.properties

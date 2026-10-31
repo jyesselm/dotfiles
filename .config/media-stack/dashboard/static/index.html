@@ -86,7 +86,7 @@ section { margin-bottom: 36px; }
 .poster { scroll-snap-align: start; }
 .poster .art { aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; background: var(--fill); box-shadow: 0 8px 22px rgba(0,0,0,.18); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
 .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.poster:hover .art { transform: scale(1.04); }
+body:not(.tv) .poster:hover .art { transform: scale(1.04); }
 .poster .t { font-size: 13px; font-weight: 500; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .err { font-size: 12px; color: var(--text-3); margin: 0 4px; }
 .poster .s { font-size: 12px; color: var(--text-2); }
@@ -98,6 +98,53 @@ section { margin-bottom: 36px; }
 .where .b.plex { background: color-mix(in srgb, #e5a00d 22%, transparent); color: #e5a00d; }
 .where .b.dim { background: var(--fill); color: var(--text-2); font-weight: 500; }
 h2 .logo { width: 26px; height: 26px; border-radius: 7px; vertical-align: -6px; margin-right: 10px; }
+
+/* title sheet: always dark, over a blurred backdrop */
+.sheet { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 32px; overflow: auto; background: #000; color: #f5f5f7;
+  --fill: rgba(255,255,255,.12); --text-2: #a1a1a6; --blue: #2997ff; }
+.sheet[hidden] { display: none; }
+body:has(.sheet:not([hidden])) { overflow: hidden; }
+.sheet .bd { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(28px) brightness(.45); transform: scale(1.1); }
+.sheet::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, #000, transparent 65%), linear-gradient(to right, rgba(0,0,0,.55), transparent 70%); }
+.sheet .in { position: relative; z-index: 1; max-width: 960px; display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: end; animation: fade .35s cubic-bezier(.2,.8,.2,1); }
+.sheet .art { aspect-ratio: 2/3; border-radius: 14px; overflow: hidden; background: var(--fill); box-shadow: 0 30px 60px rgba(0,0,0,.6); }
+.sheet .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sheet .ln { color: var(--text-2); margin-top: 8px; }
+.sheet .ln:empty { display: none; }
+.sheet .ln i { font-style: normal; color: #ffd60a; }
+.sheet p { margin-top: 14px; max-width: 62ch; }
+.sheet .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.sheet .btn.soft { color: #fff; }
+.sheet .btn:focus { outline: none; box-shadow: 0 0 0 3px #fff; }
+@media (max-width: 760px) { .sheet .in { grid-template-columns: 1fr; gap: 20px; } .sheet .art { width: 140px; } }
+
+/* TV (?tv=1 or the Watch app): the Watch view at 10 feet; remote focus replaces hover */
+body.tv { padding: 32px 48px; }
+body.tv .bar, body.tv .tabbar, body.tv #w-lead { display: none; }
+body.tv .ambient { inset: 0; height: auto; opacity: .25; filter: blur(90px) saturate(1.4); }
+body.tv .wrap { max-width: none; padding: 0; }
+body.tv .hero { padding: 8px 0 12px; }
+body.tv .eyebrow { font-size: 16px; }
+body.tv h1 { font-size: 44px; }
+body.tv #w-pick { padding: 5px; border-radius: 14px; }
+body.tv #w-pick a { font-size: 20px; padding: 8px 22px; border-radius: 10px; }
+body.tv #w-pick a:focus { box-shadow: 0 0 0 3px #fff; }
+body.tv section { margin-bottom: 8px; }
+body.tv h2 { font-size: 28px; margin: 0; }
+body.tv h2 .logo { width: 34px; height: 34px; border-radius: 9px; vertical-align: -7px; margin-right: 12px; }
+body.tv .shelf { grid-auto-columns: 220px; gap: 24px; padding: 32px 48px 24px; margin: -8px -48px 0; scroll-snap-type: none; }
+body.tv .poster .art { border-radius: 14px; }
+body.tv .poster > :not(.art) { transition: transform .4s cubic-bezier(.2,.8,.2,1); }
+body.tv .poster .t { font-size: 18px; margin-top: 12px; }
+body.tv .poster .s { font-size: 15px; }
+body.tv .where .b { font-size: 14px; padding: 3px 10px; }
+body.tv .poster:focus .art, body.tv .poster.sel .art { transform: scale(1.12); box-shadow: 0 0 0 4px #fff, 0 20px 50px rgba(0,0,0,.6); }
+body.tv .poster:focus > :not(.art), body.tv .poster.sel > :not(.art) { transform: translateY(20px); }
+body.tv .sheet { padding: 48px 96px; font-size: 22px; }
+body.tv .sheet .in { max-width: 1400px; grid-template-columns: 300px 1fr; gap: 56px; }
+body.tv .sheet h1 { font-size: 48px; }
+body.tv .sheet .btn { font-size: 22px; padding: 14px 32px; transition: transform .25s; }
+body.tv .sheet .btn:focus { box-shadow: 0 0 0 4px #fff; transform: scale(1.06); }
 
 /* app launchers */
 .apps { display: grid; gap: 14px 8px; padding: 18px 10px; }
@@ -242,6 +289,12 @@ h2 .logo { width: 26px; height: 26px; border-radius: 7px; vertical-align: -6px; 
   <div class="hero"><div class="eyebrow">Your Trakt lists</div><h1>Watch Elsewhere</h1><p class="lead" id="w-lead"></p>
     <nav class="tabs" id="w-pick" style="display:inline-flex;margin:18px 0 0"></nav></div>
   <div id="w-shelves"></div>
+  <div class="sheet" id="w-detail" hidden><img class="bd" id="d-bd" alt="">
+    <div class="in"><div class="art" id="d-art"></div>
+      <div><div class="eyebrow" id="d-kind"></div><h1 id="d-title"></h1><div class="ln" id="d-tag"></div><div class="ln" id="d-meta"></div>
+        <p id="d-ov"></p><div class="ln" id="d-cast"></div><div class="where" id="d-where"></div>
+        <div class="acts"><a class="btn" id="d-go" hidden></a><a class="btn" id="d-tr" target="_blank" rel="noopener">▶ Trailer</a><a class="btn soft" id="d-jw" target="_blank" rel="noopener">Where to watch</a><button class="btn soft" id="d-x">Close</button></div></div></div>
+  </div>
 </div>
 
 <!-- DOWNLOADS -->
@@ -307,9 +360,13 @@ const link = (port, path = "") => `http://${H}:${port}${path}`;
 const $ = (id) => document.getElementById(id);
 
 // tabs (hash-routed, remembered)
+// TV (?tv=1, or the Watch app's "PlexTV" user agent): only the Watch view, dark, laid out for a remote
+const TV = new URLSearchParams(location.search).get("tv") === "1" || navigator.userAgent.includes("PlexTV");
+if (TV) document.body.classList.add("tv");
 const TABS = [["home", "Home", "⌂"], ["watch", "Watch", "▶"], ["downloads", "Downloads", "↓"], ["storage", "Storage", "◔"], ["computers", "Computers", "▭"], ["admin", "Admin", "⚙"]];
 for (const id of ["tabs", "tabbar"]) $(id).innerHTML = TABS.map(([k, n, g]) => `<a href="#${k}" data-t="${k}"><span class="i">${g}</span>${n}</a>`).join("");
 function show(t) {
+  if (TV) t = "watch";
   if (!TABS.some(([k]) => k === t)) t = "home";
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("on", v.id === "v-" + t));
   document.querySelectorAll("[data-t]").forEach((a) => a.classList.toggle("on", a.dataset.t === t));
@@ -326,6 +383,7 @@ $("greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "
 $("date").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 const root = document.documentElement;
 try { const t = localStorage.getItem("theme"); if (t) root.dataset.theme = t; } catch {}
+if (TV) root.dataset.theme = "dark";
 $("theme").onclick = () => {
   const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("theme", root.dataset.theme); } catch {}
@@ -341,13 +399,16 @@ const tile = (t, color, ic, v, l) => `<a class="card tile" href="#${t}"><div cla
 const row = (g, meta, bar) => `<li><span class="tt">${esc(g.title)}<span class="ss">${g.kind}${g.n > 1 ? ` · ${g.n} episodes` : ""}</span></span><span class="meta ${g.warn && !g.active ? "warn" : ""}">${meta}</span>${bar ? `<div class="pbar"><i style="width:${Math.max(g.pct, 3)}%"></i></div>` : ""}</li>`;
 const COLORS = ["var(--blue)", "var(--purple)", "var(--orange)", "var(--text-3)", "var(--pink)", "var(--teal)", "var(--indigo)", "var(--green)", "var(--red)", "var(--text-2)"];
 let foldOpen = false;
-let lastWatch = null, watchLists = [], watchPick = null;
+let lastWatch = null, watchLists = [], watchPick = null, watchCards = [];
 try { watchPick = localStorage.getItem("watchList"); } catch {}
 function pickWatch(slug) {
   watchPick = slug; try { localStorage.setItem("watchList", slug); } catch {}
   renderWatch();
   document.querySelector(`#w-pick [data-l="${slug}"]`)?.focus();
 }
+const badges = (p) => (p.plex ? `<span class="b plex">Plex</span>` : "") + p.mine.map((n) => `<span class="b">${esc(n)}</span>`).join("")
+  + (p.other.length ? `<span class="b dim" title="${esc(p.other.join(", "))}">${p.plex || p.mine.length ? "+" + p.other.length + " other" : esc(p.other[0]) + (p.other.length > 1 ? " +" + (p.other.length - 1) : "")}</span>` : "")
+  || `<span class="b dim">Rent or buy</span>`;
 $("w-pick").onclick = (e) => { const a = e.target.closest("[data-l]"); if (a) { e.preventDefault(); pickWatch(a.dataset.l); } };
 function renderWatch() {
   const W = watchLists.find((l) => l.slug === watchPick) || watchLists[0];
@@ -358,20 +419,53 @@ function renderWatch() {
   $("w-lead").textContent = !watchLists.length ? "Trakt or Seerr isn't answering." : W?.missing
     ? `Make a Trakt list with the slug "${W.slug}" (trakt.tv → your profile → Lists → New list) to fill this one.`
     : "In Plex first, then your services (Netflix, HBO Max, Prime Video, Disney+, Hulu, Apple TV), then everything else. Nothing here is downloaded.";
+  watchCards = (W?.shelves || []).flatMap((s) => s.items);
+  let i = 0;
   const wHtml = (W?.shelves || []).map((s) =>
     `<section><h2><span>${s.logo ? `<img class="logo" src="${s.logo}" alt="">` : ""}${esc(s.name)}</span></h2><div class="shelf">${s.items.map((p) =>
-      `<a class="poster" href="${p.link || "#"}"><div class="art">${p.img ? `<img src="${p.img}" alt="" loading="lazy">` : ""}</div><div class="t">${esc(p.title)}</div><div class="s">${p.kind}${p.year ? " · " + p.year : ""}</div><div class="where">${
-        (p.plex ? `<span class="b plex">Plex</span>` : "") + p.mine.map((n) => `<span class="b">${esc(n)}</span>`).join("")
-        + (p.other.length ? `<span class="b dim" title="${esc(p.other.join(", "))}">${p.plex || p.mine.length ? "+" + p.other.length + " other" : esc(p.other[0]) + (p.other.length > 1 ? " +" + (p.other.length - 1) : "")}</span>` : "")
-        || `<span class="b dim">Rent or buy</span>`}</div></a>`).join("")}</div></section>`).join("")
+      `<a class="poster" href="#watch" data-i="${i++}"><div class="art">${p.img ? `<img src="${p.img}" alt="" loading="lazy">` : ""}</div><div class="t">${esc(p.title)}</div><div class="s">${p.kind}${p.year ? " · " + p.year : ""}</div><div class="where">${badges(p)}</div></a>`).join("")}</div></section>`).join("")
     || (W && !W.missing ? `<div class="err">The list is empty.</div>` : "");
   if (wHtml !== lastWatch) $("w-shelves").innerHTML = lastWatch = wHtml;  // redrawing would drop the remote's focus
+  if (TV && document.activeElement === document.body) select(document.querySelector("#w-shelves .poster"), "nearest");  // keep the heading on screen
 }
+
+// title sheet: OK / click on a poster; Back, Escape or Close returns to the poster
+$("w-shelves").onclick = (e) => { const a = e.target.closest(".poster"); if (a) { e.preventDefault(); openDetail(watchCards[a.dataset.i]); } };
+async function openDetail(p) {
+  let T = {};
+  try { const r = await fetch(`/api/title?type=${p.type}&tmdb=${p.tmdb}`); if (r.ok) T = await r.json(); } catch {}
+  const hm = (m) => m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+  $("d-bd").hidden = !(T.backdrop || p.img); $("d-bd").src = T.backdrop || p.img || "";
+  $("d-art").innerHTML = p.img ? `<img src="${p.img}" alt="">` : "";
+  $("d-kind").textContent = p.kind;
+  $("d-title").textContent = T.title || p.title;
+  $("d-tag").textContent = T.tagline || "";
+  $("d-meta").innerHTML = [T.year || p.year, T.runtime && hm(T.runtime), (T.genres || []).join(", "), T.rating && `<i>★</i> ${T.rating}`].filter(Boolean).join(" · ");
+  $("d-ov").textContent = T.overview || "";
+  $("d-cast").textContent = T.cast?.length ? "Starring " + T.cast.join(", ") : "";
+  $("d-where").innerHTML = badges(p);
+  $("d-tr").hidden = !T.trailer; $("d-tr").href = T.trailer ? `https://www.youtube.com/watch?v=${T.trailer}` : "#";
+  $("d-jw").hidden = !p.link; $("d-jw").href = p.link || "#";
+  // TV: the Watch app opens Plex itself, or Google TV search for the title (its results deep-link into each service)
+  const svc = p.plex ? "Plex" : p.mine[0] || p.other[0];
+  $("d-go").hidden = !(TV && svc); $("d-go").textContent = `▶ Watch on ${svc}`;
+  $("d-go").href = p.plex ? `watch://plex?q=${encodeURIComponent(p.title)}` : `watch://search?q=${encodeURIComponent(`${p.title} ${p.year || ""}`.trim())}`;
+  $("d-tr").classList.toggle("soft", !$("d-go").hidden);
+  if ($("w-detail").hidden) { $("w-detail").hidden = false; history.pushState({ d: 1 }, "", location.hash); }
+  document.querySelector("#w-detail .acts > :not([hidden])").focus();
+}
+function closeDetail() {
+  $("w-detail").hidden = true;
+  (document.querySelector("#w-shelves .sel") || document.querySelector("#w-shelves .poster"))?.focus();
+}
+const dismiss = () => history.state?.d ? history.back() : closeDetail();  // back pops the entry openDetail pushed
+$("d-x").onclick = dismiss;
+addEventListener("popstate", closeDetail);
 
 function render(D) {
   // ---- HOME ----
   const R = D.recent || [];
-  if (R[0]) $("ambient").style.backgroundImage = `url(${R[0].img})`;
+  if (R[0] && !TV) $("ambient").style.backgroundImage = `url(${R[0].img})`;
   $("shelf").innerHTML = R.map((p) =>
     `<a class="poster" href="${link(32400, "/web")}"><div class="art"><img src="${p.img}" alt="" loading="lazy"></div><div class="t">${esc(p.title)}</div><div class="s">${p.sub ? esc(p.sub) : p.kind + (p.year ? " · " + p.year : "")}</div></a>`).join("")
     || `<div class="err">Plex isn't answering${D.errors?.recent ? " · " + esc(D.errors.recent) : ""}</div>`;
@@ -493,6 +587,13 @@ function render(D) {
 // TV remote: arrows step through the Watch posters (left/right in a row, up/down between rows);
 // up from the first row reaches the By myself / Together switch, where left/right changes list
 addEventListener("keydown", (e) => {
+  if (!$("w-detail").hidden) {  // sheet open: left/right between its buttons, back closes it
+    const bs = [...document.querySelectorAll("#w-detail .acts > :not([hidden])")];
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") (bs[bs.indexOf(document.activeElement) + (e.key === "ArrowRight" ? 1 : -1)] || bs[0]).focus();
+    else if (["Escape", "Backspace", "GoBack", "BrowserBack"].includes(e.key)) dismiss();
+    else if (!e.key.startsWith("Arrow")) return;
+    return e.preventDefault();
+  }
   const step = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key];
   if (!step || !$("v-watch").classList.contains("on")) return;
   const pills = [...document.querySelectorAll("#w-pick [data-l]")];
@@ -513,11 +614,16 @@ addEventListener("keydown", (e) => {
   }
   if (r < 0) r = 0; else { r = Math.min(Math.max(r + step[0], 0), rows.length - 1); c = Math.min(Math.max(c + step[1], 0), rows[r].length - 1); }
   e.preventDefault();
-  document.querySelectorAll("#w-shelves .sel").forEach((x) => x.classList.remove("sel"));
-  rows[r][c].classList.add("sel");
-  rows[r][c].focus();
-  rows[r][c].scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+  select(rows[r][c]);
 });
+function select(a, block = "center") {
+  if (!a) return;
+  document.querySelectorAll("#w-shelves .sel").forEach((x) => x.classList.remove("sel"));
+  a.classList.add("sel");
+  a.focus();
+  a.scrollIntoView({ block, inline: "nearest", behavior: "smooth" });
+  if (TV) $("ambient").style.backgroundImage = `url(${a.querySelector("img")?.src})`;
+}
 
 async function refresh() {
   try {

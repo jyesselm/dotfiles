@@ -182,6 +182,7 @@ REGION = "US"
 MINE = ["Netflix", "HBO Max", "Prime Video", "Disney+", "Hulu", "Apple TV"]  # subscriptions you pay for, in shelf order
 CHANNEL = re.compile(r"\s*(Amazon|Apple TV|Roku Premium) Channel\s*$", re.I)
 where: dict[tuple, dict] = {}  # (type, TMDB id) -> title/poster/services from Seerr, looked up daily
+details: dict[tuple, dict] = {}  # same key -> the detail sheet, also daily
 
 
 def service(name: str) -> str:
@@ -223,7 +224,6 @@ def plex_ids() -> set[str]:
 
 def by_service(items: list[dict]) -> list[dict]:
     """Group Trakt list items into In Plex, one shelf per MINE service, then everything else (TMDB, via Seerr)."""
-    h = {"X-Api-Key": ENV.get("SEERR_KEY", "")}
     shelves: dict[str, dict] = {}
     try:
         library = plex_ids()
@@ -237,7 +237,7 @@ def by_service(items: list[dict]) -> list[dict]:
             continue
         key = (it["type"], tmdb)
         if key not in where or where[key]["at"] < time.time() - 86400:
-            d = get_json(f"http://seerr:5055/api/v1/{'movie' if it['type'] == 'movie' else 'tv'}/{tmdb}", h)
+            d = seerr_title(it["type"], tmdb)
             p = next((w for w in d.get("watchProviders") or [] if w["iso_3166_1"] == REGION), {})
             subs = {}  # "AMC Plus Apple TV channel", "AMC+ Amazon Channel" and "AMC+" are one subscription
             for s in sorted(p.get("flatrate", []) + p.get("free", []) + p.get("ads", []), key=lambda s: (bool(CHANNEL.search(s["name"])), s["displayPriority"])):
@@ -250,7 +250,7 @@ def by_service(items: list[dict]) -> list[dict]:
         plex = w["plex"] if library is None else bool(library & {f"tmdb:{it['type']}:{tmdb}", f"imdb:{ids.get('imdb')}", f"tvdb:{ids.get('tvdb')}"})
         mine = [n for n in MINE if n in w["services"]]
         card = {k: w[k] for k in ("title", "year", "img", "kind", "link")} | {
-            "plex": plex, "mine": mine, "other": [n for n in w["services"] if n not in MINE]}
+            "tmdb": tmdb, "type": it["type"], "plex": plex, "mine": mine, "other": [n for n in w["services"] if n not in MINE]}
         names = ["In Plex"] if plex else mine or (["Other services"] if w["services"] else ["Rent or buy only"])
         for n in names:
             shelves.setdefault(n, {"name": n, "logo": w["services"].get(n), "items": []})["items"].append(card)
@@ -260,6 +260,29 @@ def by_service(items: list[dict]) -> list[dict]:
         if s["logo"]:
             s["logo"] = "/poster?p=" + quote(s["logo"])
     return order
+
+
+def seerr_title(kind: str, tmdb) -> dict:
+    """Seerr's copy of one TMDB movie or show (kind is Trakt's "movie" or "show")."""
+    return get_json(f"http://seerr:5055/api/v1/{'movie' if kind == 'movie' else 'tv'}/{tmdb}",
+                    {"X-Api-Key": ENV.get("SEERR_KEY", "")})
+
+
+def title(kind: str, tmdb: str) -> dict:
+    """The detail sheet for one title: blurb, cast, backdrop and YouTube trailer."""
+    key = (kind, tmdb)
+    if key not in details or details[key]["at"] < time.time() - 86400:
+        d = seerr_title(kind, tmdb)
+        yt = [v for v in d.get("relatedVideos") or [] if v.get("site") == "YouTube"]
+        trailer = next((v for v in yt if v.get("type") == "Trailer"), yt[0] if yt else None)
+        details[key] = {
+            "title": d.get("title") or d.get("name"), "year": (d.get("releaseDate") or d.get("firstAirDate") or "")[:4],
+            "tagline": d.get("tagline"), "runtime": d.get("runtime") or (d.get("episodeRunTime") or [None])[0],
+            "genres": [g["name"] for g in d.get("genres") or []], "rating": round(d.get("voteAverage") or 0, 1),
+            "overview": d.get("overview"), "cast": [c["name"] for c in (d.get("credits") or {}).get("cast", [])[:4]],
+            "backdrop": f"/poster?p={quote(d['backdropPath'])}&w=1280" if d.get("backdropPath") else None,
+            "trailer": trailer and trailer["key"], "at": time.time()}
+    return details[key]
 
 
 def plex_counts() -> dict:
@@ -459,13 +482,14 @@ def refresher():
 # ---- http ----
 
 
-def poster(path: str) -> bytes:
-    """Plex thumb (/library/...) or TMDB poster (/xyz.jpg), fetched once and kept in memory."""
-    if path not in posters:
+def poster(path: str, w: str = "185") -> bytes:
+    """Plex thumb (/library/...) or TMDB poster/backdrop (/xyz.jpg, w185 or w1280), fetched once and kept in memory."""
+    key = f"{w}{path}"
+    if key not in posters:
         url = (f"{PLEX}/photo/:/transcode?width=320&height=480&minSize=1&upscale=1&url={quote(path, safe='')}&X-Plex-Token={PLEX_TOKEN}"
-               if path.startswith("/library/") else f"https://image.tmdb.org/t/p/w185{path}")
-        posters[path] = get(url, timeout=15)
-    return posters[path]
+               if path.startswith("/library/") else f"https://image.tmdb.org/t/p/w{w}{path}")
+        posters[key] = get(url, timeout=15)
+    return posters[key]
 
 
 MIME = {".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml",
@@ -490,12 +514,22 @@ class Handler(BaseHTTPRequestHandler):
             with state_lock:
                 body = json.dumps(state).encode()
             return self.send(body, "application/json")
-        if u.path == "/poster":
-            p = parse_qs(u.query).get("p", [""])[0]
-            if not p.startswith("/") or ".." in p:
+        if u.path == "/api/title":
+            q = parse_qs(u.query)
+            kind, tmdb = q.get("type", [""])[0], q.get("tmdb", [""])[0]
+            if kind not in ("movie", "show") or not tmdb.isdigit():
                 return self.send(b"bad", "text/plain", HTTPStatus.BAD_REQUEST)
             try:
-                return self.send(poster(p), "image/jpeg", cache="public, max-age=86400")
+                return self.send(json.dumps(title(kind, tmdb)).encode(), "application/json")
+            except Exception:
+                return self.send(b"{}", "application/json", HTTPStatus.BAD_GATEWAY)
+        if u.path == "/poster":
+            q = parse_qs(u.query)
+            p, w = q.get("p", [""])[0], q.get("w", ["185"])[0]
+            if not p.startswith("/") or ".." in p or w not in ("185", "1280"):
+                return self.send(b"bad", "text/plain", HTTPStatus.BAD_REQUEST)
+            try:
+                return self.send(poster(p, w), "image/jpeg", cache="public, max-age=86400")
             except Exception:
                 return self.send(b"", "image/jpeg", HTTPStatus.BAD_GATEWAY)
         f = STATIC / ("index.html" if u.path == "/" else u.path.lstrip("/"))
