@@ -66,6 +66,7 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .btn:hover { border-color: var(--muted); }
 .btn.on, .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .btn.cold { background: var(--cold-bg); color: var(--cold); border-color: transparent; }
+.btn.travel { background: var(--travel-bg); color: var(--travel); border-color: transparent; }
 .btn.ghost { background: none; color: var(--text-2); }
 .btn.danger { color: var(--delete); background: none; }
 .btn.keep { color: var(--keep); } .btn.keep.on { background: var(--keep-bg); color: var(--keep); }
@@ -120,6 +121,8 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .quick button { flex: 1; padding: 7px 0; border-radius: 9px; font-weight: 800; font-size: 12px; background: rgba(12,14,19,.82); color: #fff; backdrop-filter: blur(6px); white-space: nowrap; }
 .quick button.cold { background: var(--cold); color: var(--cold-fg); }
 .quick button.warm { background: var(--accent); color: var(--accent-fg); }
+.quick button.travel { background: var(--travel); color: #fff; flex: 0 0 auto; padding: 7px 9px; }
+.quick button.on { box-shadow: inset 0 0 0 2px #fff; }
 .card .check { position: absolute; top: 8px; right: 8px; z-index: 2; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; background: rgba(12,14,19,.5); display: none; place-items: center; font-weight: 900; color: var(--accent-fg); }
 .wall.select .card .check { display: grid; }
 .wall.select .card .res, .wall.select .card .quick { display: none; }
@@ -216,6 +219,16 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 .files td { padding: 4px 6px; border-top: 1px solid var(--border); color: var(--text-2); font-variant-numeric: tabular-nums; vertical-align: top; }
 .files td:first-child { color: var(--text); overflow-wrap: anywhere; }
 .note { width: 100%; margin: 0 0 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+/* where it lives: two switches, cold and travel, with the state spelled out */
+.live { display: grid; gap: 8px; margin: 0 0 14px; }
+.live .l, .bulk .l { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 800; }
+.sw { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+.sw.on { border-color: var(--on, var(--accent)); box-shadow: inset 0 0 0 1px var(--on, var(--accent)); }
+.sw.cold { --on: var(--cold); } .sw.travel { --on: var(--travel); }
+.sw input { width: 20px; height: 20px; margin: 0; accent-color: var(--on, var(--accent)); flex: none; }
+.sw .ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-weight: 900; background: var(--surface-2); flex: none; }
+.sw.cold .ic { background: var(--cold-bg); color: var(--cold); } .sw.travel .ic { background: var(--travel-bg); color: var(--travel); }
+.sw select { margin-left: auto; }
 .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .acts .btn { padding: 9px 14px; }
 .opt { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; cursor: pointer; }
@@ -271,7 +284,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
       <span class="count" id="count"></span>
     </div>
     <div id="list"><div class="empty">Loading…</div></div>
-    <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>c</kbd> cold / bring back · <kbd>p</kbd> play song · <kbd>Enter</kbd> details</div>
+    <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>c</kbd> cold / bring back · <kbd>t</kbd> travel on/off · <kbd>p</kbd> play song · <kbd>Enter</kbd> details</div>
   </section>
 
   <section id="tab-storage" hidden>
@@ -289,11 +302,15 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
 <div class="bulk" id="bulk">
   <span><b class="num" id="b-n">0</b> selected · <span class="num" id="b-gb">0</span></span>
-  <button class="btn cold" data-bulk="out">❄ Move to cold</button>
-  <button class="btn primary" data-bulk="back">☀ Bring back</button>
+  <span class="l">Mark as</span>
+  <button class="btn cold" data-bulk="out">❄ Cold</button>
+  <button class="btn travel" data-bulk="travel-on">🧳 Travel</button>
   <button class="btn keep" data-bulk="keep">✓ Keep</button>
   <button class="btn shrink" data-bulk="shrink">⇣ Shrink</button>
   <button class="btn delete" data-bulk="delete">✕ Delete</button>
+  <span class="l">Undo</span>
+  <button class="btn primary" data-bulk="back">☀ Bring back</button>
+  <button class="btn ghost" data-bulk="travel-off">🧳 Off travel</button>
   <button class="btn ghost" data-bulk="clear">Clear</button>
 </div>
 <div class="bulk" id="dock"><span id="docktext"></span><button class="btn danger" id="trashbtn">Review &amp; move to trash</button></div>
@@ -487,13 +504,14 @@ function watchedText(it) {
 function quickHtml(it) {
   const m = state.moves[it.item];
   if (m && m.status === "running") return "";
-  if (m && m.status !== "done") return `<button data-a="unmark">⏳ Unmark</button>`;
+  const queued = m && m.status !== "done";
   if (it.trashed_at) return `<button data-a="restore">↺ Restore</button>`;
-  if (it.cold) return `<button class="warm" data-a="back">☀ Bring back</button>`;
+  if (it.cold) return queued ? `<button data-a="unmark">⏳ Unmark</button>` : `<button class="warm" data-a="back">☀ Bring back</button>`;
   const keep = `<button data-a="keep">${it.decision === "keep" ? "✓ Kept" : "Keep"}</button>`;
   if (isSong(it)) return `<button data-a="play">${playing(it) ? "⏸ Pause" : "▶ Play"}</button>${keep}`;
-  if (isVideo(it) && it.decision !== "keep") return `<button class="cold" data-a="out">❄ Cold</button>${keep}`;
-  return keep;
+  if (!isVideo(it)) return keep;
+  const cold = queued ? `<button class="cold on" data-a="unmark">❄ Queued</button>` : it.decision === "keep" ? "" : `<button class="cold" data-a="out">❄ Cold</button>`;
+  return `${cold}<button class="travel ${it.travel ? "on" : ""}" data-a="travel" title="${it.travel ? "On the travel list · click to remove" : "Add to the travel list"}">🧳${it.travel ? " ✓" : ""}</button>${keep}`;
 }
 function cardHtml(it, i) {
   const [cat] = it.item.split("/"), d = status(it), label = titleOf(it);
@@ -560,6 +578,7 @@ async function act(it, a, drive = "") {
   if (a === "restore") { out = await api("/api/restore", { item: it.item }); alert(out.message); return load(); }
   if (a === "out" || a === "back") out = await api("/api/cold-move", { item: it.item, drive, direction: a });
   if (a === "unmark") out = await api("/api/cold-move", { item: it.item, direction: null });
+  if (a === "travel") { out = await api("/api/travel", { item: it.item, on: !it.travel }); if (out.ok) it.travel = !it.travel; }
   if (!out.ok) alert(out.message);
   await loadMoves();
   renderList(); renderStorage();
@@ -596,6 +615,7 @@ function renderBulk() {
   $("bulk").classList.toggle("on", state.picking && L.length > 0);
   $("b-n").textContent = L.length; $("b-gb").textContent = gb(L.reduce((a, it) => a + it.size, 0));
   const show = { out: L.some((it) => isVideo(it) && !it.cold && !it.trashed_at && it.decision !== "keep"), back: L.some((it) => it.cold),
+    "travel-on": L.some((it) => isVideo(it) && !it.cold && !it.trashed_at && !it.travel), "travel-off": L.some((it) => it.travel && !it.cold),
     keep: L.some((it) => !it.cold && !it.trashed_at), shrink: L.some((it) => it.shrink_saving > 0), delete: L.some((it) => !it.cold && !it.trashed_at), clear: true };
   for (const b of $("bulk").querySelectorAll("[data-bulk]")) b.hidden = !show[b.dataset.bulk];
 }
@@ -608,6 +628,11 @@ for (const b of $("bulk").querySelectorAll("[data-bulk]")) b.onclick = async () 
     if (a === "out" && !(isVideo(it) && !it.cold && !it.trashed_at && it.decision !== "keep")) continue;
     if (a === "back" && !it.cold) continue;
     if (a === "out" || a === "back") { const out = await api("/api/cold-move", { item: it.item, drive: "", direction: a }); if (!out.ok) failed.push(`${titleOf(it)}: ${out.message}`); }
+    else if (a.startsWith("travel")) {
+      const on = a === "travel-on";
+      if (!(isVideo(it) && !it.cold && !it.trashed_at) || it.travel === on) continue;
+      const out = await api("/api/travel", { item: it.item, on }); if (!out.ok) failed.push(`${titleOf(it)}: ${out.message}`);
+    }
     else if (!it.cold && !it.trashed_at && (a !== "shrink" || it.shrink_saving > 0)) { it.decision = a; await api("/api/decision", { item: it.item, decision: a, note: it.note || "" }); }
   }
   b.disabled = false;
@@ -647,15 +672,21 @@ async function openSheet(it) {
     return `<div><span class="ic ${kind}">${{ warm: "☀", cold: "❄", travel: "🧳" }[kind] || "⧉"}</span><span><b>${esc(dr)}</b><br><span class="hint">${what}</span></span><span class="r num">${gb(s)}</span></div>`;
   }).join("") + (it.travel && !(it.drives || {})[TRAVEL] ? `<div><span class="ic travel">🧳</span><span><b>Travel</b><br><span class="hint">in the Plex Travel collection · lands on ${esc(TRAVEL)} when the stick is copied and catalogued</span></span></div>` : "") + (it.trashed_at ? `<div><span class="ic">🗑</span><span><b>plex-media/_trash</b><br><span class="hint">moved ${ago(it.trashed_at)} · restore any time</span></span></div>` : "");
   const table = !files.length ? "" : `<details class="files-wrap" ${files.length > 8 ? "" : "open"}><summary class="hint" style="cursor:pointer;margin:14px 0 6px">${files.length} file${files.length === 1 ? "" : "s"}</summary><table class="files">${files.map((f) => `<tr><td>${esc(f.path.slice(it.item.length + 1) || f.path)}</td><td>${gb(f.size)}</td><td>${res(f.height)} ${esc(f.codec || "")}</td><td>${f.duration_s ? hours(f.duration_s) : ""}</td><td>${f.shrink_saving ? "⇣ " + gb(f.shrink_saving) : ""}</td><td>${f.last_viewed ? "watched " + ago(f.last_viewed) : ""}</td></tr>`).join("")}</table></details>`;
-  const acts = [];
+  const acts = [], live = [], queued = m && m.status !== "done", moving = m && m.status === "running";
+  if (!it.trashed_at && isVideo(it)) {
+    const coldOn = it.cold ? !(queued && m.direction === "back") : !!(queued && m.direction === "out");
+    const coldNote = moving ? "moving now" : queued ? (m.direction === "out" ? `queued · goes to ${esc(m.drive)} when it's plugged in` : `queued · comes back to ${esc(main)} when ${esc(m.drive)} is plugged in`)
+      : it.cold ? `on ${esc(coldDrive(it) || "a cold drive")} · untick to bring it back` : d === "keep" ? "kept titles stay active (clear Keep first)" : "tick to copy it to a cold drive and free the space here";
+    const pick = !it.cold && !queued && d !== "keep" ? `<select class="sort" data-drive title="Which cold drive"><option value="">roomiest drive</option>${COLD.map((c) => `<option>${c}</option>`).join("")}</select>` : "";
+    live.push(`<label class="sw cold ${coldOn ? "on" : ""}"><input type="checkbox" data-sw="cold" ${coldOn ? "checked" : ""} ${moving || (d === "keep" && !it.cold) ? "disabled" : ""}><span class="ic">❄</span><span><b>Cold storage</b><br><span class="hint">${coldNote}</span></span>${pick}</label>`);
+    if (!it.cold) live.push(`<label class="sw travel ${it.travel ? "on" : ""}"><input type="checkbox" data-sw="travel" ${it.travel ? "checked" : ""}><span class="ic">🧳</span><span><b>Travel stick</b><br><span class="hint">${it.travel ? "on the travel list (Plex collection “Travel”) · gets copied to the stick" : "tick to add it to the travel list"}</span></span></label>`);
+  }
   if (it.trashed_at) acts.push(`<button class="btn primary" data-a="restore">↺ Restore</button>`);
-  else if (it.cold) acts.push(m && m.status !== "done" ? (m.status === "running" ? "" : `<button class="btn" data-a="unmark">⏳ Unmark</button>`) : `<button class="btn primary" data-a="back">☀ Bring back to ${esc(main)}</button>`);
+  else if (it.cold) { /* the cold switch above brings it back */ }
   else {
     acts.push(`<button class="btn keep ${d === "keep" ? "on" : ""}" data-a="keep">✓ Keep</button>`);
     if (!isSong(it)) acts.push(`<button class="btn shrink ${d === "shrink" ? "on" : ""}" data-a="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient'"}>⇣ Shrink</button>`);
     acts.push(`<button class="btn delete ${d === "delete" ? "on" : ""}" data-a="delete">✕ Delete</button>`);
-    if (isVideo(it) && d !== "keep") acts.push(m && m.status !== "done" ? (m.status === "running" ? "" : `<button class="btn" data-a="unmark">⏳ Unmark cold move</button>`)
-      : `<button class="btn cold" data-a="out">❄ Move to cold</button><select class="sort" data-drive title="Which cold drive"><option value="">roomiest drive</option>${COLD.map((c) => `<option>${c}</option>`).join("")}</select>`);
     if (isBig(it)) acts.push(`<button class="btn ghost" data-a="swap">⇄ Find smaller 1080p</button>`);
     if (isSong(it)) acts.push(`<button class="btn ghost" data-a="play">${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
   }
@@ -666,11 +697,16 @@ async function openSheet(it) {
       <div class="facts">${facts.map(([l, v]) => `<div class="fact"><div class="l">${l}</div><div class="v num">${v}</div></div>`).join("")}</div>
       <div class="where">${where}</div>
       ${it.trashed_at || it.cold ? "" : `<input class="note" placeholder="Note (saved with your decision)" value="${esc(it.note || "")}">`}
+      ${live.length ? `<div class="live"><div class="l">Where it lives</div>${live.join("")}</div>` : ""}
       <div class="acts">${acts.join("")}</div>${table}
     </div></div>`;
   const inner = $("sheet-in");
   inner.querySelector("[data-close]").onclick = () => dlg.close();
   for (const b of inner.querySelectorAll("[data-a]")) b.onclick = () => act(it, b.dataset.a, inner.querySelector("[data-drive]")?.value || "");
+  for (const c of inner.querySelectorAll("[data-sw]")) c.onchange = () => {
+    if (c.dataset.sw === "travel") return act(it, "travel");
+    act(it, queued ? "unmark" : it.cold ? "back" : "out", inner.querySelector("[data-drive]")?.value || "");
+  };
   const note = inner.querySelector(".note");
   if (note) note.onchange = async () => { it.note = note.value; await api("/api/decision", { item: it.item, decision: it.decision || "keep", note: it.note }); load(); };
 }
@@ -848,7 +884,7 @@ document.addEventListener("keydown", async (e) => {
   const rows = visible().slice(0, state.shown), cur = rows[state.sel];
   const keys = { j: () => select(Math.min(state.sel + 1, rows.length - 1)), k: () => select(Math.max(state.sel - 1, 0)),
     1: () => decide(cur, "keep"), 2: () => decide(cur, "shrink"), 3: () => decide(cur, "delete"), 0: () => decide(cur, null),
-    c: () => act(cur, cur?.cold ? "back" : "out"), Enter: () => openSheet(cur), p: () => play(cur), " ": () => state.picking && togglePick(cur) };
+    c: () => act(cur, cur?.cold ? "back" : "out"), t: () => act(cur, "travel"), Enter: () => openSheet(cur), p: () => play(cur), " ": () => state.picking && togglePick(cur) };
   const fn = keys[e.key];
   if (!fn || !cur) return;
   e.preventDefault();

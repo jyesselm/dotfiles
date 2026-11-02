@@ -470,7 +470,8 @@ COVER_NAMES = ("cover", "folder", "poster", "show", "front", "album")
 COVER_TYPES = ("*.jpg", "*.jpeg", "*.png")
 MISS_RETRY_S = 6 * 3600
 _arr_paths: dict = {"at": 0.0, "paths": {}}
-_plex_cache: dict = {"at": 0.0, "by_item": {}, "by_key": {}, "travel": set()}
+_plex_cache: dict = {"at": 0.0, "by_item": {}, "by_key": {}, "travel": set(), "sections": {}, "travel_coll": {}}
+PLEX_TYPE = {"movie": 1, "show": 2}  # Plex metadata type codes, for creating a collection
 _misses: dict[str, float] = {}
 
 
@@ -517,37 +518,80 @@ def _plex_index() -> dict:
     """Plex artwork and Travel-collection membership for every title, refreshed every 10 minutes.
 
     Returns:
-        {"by_item": item -> thumb (movies, matched by file path), "by_key": _plex_key -> thumb (shows, artists:
-        matched by title), "travel": set of _plex_keys in a collection called Travel}.
+        {"by_item": item -> {"thumb", "rk"} (movies, matched by file path), "by_key": _plex_key -> the same (shows,
+        artists: matched by title), "travel": set of _plex_keys in a collection called Travel,
+        "sections": folder -> {"key", "type"}, "travel_coll": folder -> that section's Travel collection ratingKey}.
     """
     if time.time() - _plex_cache["at"] < 600:
         return _plex_cache
-    by_item, by_key, travel, root = {}, {}, set(), str(index.MEDIA_ROOT) + "/"
+    found: dict = {"by_item": {}, "by_key": {}, "travel": set(), "sections": {}, "travel_coll": {}}
+    root = str(index.MEDIA_ROOT) + "/"
     for section in _plex_get("/library/sections").get("Directory", []):
         paths = [loc["path"] for loc in section.get("Location", []) if loc["path"].startswith(root)]
         folder = paths[0][len(root):] if paths else ""
         if folder:
-            _plex_section(section["key"], folder, root, by_item, by_key, travel)
-    if by_key or _plex_cache["at"] == 0:  # keep the old index while Plex is down
-        _plex_cache.update(at=time.time(), by_item=by_item, by_key=by_key, travel=travel)
+            found["sections"][folder] = {"key": section["key"], "type": PLEX_TYPE.get(section["type"], 1)}
+            _plex_section(section["key"], folder, root, found)
+    if found["by_key"] or _plex_cache["at"] == 0:  # keep the old index while Plex is down
+        _plex_cache.update(at=time.time(), **found)
     return _plex_cache
 
 
-def _plex_section(key: str, folder: str, root: str, by_item: dict, by_key: dict, travel: set) -> None:
-    """One library section's artwork into by_item / by_key, and the titles of its Travel collection into travel."""
+def _plex_section(key: str, folder: str, root: str, found: dict) -> None:
+    """One library section's artwork and rating keys into found, plus its Travel collection and that one's titles."""
     for entry in _plex_get(f"/library/sections/{key}/all").get("Metadata", []):
         thumb = entry.get("thumb")
         if not thumb:
             continue
-        by_key.setdefault((folder, index.title_key(entry["title"])), thumb)
+        hit = {"thumb": thumb, "rk": entry["ratingKey"]}
+        found["by_key"].setdefault((folder, index.title_key(entry["title"])), hit)
         files = (part.get("file", "") for media in entry.get("Media", []) for part in media.get("Part", []))
         for file in files:
             if file.startswith(root):
-                by_item.setdefault(nfc(index.item_for(file[len(root):])[0]), thumb)
+                found["by_item"].setdefault(nfc(index.item_for(file[len(root):])[0]), hit)
     for coll in _plex_get(f"/library/sections/{key}/collections").get("Metadata", []):
         if coll["title"].lower() == "travel":
+            found["travel_coll"][folder] = coll["ratingKey"]
             for entry in _plex_get(f"/library/collections/{coll['ratingKey']}/children").get("Metadata", []):
-                travel.add((folder, index.title_key(entry["title"])))
+                found["travel"].add((folder, index.title_key(entry["title"])))
+
+
+def _plex_entry(item: str) -> dict | None:
+    plex = _plex_index()
+    return plex["by_item"].get(nfc(item)) or plex["by_key"].get(_plex_key(item))
+
+
+def _plex_call(path: str, method: str) -> None:
+    """A Plex write (PUT/POST/DELETE); OSError when it fails."""
+    token = shrink.read_env().get("HOMEPAGE_VAR_PLEX_TOKEN", "")
+    sep = "&" if "?" in path else "?"
+    req = urllib.request.Request(f"{PLEX}{path}{sep}X-Plex-Token={token}", method=method)
+    with urllib.request.urlopen(req, timeout=60):
+        pass
+
+
+def set_travel(item: str, on: bool) -> dict:
+    """Put a title into (or take it out of) its library's Plex collection "Travel": the 🧳 mark, and the list that
+    gets copied to the stick."""
+    entry, folder = _plex_entry(item), item.split("/")[0]
+    plex = _plex_index()
+    section, coll = plex["sections"].get(folder), plex["travel_coll"].get(folder)
+    if not entry or not section:
+        return {"ok": False, "message": "not in Plex right now (a cold title has to come back first)"}
+    machine = _plex_get("/identity").get("machineIdentifier", "")
+    uri = quote(f"server://{machine}/com.plexapp.plugins.library/library/metadata/{entry['rk']}", safe="")
+    try:
+        if on and coll:
+            _plex_call(f"/library/collections/{coll}/items?uri={uri}", "PUT")
+        elif on:
+            query = f"type={section['type']}&title=Travel&smart=0&sectionId={section['key']}&uri={uri}"
+            _plex_call(f"/library/collections?{query}", "POST")
+        elif coll:
+            _plex_call(f"/library/collections/{coll}/children/{entry['rk']}?excludeAllLeaves=1", "DELETE")
+    except OSError as err:
+        return {"ok": False, "message": f"Plex refused: {err}"}
+    _plex_cache["at"] = 0  # the next items load re-reads the collections
+    return {"ok": True, "message": "on the travel list" if on else "off the travel list"}
 
 
 def _fetch(url: str, headers: dict | None = None) -> bytes | None:
@@ -567,10 +611,10 @@ def _poster_from_arr(item: str) -> bytes | None:
 
 
 def _poster_from_plex(item: str) -> bytes | None:
-    plex = _plex_index()
-    thumb = plex["by_item"].get(nfc(item)) or plex["by_key"].get(_plex_key(item))
-    if not thumb:
+    hit = _plex_entry(item)
+    if not hit:
         return None
+    thumb = hit["thumb"]
     token = shrink.read_env().get("HOMEPAGE_VAR_PLEX_TOKEN", "")
     return _fetch(f"{PLEX}/photo/:/transcode?width={POSTER_W}&height={POSTER_H}&minSize=1&upscale=1"
                   f"&url={quote(thumb)}&X-Plex-Token={token}")
@@ -801,6 +845,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(shrink_finish(body["path"], bool(body.get("replace"))))
         elif path == "/api/cold-move":
             self._json(mark_cold_move(body["item"], body.get("drive", ""), body.get("direction")))
+        elif path == "/api/travel":
+            self._json(set_travel(body["item"], bool(body.get("on"))))
         elif path == "/api/cold-moves/status":
             self._json(cold_move_status(body["item"], body["status"], body.get("message", "")))
         elif path == "/api/scan":

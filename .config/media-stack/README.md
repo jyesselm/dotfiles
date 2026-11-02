@@ -109,7 +109,9 @@ serves a review page on 8686: a poster wall (like Plex) where every title is eit
 **❄ cold** on a cold drive (the drive is a chip on the card); **🧳 travel** marks what goes on the travel stick: anything in a Plex
 collection called Travel, or held by the drive `plex-travel` once the stick is named that and catalogued. Posters come from
 Radarr/Sonarr, then Plex, then a cover image in the title's own folder (audiobooks, podcasts, album art), then TMDB
-(`TMDB_API_KEY`); a title with none shows a tinted tile with its name. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
+(`TMDB_API_KEY`); a title with none shows a tinted tile with its name. A title's sheet has two switches under "Where it
+lives", ❄ Cold storage and 🧳 Travel stick (the travel one adds or removes it in the Plex Travel collection); the hover
+buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
 or press **Select** to mark many at once. The **Storage** tab shows the disk by folder, the cold shelf (both drives as one
 pool, with where the next move goes), queued moves, and shelves of suggestions: never watched and big, not watched in
