@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import csv
 import fnmatch
+import json
 import os
 import re
 import shutil
@@ -110,6 +111,8 @@ def catalog(mount: Path, drive: str) -> list[Entry]:
     entries = [Entry(f.path, f.size, f.mtime) for f in index.walk(mount)]
     saved = catalog_path(drive)
     save(entries, saved)
+    total, _used, free = shutil.disk_usage(mount)
+    usage_path(drive).write_text(json.dumps({"total": total, "free": free}))
     try:
         shutil.copyfile(saved, mount / ON_DRIVE_NAME)
     except OSError as err:  # read-only drive: the Mac copy is enough
@@ -120,6 +123,19 @@ def catalog(mount: Path, drive: str) -> list[Entry]:
 def catalog_path(drive: str) -> Path:
     """Where a drive's manifest lives on the Mac."""
     return CATALOG_DIR / f"{drive}.tsv"
+
+
+def usage_path(drive: str) -> Path:
+    """Where a drive's size and free space (as of its last catalog) live on the Mac."""
+    return CATALOG_DIR / f"{drive}.usage.json"
+
+
+def usage(drive: str) -> dict:
+    """{"total", "free"} bytes from the last catalog, or {} for drives catalogued before this was recorded."""
+    try:
+        return json.loads(usage_path(drive).read_text())
+    except OSError:
+        return {}
 
 
 def save(entries: list[Entry], path: Path) -> None:

@@ -23,7 +23,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
-| Media Index | 8686 | Disk use by title, Plex watch history, keep/delete/shrink review, Drives tab (which drive holds what), ▦ Posters grid (posters from Radarr/Sonarr, cached in `~/.local/share/media-index/posters` so cold-storage titles keep theirs) (`media-index/`) |
+| Media Index | 8686 | Poster wall of every title, active or cold, with keep/shrink/delete and cold-storage moves; Storage tab (disk use, cold shelf, suggestions); posters from Radarr/Sonarr, cached in `~/.local/share/media-index/posters` so cold titles keep theirs (`media-index/`) |
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
@@ -105,7 +105,12 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 ## Media Index (cleanup)
 
 `media-index/` indexes the disk daily (sizes, ffprobe video info, watch history from Plex's dated database backups) and
-serves a review page on 8686. Mark each title Keep, Shrink (worth re-encoding to HEVC) or Delete. "Move to trash"
+serves a review page on 8686: a poster wall (like Plex) where every title is either **☀ active** on `plex-media` or
+**❄ cold** on a cold drive (the drive is a chip on the card). Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
+click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
+or press **Select** to mark many at once. The **Storage** tab shows the disk by folder, the cold shelf (both drives as one
+pool, with where the next move goes), queued moves, and shelves of suggestions: never watched and big, not watched in
+3+ years, 4K you could shrink instead, on the shelf to bring back. Mark each title Keep, Shrink (worth re-encoding to HEVC) or Delete. "Move to trash"
 renames Delete items into `plex-media/_trash/` and unmonitors them in Radarr/Sonarr; restore from the page. Nothing is
 permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/plex-media/_trash/*`. Music is reviewed per song:
 pick ♪ Music in the type chips, press `p` (or ▶) to listen, and `1`/`3` keep or delete; while a song plays, moving or deciding plays
@@ -159,8 +164,9 @@ python3 media-index/music_upgrade.py run --dry-run          # what would start o
 unplugged. `media-index/drives.py catalog` writes one row per file (path, size, mtime) to
 `~/.local/share/media-index/drives/<drive>.tsv` and to `.media-manifest.tsv` on the drive itself. Re-run it
 after changing a drive. A file counts as copied when another drive has the same name and size (or the same size for
-files over 50 MB, which catches renames). The **Drives** tab on the Media Index page (8686) shows the same manifests:
-a card per drive, a search box for "where is …", and an "Only on one drive" filter for titles with no second copy.
+files over 50 MB, which catches renames). `catalog` also records the drive's size and free space
+(`<drive>.usage.json`), which is how the page picks the roomiest cold drive. The Storage tab shows the same manifests,
+and a title's sheet lists every drive holding a copy.
 
 ```sh
 python3 media-index/drives.py catalog /Volumes/plex-backup-1      # after plugging a drive in
@@ -175,9 +181,9 @@ Radarr/Sonarr (files kept, import-list exclusion so it isn't grabbed again), mov
 `plex-media/_trash`, re-catalogs the drive and has Plex refresh the library. The cold drive then holds the only
 copy once the regular backup drives are next synced.
 
-**Click instead.** In Media Index (either tab), a title on `plex-media` has **❄ cold-1 / ❄ cold-2**
-buttons, and a title only on a cold drive has **← Bring back**. Clicking marks it (Keep titles, i.e. the repeat
-list and watchlist, are refused); the marks show at the top of the tab with their progress. The launchd agent
+**Click instead.** In Media Index, ❄ on a `plex-media` title marks it for the cold drive with the most room (the
+sheet lets you pick one), and ☀ Bring back marks a cold title to copy home. Keep titles, i.e. the repeat list and
+watchlist, are refused; the marks show on the cards and in the Storage tab's queue with their progress. The launchd agent
 `com.yesselman.cold-moves` (`python3 media-index/drives.py install`) runs `drives.py watch` every 10 minutes and whenever a drive is
 plugged in: for each plugged-in cold drive with marks it runs `drives.py queue <drive>` in a one-off media-index
 container (launchd can't write the media disk), which does the moves the same way as `cold`. Bringing one back copies

@@ -114,6 +114,35 @@ def load_items() -> list[dict]:
     return rows + [_trashed_item(t) for t in trashed if t["item"] not in items]
 
 
+def library() -> list[dict]:
+    """Everything on plex-media plus the titles that live only on a cold drive, each with the drives holding a copy.
+
+    Returns:
+        load_items() rows with "drives" and "cold" added, then one row per cold-only title (size from its catalog).
+    """
+    items = load_items()
+    held = {r["item"]: r for r in _drive_data()["items"]}
+    on_main = {i["item"] for i in items}
+    for it in items:
+        it["drives"] = held.get(it["item"], {}).get("drives", {})
+        it["cold"] = False
+    for r in held.values():
+        on_cold = any(d in drives.COLD_DRIVES for d in r["drives"])
+        if r["item"] in on_main or not on_cold or r["category"] not in drives.PLEX_SECTIONS:
+            continue
+        items.append({
+            "item": r["item"], "category": r["category"], "size": r["size"], "files": 0, "freeable": 0,
+            "video_files": 1, "drives": r["drives"], "cold": True, "shrink_saving": 0,
+        })
+    return items
+
+
+def pick_cold_drive() -> str:
+    """The cold drive with the most room: by free space when its catalog recorded it, else the one holding least."""
+    info = {d["drive"]: d for d in _drive_data()["drives"]}
+    return max(drives.COLD_DRIVES, key=lambda d: (info.get(d, {}).get("free") or 0, -info.get(d, {}).get("size", 0)))
+
+
 def _flag_duplicates(items: dict[str, dict]) -> None:
     by_title: dict[str, list[str]] = {}
     for name, item in items.items():
@@ -302,17 +331,20 @@ def mark_cold_move(item: str, drive: str, direction: str | None) -> dict:
 
     Args:
         item: Item key, e.g. "movies/Aquaman (2018)".
-        drive: One of drives.COLD_DRIVES.
+        drive: One of drives.COLD_DRIVES, or "" to pick: the roomiest for "out", the one holding the title for "back".
         direction: out | back, or None to unmark (not while it's running).
 
     Returns:
-        {"ok", "message"}.
+        {"ok", "message", "drive"}.
     """
     if direction is None:
         with db_lock:
             conn.execute("delete from cold_moves where item = ? and status != 'running'", (item,))
             conn.commit()
         return {"ok": True, "message": "unmarked"}
+    held = next((r["drives"] for r in _drive_data()["items"] if r["item"] == item), {})
+    if not drive:
+        drive = pick_cold_drive() if direction == "out" else next((d for d in drives.COLD_DRIVES if d in held), "")
     if drive not in drives.COLD_DRIVES or direction not in ("out", "back") or ".." in Path(item).parts:
         return {"ok": False, "message": "unknown drive or direction"}
     on_main = (index.MEDIA_ROOT / item).exists()
@@ -327,14 +359,14 @@ def mark_cold_move(item: str, drive: str, direction: str | None) -> dict:
             return {"ok": False, "message": f"marked Keep ({decision['note'] or 'no note'}); clear that first"}
     elif on_main:
         return {"ok": False, "message": "already on plex-media"}
-    elif drive not in next((r["drives"] for r in _drive_data()["items"] if r["item"] == item), {}):
+    elif drive not in held:
         return {"ok": False, "message": f"not in {drive}'s catalog"}
     with db_lock:
         conn.execute(
             "insert or replace into cold_moves values (?, ?, ?, 'queued', '', ?)", (item, drive, direction, time.time())
         )
         conn.commit()
-    return {"ok": True, "message": f"queued; moves when {drive} is plugged in"}
+    return {"ok": True, "message": f"queued; moves when {drive} is plugged in", "drive": drive}
 
 
 def cold_move_status(item: str, status: str, message: str) -> dict:
@@ -521,6 +553,7 @@ def _drive_data() -> dict:
             summary.append({
                 "drive": d, "files": len(entries), "size": sum(e.size for e in entries),
                 "catalogued": drives.catalog_path(d).stat().st_mtime, "main": d == drives.MAIN_DRIVE,
+                "cold": d in drives.COLD_DRIVES, **drives.usage(d),
                 "scopes": drives.BACKUPS.get(d, []), "folders": sorted(folders.items(), key=lambda kv: -kv[1]),
             })
         items = [
@@ -583,7 +616,7 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path == "/api/summary":
             self._json(summary())
         elif url.path == "/api/items":
-            self._json(load_items())
+            self._json(library())
         elif url.path == "/api/files":
             self._json(_files(parse_qs(url.query).get("item", [""])[0]))
         elif url.path == "/api/swap-options":
