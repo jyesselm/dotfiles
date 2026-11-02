@@ -14,7 +14,7 @@
   --bg: #f3f4f7; --bg-2: #ffffff; --surface: #ffffff; --surface-2: #eceef3; --border: #dadfe8;
   --text: #141821; --text-2: #4b5466; --muted: #8791a3;
   --accent: #b97d0a; --accent-fg: #1a1200; --accent-bg: #fbf1d9;
-  --cold: #1f6fc2; --cold-bg: #e2eefb; --cold-fg: #06182a;
+  --cold: #1f6fc2; --cold-bg: #e2eefb; --cold-fg: #06182a; --travel: #b0541a; --travel-bg: #fbe9dc;
   --keep: #178a4c; --keep-bg: #dff3e7; --delete: #c93b37; --delete-bg: #fbe4e3; --shrink: #1f6fc2; --shrink-bg: #e2eefb;
   --warn: #b86a00; --warn-bg: #fdf1d8; --scrim: rgba(20,24,33,.72); --shadow: rgba(0,0,0,.18);
   --s1: #b97d0a; --s2: #c98a2b; --s3: #1f6fc2; --s4: #178a4c; --s5: #d55181; --s6: #6250d6; --s7: #0f8a8a; --s8: #9aa0aa; --free: #e6e8ec;
@@ -24,7 +24,7 @@
   --bg: #0c0e13; --bg-2: #12151c; --surface: #181c25; --surface-2: #1f2430; --border: #2a3040;
   --text: #eef1f6; --text-2: #aab2c0; --muted: #6f7889;
   --accent: #e8b23c; --accent-fg: #1a1200; --accent-bg: #3a2e10;
-  --cold: #7cc4ff; --cold-bg: #10243a; --cold-fg: #06182a;
+  --cold: #7cc4ff; --cold-bg: #10243a; --cold-fg: #06182a; --travel: #ffb27a; --travel-bg: #3a2414;
   --keep: #58d08a; --keep-bg: #13301f; --delete: #f06a66; --delete-bg: #3a1716; --shrink: #7cc4ff; --shrink-bg: #132741;
   --warn: #f0a24a; --warn-bg: #352812; --scrim: rgba(12,14,19,.72); --shadow: rgba(0,0,0,.45);
   --s1: #e8b23c; --s2: #c98a2b; --s3: #3987e5; --s4: #199e70; --s5: #d55181; --s6: #9085e9; --s7: #1aa3a3; --s8: #5d6470; --free: #232934;
@@ -34,7 +34,7 @@
   --bg: #0c0e13; --bg-2: #12151c; --surface: #181c25; --surface-2: #1f2430; --border: #2a3040;
   --text: #eef1f6; --text-2: #aab2c0; --muted: #6f7889;
   --accent: #e8b23c; --accent-fg: #1a1200; --accent-bg: #3a2e10;
-  --cold: #7cc4ff; --cold-bg: #10243a; --cold-fg: #06182a;
+  --cold: #7cc4ff; --cold-bg: #10243a; --cold-fg: #06182a; --travel: #ffb27a; --travel-bg: #3a2414;
   --keep: #58d08a; --keep-bg: #13301f; --delete: #f06a66; --delete-bg: #3a1716; --shrink: #7cc4ff; --shrink-bg: #132741;
   --warn: #f0a24a; --warn-bg: #352812; --scrim: rgba(12,14,19,.72); --shadow: rgba(0,0,0,.45);
   --s1: #e8b23c; --s2: #c98a2b; --s3: #3987e5; --s4: #199e70; --s5: #d55181; --s6: #9085e9; --s7: #1aa3a3; --s8: #5d6470; --free: #232934;
@@ -58,6 +58,7 @@ code { font-size: 12px; }
 .seg button.on { background: var(--surface-2); color: var(--text); box-shadow: 0 1px 2px var(--shadow); }
 .seg button.on.cold { color: var(--cold); }
 .seg button.on.warm { color: var(--accent); }
+.seg button.on.travel { color: var(--travel); }
 .search { flex: 1; min-width: 150px; display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--bg); border-radius: 10px; color: var(--muted); }
 .search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; }
 select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-radius: 10px; background: var(--bg); border: 0; }
@@ -93,7 +94,11 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 /* poster wall */
 .wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)); gap: 22px 16px; padding: 14px 4px; }
 .card { position: relative; text-align: left; border-radius: 12px; cursor: pointer; }
-.card .art { position: relative; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 10px 24px var(--shadow); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.card .art { position: relative; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 10px 24px var(--shadow); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; color: rgba(255,255,255,.9); text-shadow: 0 1px 2px rgba(0,0,0,.45); background: linear-gradient(165deg, hsl(var(--h, 220) 36% 36%), hsl(calc(var(--h, 220) + 40) 42% 14%)); }
+/* placeholder behind the poster: a tinted tile with the type's glyph and the title, seen only when no source has art */
+.ph { position: relative; display: grid; gap: 8px; justify-items: center; }
+.ph i { font-style: normal; font-size: 34px; line-height: 1; opacity: .6; }
+.ph b { font-size: 12.5px; line-height: 1.25; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .card:hover .art { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 36px var(--shadow); }
 .card.cold img { filter: saturate(.55) brightness(.85); }
@@ -104,6 +109,7 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .card .ribbon { position: absolute; top: 8px; left: 8px; z-index: 1; display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: rgba(12,14,19,.72); color: #fff; backdrop-filter: blur(6px); max-width: calc(100% - 16px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card.cold .ribbon { background: var(--cold); color: var(--cold-fg); }
 .card .ribbon.queued { background: var(--warn); color: #241400; }
+.card .ribbon.travel { background: var(--travel); color: #fff; }
 .card .res { position: absolute; top: 8px; right: 8px; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 10.5px; font-weight: 800; background: rgba(12,14,19,.72); color: #fff; letter-spacing: .04em; }
 .card .size { position: absolute; left: 8px; bottom: 8px; z-index: 1; padding: 3px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; background: rgba(12,14,19,.72); color: #fff; }
 .card .t { margin-top: 9px; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -190,8 +196,9 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-2), transparent 70%); }
 .x { position: absolute; top: 14px; right: 14px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; background: rgba(12,14,19,.6); color: #fff; font-size: 18px; display: grid; place-items: center; }
 .body { position: relative; display: grid; grid-template-columns: 170px 1fr; gap: 24px; padding: 0 28px 28px; margin-top: -120px; }
-.body .poster { aspect-ratio: 2 / 3; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px var(--shadow); background: var(--surface-2); }
-.body .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.body .poster { position: relative; aspect-ratio: 2 / 3; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px var(--shadow); display: grid; place-items: center; padding: 14px; text-align: center; color: rgba(255,255,255,.9); background: linear-gradient(165deg, hsl(var(--h, 220) 36% 36%), hsl(calc(var(--h, 220) + 40) 42% 14%)); }
+.body .poster .ph i { font-size: 44px; } .body .poster .ph b { font-size: 15px; -webkit-line-clamp: 6; }
+.body .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .body h1 { margin: 100px 0 2px; font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; overflow-wrap: anywhere; }
 .body h1 small { display: block; font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: 0; }
 .meta-line { color: var(--text-2); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -203,7 +210,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 .where { display: grid; gap: 8px; margin: 6px 0 16px; }
 .where > div { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
 .where .ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-weight: 900; background: var(--surface-2); flex: none; }
-.where .ic.cold { background: var(--cold-bg); color: var(--cold); } .where .ic.warm { background: var(--accent-bg); color: var(--accent); }
+.where .ic.cold { background: var(--cold-bg); color: var(--cold); } .where .ic.warm { background: var(--accent-bg); color: var(--accent); } .where .ic.travel { background: var(--travel-bg); color: var(--travel); }
 .where .r { margin-left: auto; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
 .files { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 14px; }
 .files td { padding: 4px 6px; border-top: 1px solid var(--border); color: var(--text-2); font-variant-numeric: tabular-nums; vertical-align: top; }
@@ -230,7 +237,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   <div class="bar">
     <div class="brand"><i></i>Media Index <span id="diskline"></span></div>
     <div class="seg" id="tabs"><button class="on" data-tab="library">Library</button><button data-tab="storage">Storage</button></div>
-    <div class="seg" id="f-state"><button class="on" data-v="">All</button><button class="warm" data-v="active">☀ Active</button><button class="cold" data-v="cold">❄ Cold</button></div>
+    <div class="seg" id="f-state"><button class="on" data-v="">All</button><button class="warm" data-v="active">☀ Active</button><button class="cold" data-v="cold">❄ Cold</button><button class="travel" data-v="travel">🧳 Travel</button></div>
     <label class="search">⌕ <input id="q" placeholder="Search titles  ( / )" aria-label="Search titles"></label>
     <select class="sort" id="sort" aria-label="Sort">
       <option value="size">Largest first</option>
@@ -314,6 +321,7 @@ const PAGE = 120;
 const OLD_CODECS = ["mpeg4", "msmpeg4v3", "mpeg2video", "mpeg1video", "wmv3", "vc1", "h263", "msmpeg4v2"];
 const SERIES = 7; // categorical slots in the disk meter; the rest fold into "Other folders"
 const COLD = ["plex-cold-1", "plex-cold-2"];
+const TRAVEL = "plex-travel";
 const VIDEO = ["movies", "tv", "anime"];
 const SHELF_MIN_BYTES = 3e9, STALE_S = 3 * 365 * 86400;
 const state = { items: [], summary: null, drives: [], moves: {}, tab: "library", where: "", view: "undecided", category: null, flags: new Set(), q: "", sort: "size",
@@ -348,6 +356,10 @@ const player = new Audio();
 const playing = (it) => it && player.dataset.item === it.item && !player.paused;
 const TYPE_LABELS = { movies: "🎬 Movies", tv: "📺 TV", anime: "🍥 Anime", music: "♪ Music", audiobooks: "📚 Audiobooks", podcasts: "🎙 Podcasts", youtube: "▶ YouTube" };
 const typeLabel = (name) => TYPE_LABELS[name] || name.charAt(0).toUpperCase() + name.slice(1);
+const GLYPHS = { downloads: "⬇", games: "🎮", other: "📁" };
+const glyph = (cat) => GLYPHS[cat] || (TYPE_LABELS[cat] || "▪").split(" ")[0];
+const hue = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+const placeholder = (it, label) => `<span class="ph"><i>${glyph(it.item.split("/")[0])}</i><b>${esc(label)}</b></span>`;
 
 async function api(path, body) {
   const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -429,7 +441,7 @@ const SORTS = {
 function visible() {
   const q = state.q.toLowerCase();
   const rows = state.items.filter((it) =>
-    (!state.where || (state.where === "cold") === !!it.cold) &&
+    (!state.where || (state.where === "travel" ? !!it.travel : (state.where === "cold") === !!it.cold)) &&
     (!state.view || (!it.cold && status(it) === state.view)) &&
     (!state.category || it.category === state.category) &&
     (!q || it.item.toLowerCase().includes(q)) &&
@@ -455,9 +467,9 @@ function renderList() {
 function ribbon(it) {
   const m = state.moves[it.item];
   if (m && m.status !== "done") return `<span class="ribbon queued">⏳ ${m.direction === "out" ? "to cold" : "coming back"}${m.status === "running" ? " · moving" : m.status === "failed" ? " · failed" : ""}</span>`;
-  if (it.cold) return `<span class="ribbon">❄ cold · ${esc((coldDrive(it) || "").replace("plex-", ""))}</span>`;
+  if (it.cold) return `<span class="ribbon">❄ cold · ${esc((coldDrive(it) || "").replace("plex-", ""))}${it.travel ? " · 🧳" : ""}</span>`;
   if (it.trashed_at) return `<span class="ribbon">🗑 in _trash</span>`;
-  return "";
+  return it.travel ? `<span class="ribbon travel">🧳 travel</span>` : "";
 }
 function statusBits(it) {
   const d = status(it), bits = [];
@@ -487,7 +499,7 @@ function cardHtml(it, i) {
   const [cat] = it.item.split("/"), d = status(it), label = titleOf(it);
   const sub = [isSong(it) ? it.item.split("/")[1] : typeLabel(cat).replace(/^\S+ /, ""), watchedText(it), ...statusBits(it)].filter(Boolean);
   return `<div class="card ${it.cold ? "cold" : ""} d-${d} ${i === state.sel ? "sel" : ""} ${state.picked.has(it.item) ? "picked" : ""}" data-i="${i}" tabindex="0">
-    <div class="art">${esc(label)}${isSong(it) ? "" : `<img loading="lazy" alt="" src="${posterUrl(it)}" onerror="this.remove()">`}
+    <div class="art" style="--h:${hue(label)}">${placeholder(it, label)}<img loading="lazy" alt="" src="${posterUrl(it)}" onerror="this.remove()">
       ${ribbon(it)}${res(it.height) && !it.cold ? `<span class="res">${res(it.height)}</span>` : ""}<span class="size num">${gb(it.size)}</span><span class="check">✓</span>
       <div class="quick">${quickHtml(it)}</div></div>
     <div class="t" title="${esc(label)}">${esc(label)}</div><div class="s">${sub.join(" · ")}</div></div>`;
@@ -630,10 +642,10 @@ async function openSheet(it) {
   const copies = Object.entries(it.drives || {}).sort(([a], [b]) => (a === main ? -1 : b === main ? 1 : a.localeCompare(b)));
   if (!copies.length && !it.trashed_at) copies.push([main, it.size]);
   const where = copies.map(([dr, s]) => {
-    const kind = dr === main ? "warm" : COLD.includes(dr) ? "cold" : "";
-    const what = dr === main ? "active · in Plex now" : COLD.includes(dr) ? "cold shelf · plug it in to watch or bring back" : "backup copy";
-    return `<div><span class="ic ${kind}">${kind === "warm" ? "☀" : kind === "cold" ? "❄" : "⧉"}</span><span><b>${esc(dr)}</b><br><span class="hint">${what}</span></span><span class="r num">${gb(s)}</span></div>`;
-  }).join("") + (it.trashed_at ? `<div><span class="ic">🗑</span><span><b>plex-media/_trash</b><br><span class="hint">moved ${ago(it.trashed_at)} · restore any time</span></span></div>` : "");
+    const kind = dr === main ? "warm" : COLD.includes(dr) ? "cold" : dr === TRAVEL ? "travel" : "";
+    const what = dr === main ? "active · in Plex now" : COLD.includes(dr) ? "cold shelf · plug it in to watch or bring back" : dr === TRAVEL ? "travel stick · goes on trips" : "backup copy";
+    return `<div><span class="ic ${kind}">${{ warm: "☀", cold: "❄", travel: "🧳" }[kind] || "⧉"}</span><span><b>${esc(dr)}</b><br><span class="hint">${what}</span></span><span class="r num">${gb(s)}</span></div>`;
+  }).join("") + (it.travel && !(it.drives || {})[TRAVEL] ? `<div><span class="ic travel">🧳</span><span><b>Travel</b><br><span class="hint">in the Plex Travel collection · lands on ${esc(TRAVEL)} when the stick is copied and catalogued</span></span></div>` : "") + (it.trashed_at ? `<div><span class="ic">🗑</span><span><b>plex-media/_trash</b><br><span class="hint">moved ${ago(it.trashed_at)} · restore any time</span></span></div>` : "");
   const table = !files.length ? "" : `<details class="files-wrap" ${files.length > 8 ? "" : "open"}><summary class="hint" style="cursor:pointer;margin:14px 0 6px">${files.length} file${files.length === 1 ? "" : "s"}</summary><table class="files">${files.map((f) => `<tr><td>${esc(f.path.slice(it.item.length + 1) || f.path)}</td><td>${gb(f.size)}</td><td>${res(f.height)} ${esc(f.codec || "")}</td><td>${f.duration_s ? hours(f.duration_s) : ""}</td><td>${f.shrink_saving ? "⇣ " + gb(f.shrink_saving) : ""}</td><td>${f.last_viewed ? "watched " + ago(f.last_viewed) : ""}</td></tr>`).join("")}</table></details>`;
   const acts = [];
   if (it.trashed_at) acts.push(`<button class="btn primary" data-a="restore">↺ Restore</button>`);
@@ -647,8 +659,8 @@ async function openSheet(it) {
     if (isBig(it)) acts.push(`<button class="btn ghost" data-a="swap">⇄ Find smaller 1080p</button>`);
     if (isSong(it)) acts.push(`<button class="btn ghost" data-a="play">${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
   }
-  $("sheet-in").innerHTML = `<div class="hero">${isSong(it) ? "" : `<img alt="" src="${posterUrl(it)}" onerror="this.remove()">`}<button class="x" aria-label="Close" data-close>×</button></div>
-    <div class="body"><div class="poster">${isSong(it) ? "" : `<img alt="" src="${posterUrl(it)}" onerror="this.remove()">`}</div><div>
+  $("sheet-in").innerHTML = `<div class="hero"><img alt="" src="${posterUrl(it)}" onerror="this.remove()"><button class="x" aria-label="Close" data-close>×</button></div>
+    <div class="body"><div class="poster" style="--h:${hue(titleOf(it))}">${placeholder(it, titleOf(it))}<img alt="" src="${posterUrl(it)}" onerror="this.remove()"></div><div>
       <h1><small>${esc(isSong(it) ? it.item.split("/").slice(1, -1).join(" · ") : cat)}</small>${esc(titleOf(it))}</h1>
       <div class="meta-line">${chips.join("")}</div>
       <div class="facts">${facts.map(([l, v]) => `<div class="fact"><div class="l">${l}</div><div class="v num">${v}</div></div>`).join("")}</div>
@@ -764,7 +776,7 @@ $("f-state").onclick = (e) => {
   const b = e.target.closest("button"); if (!b) return;
   for (const x of $("f-state").children) x.classList.toggle("on", x === b);
   state.where = b.dataset.v;
-  if (state.where === "cold") state.view = null;  // decisions are for active titles; the shelf has none
+  if (state.where === "cold" || state.where === "travel") state.view = null;  // decisions are for active titles
   showTab("library"); reset(); renderHeader();
 };
 $("q").oninput = (e) => { state.q = e.target.value; showTab("library"); reset(); };

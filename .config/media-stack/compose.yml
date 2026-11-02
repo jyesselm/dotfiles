@@ -293,6 +293,7 @@ services:
       HOMEPAGE_VAR_RADARR_KEY: ${HOMEPAGE_VAR_RADARR_KEY}
       HOMEPAGE_VAR_SONARR_KEY: ${HOMEPAGE_VAR_SONARR_KEY}
       HOMEPAGE_VAR_PLEX_TOKEN: ${HOMEPAGE_VAR_PLEX_TOKEN}
+      TMDB_API_KEY: ${TMDB_API_KEY}  # poster fallback for titles Radarr/Sonarr and Plex don't know
       DRIVE_CATALOG_DIR: /data/drives  # = ~/.local/share/media-index/drives, where drives.py keeps manifests
       # Host scripts (drives.py, downloads_cap.py) reach the services at localhost; in here they use these.
       MEDIA_INDEX_API: http://media-index:8686/api

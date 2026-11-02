@@ -75,6 +75,7 @@ PLEX = os.environ.get("PLEX_URL", "http://localhost:32400")
 PLEX_SECTIONS = {"movies": 1, "tv": 2, "anime": 4}  # library id per top-level folder, for refreshes after `cold`
 QUALITY_PROFILE = 4  # HD-1080p in both Radarr and Sonarr, for titles brought back from cold storage
 COLD_DRIVES = ["plex-cold-1", "plex-cold-2"]
+TRAVEL_DRIVE = "plex-travel"  # the USB stick that goes on trips; name it this and `catalog` it like the others
 COMPOSE = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose"
 WATCH_LABEL = "com.yesselman.cold-moves"
 WATCH_MINUTES = 10

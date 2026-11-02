@@ -10,15 +10,18 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
+import subprocess
 import threading
 import time
+import unicodedata
 import urllib.request
 from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse
 
 import arr
 import drives
@@ -134,6 +137,9 @@ def library() -> list[dict]:
             "item": r["item"], "category": r["category"], "size": r["size"], "files": 0, "freeable": 0,
             "video_files": 1, "drives": r["drives"], "cold": True, "shrink_saving": 0,
         })
+    travel = _plex_index()["travel"]
+    for it in items:
+        it["travel"] = drives.TRAVEL_DRIVE in it["drives"] or _plex_key(it["item"]) in travel
     return items
 
 
@@ -453,45 +459,183 @@ def _record_swap(item: str, original: Path, release: dict) -> None:
         conn.commit()
 
 
-# Posters for the grid view, from Radarr/Sonarr, cached by item so titles moved to a cold drive (and dropped from
-# Radarr/Sonarr) keep theirs. warm_posters fetches every one at startup and daily.
+# Posters for the grid view, cached by item so titles moved to a cold drive (and dropped from Radarr/Sonarr) keep
+# theirs. Sources, in order: Radarr/Sonarr, Plex artwork, a cover image in the title's own folder (audiobooks,
+# podcasts, YouTube, music albums), TMDB by title and year. warm_posters fetches every one at startup and daily.
 POSTERS = index.DB_PATH.parent / "posters"
+POSTER_W, POSTER_H = 250, 375
+PLEX = os.environ.get("PLEX_URL", "http://localhost:32400")
+TMDB_IMAGES = "https://image.tmdb.org/t/p/w342"
+COVER_NAMES = ("cover", "folder", "poster", "show", "front", "album")
+COVER_TYPES = ("*.jpg", "*.jpeg", "*.png")
+MISS_RETRY_S = 6 * 3600
 _arr_paths: dict = {"at": 0.0, "paths": {}}
+_plex_cache: dict = {"at": 0.0, "by_item": {}, "by_key": {}, "travel": set()}
+_misses: dict[str, float] = {}
+
+
+def nfc(text: str) -> str:
+    """Unicode-composed form: macOS names files decomposed ("Déjà" as e + ́), Radarr and Plex keep them composed."""
+    return unicodedata.normalize("NFC", text)
 
 
 def _poster_file(item: str) -> Path:
     return POSTERS / (hashlib.sha1(item.encode()).hexdigest() + ".jpg")
 
 
+def _plex_key(item: str) -> tuple[str, str]:
+    """(category, normalized title) — how a Plex entry without a file path is matched to a library folder."""
+    return item.split("/")[0], index.title_key(item)
+
+
 def _arr_index() -> dict[str, tuple[str, str, int]]:
-    """Library path -> (API base, key, id) for everything Radarr and Sonarr manage; refreshed every 10 minutes."""
+    """Library path (NFC) -> (API base, key, id) for everything Radarr and Sonarr manage; refreshed every 10 minutes."""
     if time.time() - _arr_paths["at"] > 600:
         paths = {}
         for base, kind, key in arr.ARR.values():
             for entry in arr.request(f"{base}/{kind}", key):
-                paths[entry["path"]] = (base, key, entry["id"])
+                paths[nfc(entry["path"])] = (base, key, entry["id"])
         _arr_paths.update(at=time.time(), paths=paths)
     return _arr_paths["paths"]
 
 
-def poster(item: str) -> bytes | None:
-    """A title's poster (250 px wide JPEG), or None when neither the cache nor Radarr/Sonarr has one."""
-    cached = _poster_file(item)
-    if cached.exists():
-        return cached.read_bytes()
+def _plex_get(path: str) -> dict:
+    """A Plex API answer as JSON; {} when Plex is down or the token is missing."""
+    token = shrink.read_env().get("HOMEPAGE_VAR_PLEX_TOKEN", "")
+    if not token:
+        return {}
+    sep = "&" if "?" in path else "?"
+    req = urllib.request.Request(f"{PLEX}{path}{sep}X-Plex-Token={token}", headers={"Accept": "application/json"})
     try:
-        found = _arr_index().get(str(index.MEDIA_ROOT / item))
-        if not found:
-            return None
-        base, key, arr_id = found
-        req = urllib.request.Request(f"{base}/mediacover/{arr_id}/poster-250.jpg", headers={"X-Api-Key": key})
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = resp.read()
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            return json.loads(resp.read()).get("MediaContainer", {})
+    except (OSError, ValueError):
+        return {}
+
+
+def _plex_index() -> dict:
+    """Plex artwork and Travel-collection membership for every title, refreshed every 10 minutes.
+
+    Returns:
+        {"by_item": item -> thumb (movies, matched by file path), "by_key": _plex_key -> thumb (shows, artists:
+        matched by title), "travel": set of _plex_keys in a collection called Travel}.
+    """
+    if time.time() - _plex_cache["at"] < 600:
+        return _plex_cache
+    by_item, by_key, travel, root = {}, {}, set(), str(index.MEDIA_ROOT) + "/"
+    for section in _plex_get("/library/sections").get("Directory", []):
+        paths = [loc["path"] for loc in section.get("Location", []) if loc["path"].startswith(root)]
+        folder = paths[0][len(root):] if paths else ""
+        if folder:
+            _plex_section(section["key"], folder, root, by_item, by_key, travel)
+    if by_key or _plex_cache["at"] == 0:  # keep the old index while Plex is down
+        _plex_cache.update(at=time.time(), by_item=by_item, by_key=by_key, travel=travel)
+    return _plex_cache
+
+
+def _plex_section(key: str, folder: str, root: str, by_item: dict, by_key: dict, travel: set) -> None:
+    """One library section's artwork into by_item / by_key, and the titles of its Travel collection into travel."""
+    for entry in _plex_get(f"/library/sections/{key}/all").get("Metadata", []):
+        thumb = entry.get("thumb")
+        if not thumb:
+            continue
+        by_key.setdefault((folder, index.title_key(entry["title"])), thumb)
+        files = (part.get("file", "") for media in entry.get("Media", []) for part in media.get("Part", []))
+        for file in files:
+            if file.startswith(root):
+                by_item.setdefault(nfc(index.item_for(file[len(root):])[0]), thumb)
+    for coll in _plex_get(f"/library/sections/{key}/collections").get("Metadata", []):
+        if coll["title"].lower() == "travel":
+            for entry in _plex_get(f"/library/collections/{coll['ratingKey']}/children").get("Metadata", []):
+                travel.add((folder, index.title_key(entry["title"])))
+
+
+def _fetch(url: str, headers: dict | None = None) -> bytes | None:
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers or {}), timeout=30) as resp:
+            return resp.read()
     except OSError:
         return None
+
+
+def _poster_from_arr(item: str) -> bytes | None:
+    found = _arr_index().get(nfc(str(index.MEDIA_ROOT / item)))
+    if not found:
+        return None
+    base, key, arr_id = found
+    return _fetch(f"{base}/mediacover/{arr_id}/poster-250.jpg", {"X-Api-Key": key})
+
+
+def _poster_from_plex(item: str) -> bytes | None:
+    plex = _plex_index()
+    thumb = plex["by_item"].get(nfc(item)) or plex["by_key"].get(_plex_key(item))
+    if not thumb:
+        return None
+    token = shrink.read_env().get("HOMEPAGE_VAR_PLEX_TOKEN", "")
+    return _fetch(f"{PLEX}/photo/:/transcode?width={POSTER_W}&height={POSTER_H}&minSize=1&upscale=1"
+                  f"&url={quote(thumb)}&X-Plex-Token={token}")
+
+
+def _cover_on_disk(item: str) -> bytes | None:
+    """A cover image kept next to the files (cover.jpg, folder.jpg, show.jpg, any image up to three levels down),
+    scaled to poster width with ffmpeg. For a song, its album folder's cover."""
+    path = index.MEDIA_ROOT / item
+    if path.is_dir():
+        folder = path
+    elif path.is_file():  # a song: its album folder
+        folder = path.parent
+    else:  # not on this disk (cold): never fall back to the parent, or every cold show would share one cover
+        return None
+    cached = _poster_file("dir:" + str(folder.relative_to(index.MEDIA_ROOT)))
+    if cached.exists():
+        return cached.read_bytes()
+    found = [p for depth in ("", "*/", "*/*/", "*/*/*/") for pat in COVER_TYPES for p in folder.glob(depth + pat)]
+    if not found:
+        return None
+    rank = {name: i for i, name in enumerate(COVER_NAMES)}
+    best = min(found, key=lambda p: (rank.get(p.stem.lower(), len(rank)), len(p.parts), p.name))
     POSTERS.mkdir(parents=True, exist_ok=True)
-    cached.write_bytes(data)
-    return data
+    done = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(best), "-vf", f"scale={POSTER_W}:-2", "-q:v", "4",
+                           "-f", "mjpeg", str(cached)], capture_output=True)
+    return cached.read_bytes() if done.returncode == 0 and cached.exists() else None
+
+
+def _poster_from_tmdb(item: str) -> bytes | None:
+    """TMDB's poster for a movie or show folder, by title and year; needs TMDB_API_KEY in the environment."""
+    key = shrink.read_env().get("TMDB_API_KEY", "")
+    category, name = item.split("/", 1) if "/" in item else (item, item)
+    if not key or category not in drives.PLEX_SECTIONS:
+        return None
+    year = re.search(r"\b(19|20)\d{2}\b", name)
+    title = re.split(r"[\[(]|\b(19|20)\d{2}\b|\b\d{3,4}p\b", name)[0].replace(".", " ").strip(" -_")
+    kind, year_param = ("movie", "year") if category == "movies" else ("tv", "first_air_date_year")
+    query = urlencode({"api_key": key, "query": title, **({year_param: year.group()} if year else {})})
+    raw = _fetch(f"https://api.themoviedb.org/3/search/{kind}?{query}")
+    results = json.loads(raw).get("results", []) if raw else []
+    path = next((r["poster_path"] for r in results if r.get("poster_path")), None)
+    return _fetch(TMDB_IMAGES + path) if path else None
+
+
+def poster(item: str) -> bytes | None:
+    """A title's poster (250 px wide JPEG) from the cache or the first source that has one, else None.
+
+    A miss is remembered for six hours so a wall of unposterable titles doesn't ask Plex and TMDB on every scroll.
+    """
+    cached = _poster_file(item)
+    try:
+        return cached.read_bytes()
+    except FileNotFoundError:
+        pass
+    if time.time() - _misses.get(item, 0) < MISS_RETRY_S:
+        return None
+    for source in (_poster_from_arr, _poster_from_plex, _cover_on_disk, _poster_from_tmdb):
+        data = source(item)
+        if data:
+            POSTERS.mkdir(parents=True, exist_ok=True)
+            cached.write_bytes(data)
+            return data
+    _misses[item] = time.time()
+    return None
 
 
 def warm_posters() -> None:
@@ -553,7 +697,7 @@ def _drive_data() -> dict:
             summary.append({
                 "drive": d, "files": len(entries), "size": sum(e.size for e in entries),
                 "catalogued": drives.catalog_path(d).stat().st_mtime, "main": d == drives.MAIN_DRIVE,
-                "cold": d in drives.COLD_DRIVES, **drives.usage(d),
+                "cold": d in drives.COLD_DRIVES, "travel": d == drives.TRAVEL_DRIVE, **drives.usage(d),
                 "scopes": drives.BACKUPS.get(d, []), "folders": sorted(folders.items(), key=lambda kv: -kv[1]),
             })
         items = [

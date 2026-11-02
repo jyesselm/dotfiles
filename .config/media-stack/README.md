@@ -23,7 +23,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
-| Media Index | 8686 | Poster wall of every title, active or cold, with keep/shrink/delete and cold-storage moves; Storage tab (disk use, cold shelf, suggestions); posters from Radarr/Sonarr, cached in `~/.local/share/media-index/posters` so cold titles keep theirs (`media-index/`) |
+| Media Index | 8686 | Poster wall of every title, active or cold, with keep/shrink/delete and cold-storage moves; Storage tab (disk use, cold shelf, suggestions); posters from Radarr/Sonarr, Plex, cover images on disk or TMDB, cached in `~/.local/share/media-index/posters` so cold titles keep theirs (`media-index/`) |
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
@@ -106,7 +106,10 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 
 `media-index/` indexes the disk daily (sizes, ffprobe video info, watch history from Plex's dated database backups) and
 serves a review page on 8686: a poster wall (like Plex) where every title is either **☀ active** on `plex-media` or
-**❄ cold** on a cold drive (the drive is a chip on the card). Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
+**❄ cold** on a cold drive (the drive is a chip on the card); **🧳 travel** marks what goes on the travel stick: anything in a Plex
+collection called Travel, or held by the drive `plex-travel` once the stick is named that and catalogued. Posters come from
+Radarr/Sonarr, then Plex, then a cover image in the title's own folder (audiobooks, podcasts, album art), then TMDB
+(`TMDB_API_KEY`); a title with none shows a tinted tile with its name. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
 or press **Select** to mark many at once. The **Storage** tab shows the disk by folder, the cold shelf (both drives as one
 pool, with where the next move goes), queued moves, and shelves of suggestions: never watched and big, not watched in
