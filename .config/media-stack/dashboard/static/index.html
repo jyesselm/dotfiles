@@ -121,27 +121,27 @@ body:has(.sheet:not([hidden])) { overflow: hidden; }
 @media (max-width: 760px) { .sheet .in { grid-template-columns: 1fr; gap: 20px; } .sheet .art { width: 140px; } }
 
 /* TV (?tv=1 or the Watch app): the Watch view at 10 feet; remote focus replaces hover */
-body.tv { padding: 32px 48px; }
+body.tv { padding: 24px 40px; }
 body.tv .bar, body.tv .tabbar, body.tv #w-lead { display: none; }
 body.tv .ambient { inset: 0; height: auto; opacity: .25; filter: blur(90px) saturate(1.4); }
 body.tv .wrap { max-width: none; padding: 0; }
 body.tv .hero { padding: 8px 0 12px; }
 body.tv .eyebrow { font-size: 16px; }
-body.tv h1 { font-size: 44px; }
+body.tv h1 { font-size: 32px; }
 body.tv #w-pick { padding: 5px; border-radius: 14px; }
-body.tv #w-pick a { font-size: 20px; padding: 8px 22px; border-radius: 10px; }
+body.tv #w-pick a { font-size: 16px; padding: 6px 16px; border-radius: 10px; }
 body.tv #w-pick a:focus { box-shadow: 0 0 0 3px #fff; }
 body.tv section { margin-bottom: 8px; }
-body.tv h2 { font-size: 28px; margin: 0; }
-body.tv h2 .logo { width: 34px; height: 34px; border-radius: 9px; vertical-align: -7px; margin-right: 12px; }
-body.tv .shelf { grid-auto-columns: 220px; gap: 24px; padding: 32px 48px 24px; margin: -8px -48px 0; scroll-snap-type: none; }
-body.tv .poster .art { border-radius: 14px; }
+body.tv h2 { font-size: 20px; margin: 0; }
+body.tv h2 .logo { width: 24px; height: 24px; border-radius: 7px; vertical-align: -5px; margin-right: 10px; }
+body.tv .shelf { grid-auto-columns: 130px; gap: 16px; padding: 20px 40px 16px; margin: -8px -40px 0; scroll-snap-type: none; }
+body.tv .poster .art { border-radius: 10px; }
 body.tv .poster > :not(.art) { transition: transform .4s cubic-bezier(.2,.8,.2,1); }
-body.tv .poster .t { font-size: 18px; margin-top: 12px; }
-body.tv .poster .s { font-size: 15px; }
-body.tv .where .b { font-size: 14px; padding: 3px 10px; }
-body.tv .poster:focus .art, body.tv .poster.sel .art { transform: scale(1.12); box-shadow: 0 0 0 4px #fff, 0 20px 50px rgba(0,0,0,.6); }
-body.tv .poster:focus > :not(.art), body.tv .poster.sel > :not(.art) { transform: translateY(20px); }
+body.tv .poster .t { font-size: 14px; margin-top: 8px; }
+body.tv .poster .s { font-size: 12px; }
+body.tv .where .b { font-size: 11px; padding: 2px 7px; }
+body.tv .poster:focus .art, body.tv .poster.sel .art { transform: scale(1.1); box-shadow: 0 0 0 3px #fff, 0 14px 36px rgba(0,0,0,.6); }
+body.tv .poster:focus > :not(.art), body.tv .poster.sel > :not(.art) { transform: translateY(12px); }
 body.tv .sheet { padding: 48px 96px; font-size: 22px; }
 body.tv .sheet .in { max-width: 1400px; grid-template-columns: 300px 1fr; gap: 56px; }
 body.tv .sheet h1 { font-size: 48px; }
