@@ -268,5 +268,6 @@ alias ezp=ezt
 alias eze=ezt
 alias egc='nvim ~/.gitconfig'
 
-# Remote desktop
-alias home-gpu-rdp='sdl-freerdp /v:100.103.114.116 /u:yesselman +force-console-callbacks /size:1920x1080 +smart-sizing'
+# Share home-gpu's existing desktop (3390), preserving its logged-in session.
+alias home-gpu-desktop='sdl-freerdp /v:100.103.114.116:3390 /u:yesselman +force-console-callbacks /size:1920x1080 +smart-sizing'
+alias home-gpu-rdp=home-gpu-desktop
