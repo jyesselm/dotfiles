@@ -1,0 +1,31 @@
+#!/bin/zsh
+# Watches the nrdstor lab share's CephFS quotas (entries and bytes) from swan. Runs every 30 minutes from the
+# LaunchAgent com.jyesselman.nrdstor-quota-watch; appends one line per run to
+# ~/.local/state/nrdstor-quota-watch/history.tsv (time, entries, max, %, bytes, max, %). When either passes WARN_PCT
+# it shows a macOS notification and files one P1 task in the Tasks app (project Computers), once per crossing
+# (state file `alerted`, cleared again under CLEAR_PCT). Why: on 2026-11-04 NAS pulls hit the 5 M entry quota
+# twice and every write on nrdstor failed until entries were freed.
+set -u
+STATE=$HOME/.local/state/nrdstor-quota-watch; mkdir -p "$STATE"
+WARN_PCT=${WARN_PCT:-90}; CLEAR_PCT=${CLEAR_PCT:-85}
+LAB=/mnt/nrdstor/yesselmanlab
+now=$(date -Iseconds)
+vals=$(ssh -o BatchMode=yes -o ConnectTimeout=20 swan "for a in ceph.dir.rentries ceph.quota.max_files ceph.dir.rbytes ceph.quota.max_bytes; do getfattr -n \$a --only-values $LAB 2>/dev/null; printf ' '; done" 2>/dev/null)
+read -r entries max_entries bytes max_bytes <<< "$vals"
+if [[ -z "${entries:-}" || -z "${max_entries:-}" || -z "${max_bytes:-}" ]]; then
+  printf '%s\tunreachable\n' "$now" >> "$STATE/history.tsv"; exit 0
+fi
+pct_e=$(( entries * 100 / max_entries )); pct_b=$(( bytes * 100 / max_bytes ))
+printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" "$entries" "$max_entries" "$pct_e" "$bytes" "$max_bytes" "$pct_b" >> "$STATE/history.tsv"
+worst=$(( pct_e > pct_b ? pct_e : pct_b ))
+if (( worst >= WARN_PCT )); then
+  [[ -e "$STATE/alerted" ]] && exit 0
+  msg="nrdstor at $pct_e% of its entry quota ($(( entries / 1000 ))K of $(( max_entries / 1000 ))K) and $pct_b% of its bytes"
+  osascript -e "display notification \"$msg\" with title \"nrdstor quota\" sound name \"Basso\"" 2>/dev/null
+  body=$(python3 -c 'import json, sys
+print(json.dumps({"title": "Free nrdstor entries now", "project_id": 11, "priority": 1, "due": sys.argv[2],
+  "description": sys.argv[1] + "\n1. Check: ssh swan getfattr -n ceph.dir.rentries --only-values /mnt/nrdstor/yesselmanlab\n2. Ask Claude what grew (a NAS pull, intermediates) and free it with the remove/pack scripts in jyesselm/staging-2026/scripts-and-logs\n3. Ask HCC to raise the file quota if this keeps happening"}))' "$msg" "$(date +%F)")
+  curl -s -m 10 -X POST localhost:8767/api/tasks -H 'content-type: application/json' -d "$body" > /dev/null && echo "$now" > "$STATE/alerted"
+elif (( worst < CLEAR_PCT )); then
+  rm -f "$STATE/alerted"
+fi
