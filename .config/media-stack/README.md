@@ -8,7 +8,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Plex (native on the Mac) | 32400 | Streaming |
 | Seerr | 5055 | Requests from you and your wife |
 | Audiobookshelf | 13378 | Audiobooks and podcasts (iPhone: ShelfPlayer, server `http://plex-server.tail2813f4.ts.net:13378`) |
-| AudioBookRequest | 8000 | Audiobook requests: Audible search → Prowlarr → qBittorrent category `audiobooks` → `audiobooks/` |
+| AudioBookRequest | 8000 | Audiobook requests: Audible search → Prowlarr → qBittorrent category `audiobooks` → `audiobooks/`. English only: region pinned to US (`ABR_APP__DEFAULT_REGION`) and the region dropdown replaced by `app-config/audiobookrequest/Search-Index.jinja` (re-copy from the image if an update changes the search page) |
 | Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
 | spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |

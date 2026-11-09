@@ -180,8 +180,10 @@ services:
     ports: ["8000:8000"]
     environment:
       TZ: ${TZ}
+      ABR_APP__DEFAULT_REGION: us   # English catalog only; the region dropdown is replaced by the overlay below
     volumes:
       - ${DATA_ROOT}/audiobookrequest/config:/config
+      - ./app-config/audiobookrequest/Search-Index.jinja:/app/templates/pages/Search/Index.jinja:ro
 
   # Audiobooks with per-user progress; iPhone apps. Accounts and libraries are set up in its web UI.
   audiobookshelf:
