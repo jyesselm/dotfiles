@@ -394,8 +394,8 @@ document.querySelectorAll("[data-port]").forEach((a) => a.href = link(a.dataset.
 $("plex-link").href = link(32400, "/web");
 
 const app = (n, icon, port, d, path = "") => `<a class="app" href="${link(port, path)}"><div class="icon">${img(icon)}</div><div class="n">${n}</div>${d ? `<div class="d">${d}</div>` : ""}</a>`;
-$("apps-use").innerHTML = app("Plex", "plex.svg", 32400, "Movies, TV, music", "/web") + app("Audiobookshelf", "audiobookshelf.svg", 13378, "Audiobooks") + app("RomM", "romm.svg", 8090, "Retro games");
-$("apps-ask").innerHTML = app("Movies & TV", "jellyseerr.svg", 5055) + app("Audiobooks", "📚", 8000) + app("Games", "🎮", 5001) + app("Songs", "spotify.svg", 8800);
+$("apps-use").innerHTML = app("Plex", "plex.svg", 32400, "Movies, TV, music", "/web") + app("Audiobookshelf", "audiobookshelf.svg", 13378, "Audiobooks") + app("Kavita", "📖", 5003, "Manga") + app("RomM", "romm.svg", 8090, "Retro games");
+$("apps-ask").innerHTML = app("Movies & TV", "jellyseerr.svg", 5055) + app("Audiobooks", "📚", 8000) + app("Games", "🎮", 5001) + app("Manga", "📥", 4567) + app("Songs", "spotify.svg", 8800);
 
 const tile = (t, color, ic, v, l) => `<a class="card tile" href="#${t}"><div class="ic" style="background:${color}">${ic}</div><div><div class="v">${v}</div><div class="l">${l}</div></div><span class="chev">›</span></a>`;
 const row = (g, meta, bar) => `<li><span class="tt">${esc(g.title)}<span class="ss">${g.kind}${g.n > 1 ? ` · ${g.n} episodes` : ""}</span></span><span class="meta ${g.warn && !g.active ? "warn" : ""}">${meta}</span>${bar ? `<div class="pbar"><i style="width:${Math.max(g.pct, 3)}%"></i></div>` : ""}</li>`;

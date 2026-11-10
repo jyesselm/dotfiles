@@ -40,6 +40,8 @@ SERVICES = [
     ("Seerr", "jellyseerr.svg", "Request movies and TV", "seerr:5055", 5055, None),
     ("Audiobookshelf", "audiobookshelf.svg", "Audiobooks and podcasts", "audiobookshelf:80", 13378, None),
     ("AudioBookRequest", "📚", "Request audiobooks", "audiobookrequest:8000", 8000, None),
+    ("Kavita", "📖", "Read manga", "kavita:5000", 5003, None),
+    ("Suwayomi", "📥", "Manga: follow a series", "suwayomi:4567", 4567, None),
     ("RomM", "romm.svg", "Retro games", "romm:8080", 8090, None),
     ("Gamarr", "🎮", "Request games", "gamarr:5001", 5001, None),
     ("PairDrop", "pairdrop.png", "Send files between devices", "pairdrop:3000", 3010, None),
