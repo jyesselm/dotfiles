@@ -12,6 +12,7 @@ com.alfredapp.vitor.1password  class:laptop,studio
 com.yesselman.dotfiles-sync
 com.yesselman.search-cli-prewarm  class:laptop,studio
 com.jyesselman.studio-mirror  class:studio
+com.yesselman.media-menu  class:server
 
 # seeded 2026-10-28 from laptop, studio, plex-server; prune by hand
 com.git-repo-checker.active  allowed

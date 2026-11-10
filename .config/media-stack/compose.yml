@@ -198,6 +198,37 @@ services:
       - ${DATA_ROOT}/audiobookshelf/metadata:/metadata
       - ${MEDIA_ROOT}:/Volumes/plex-media
 
+  # Manga, the Sonarr way: add a series to the library and it keeps pulling new chapters (Tachiyomi sources:
+  # MangaDex and the others you install under Extensions). Chapters are saved as CBZ into manga/<Series>/ for Kavita.
+  # Settings → Downloads → "Automatically download new chapters" is turned on once by the GraphQL call in README.md;
+  # the variables below overwrite the matching web-UI settings at every start. No login.
+  suwayomi:
+    image: ghcr.io/suwayomi/suwayomi-server:stable
+    container_name: suwayomi
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    ports: ["4567:4567"]
+    environment:
+      TZ: ${TZ}
+      DOWNLOAD_AS_CBZ: "true"
+      UPDATE_INTERVAL: "12"  # hours between library checks for new chapters
+    volumes:  # downloads must be listed before the data folder (Suwayomi docs)
+      - ${MEDIA_ROOT}/manga:/home/suwayomi/.local/share/Tachidesk/downloads
+      - ${DATA_ROOT}/suwayomi:/home/suwayomi/.local/share/Tachidesk
+
+  # Manga reader with per-user progress (web, and iPhone/iPad apps through OPDS: Panels, Paperback). Reads manga/
+  # read-only; the admin account is made in its web UI on first start. Host port 5003 because macOS holds 5000.
+  kavita:
+    image: jvmilazz0/kavita:latest
+    container_name: kavita
+    restart: unless-stopped
+    ports: ["5003:5000"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${DATA_ROOT}/kavita/config:/kavita/config
+      - ${MEDIA_ROOT}/manga:/manga:ro
+
   # Retro game library with in-browser play (EmulatorJS) and per-user saves. ROMs live in
   # plex-media/games/roms/<platform>/ (folder names: docs.romm.app → Supported Platforms). Accounts are made in its web UI.
   romm:

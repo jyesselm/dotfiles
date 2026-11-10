@@ -8,7 +8,9 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Plex (native on the Mac) | 32400 | Streaming |
 | Seerr | 5055 | Requests from you and your wife |
 | Audiobookshelf | 13378 | Audiobooks and podcasts (iPhone: ShelfPlayer, server `http://plex-server.tail2813f4.ts.net:13378`) |
-| AudioBookRequest | 8000 | Audiobook requests: Audible search → Prowlarr → qBittorrent category `audiobooks` → `audiobooks/`. English only: region pinned to US (`ABR_APP__DEFAULT_REGION`) and the region dropdown replaced by `app-config/audiobookrequest/Search-Index.jinja` (re-copy from the image if an update changes the search page) |
+| AudioBookRequest | 8000 | Audiobook requests: Audible search → Prowlarr → qBittorrent category `audiobooks` → `audiobooks/` |
+| Suwayomi | 4567 | Manga: add a series, it downloads every new chapter as CBZ into `manga/` (Tachiyomi sources, no torrents) |
+| Kavita | 5003 | Manga reader with reading progress (web, or Panels/Paperback over OPDS); see Manga |
 | Radarr / Sonarr / Lidarr | 7878 / 8989 / 8687 | Movies / TV / music: find, grab, rename, file |
 | spotDL | 8800 | Single songs: paste a Spotify link, saved to `music/` (built from `spotdl/` with current yt-dlp) |
 | Sonobarr | 8688 | Music discovery: Last.fm artists similar to yours, one click adds them to Lidarr |
@@ -30,6 +32,43 @@ without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions),
 Music library, Plexamp app). Lidarr only fetches whole albums, so for one song paste its Spotify link into spotDL instead;
 if spotDL fails with YouTube 403/429 errors, `docker-compose build --pull spotdl && docker-compose up -d spotdl`.
 Lidarr unmonitors tracks you delete, so trimming an album in Media Index doesn't re-download it.
+
+## Manga
+
+Suwayomi (`:4567`) is Sonarr for manga, but it reads chapters from manga sites through Tachiyomi source extensions
+instead of torrents, so nothing goes through Prowlarr or the VPN. The Keiyoushi extension store
+(`https://github.com/keiyoushi/extensions/raw/repo/index.pb`, in Suwayomi's `server.conf`) and the MangaDex and
+Weeb Central extensions are installed (2026-11-09); more sources go in under **Extensions** (MangaDex lists one source
+per language — use *MangaDex (EN)*). `server.kcefEnabled = false` in `server.conf`: the embedded Chromium pushed the
+4 GB OrbStack VM out of memory and the container crash-looped (`Killed` in its log) until it was turned off. **Settings → Downloads** shows *Download as CBZ* on (set by `compose.yml`) and *Automatically
+download new chapters* on (set once with the call below). To follow a series: **Browse → Sources → MangaDex (EN)**,
+search it, open it, **Add to library**; the whole backlog downloads with the ⤓ button on the series page, and every
+new chapter after that is fetched on the 12-hourly library update. Chapters land in
+`manga/mangas/<Source>/<Series>/<Chapter>.cbz` (Suwayomi fixes that layout). MangaDex drops titles that have an
+English publisher (Solo Leveling, for one); those come from Weeb Central instead.
+
+Kavita (`:5003`) is the reader (set up 2026-11-09, admin `jyesselm`, API key `KAVITA_API_KEY` in `.env`): one library
+*Manga* over `/manga/paged/Weeb Central (EN)` and `/manga/mangas/Weeb Central (EN)` (add `/manga/mangas/MangaDex (EN)`
+when something downloads from there), folder watching on so new Suwayomi chapters appear without a scan, metadata
+from Mangabaka, exclude pattern `**/mangas/*/Solo Leveling/**` so a re-cut series (below) is read from `paged/` and
+not twice. The default reading profile is paged left-to-right, automatic scaling, fit-split for spreads, tap or
+swipe to turn, menu auto-closes, black background, webtoon auto-detection off (Joe wants pages, never scrolling). If a series still opens scrolling, Kavita saved a
+per-series *implicit* profile from an earlier read; clear it with `DELETE /api/reading-profile/series/<seriesId>`
+(or the reader's settings → reset). OPDS is on: Kavita → user menu →
+*3rd Party Clients* has the OPDS link for Panels/Paperback (progress syncs with the web reader). Suwayomi's own page
+reads too, without progress sync.
+
+Webtoons in a paged app (Panels, free, no OPDS): each file is one ~720×4000 strip, so a paged reader shows a thin
+column. `manga/webtoon_cut.py` re-cuts a series into 720×1560 pages (iPhone shape) at panel gutters; the copies live in
+`manga/paged/<Source>/<Series>/` (same names as the originals), Kavita reads those and excludes the original folder.
+Solo Leveling is cut (201 chapters, 2.2 GB); new chapters need the script run again on the new files. For Panels,
+copy `manga/paged/Weeb Central (EN)/Solo Leveling` to the phone over File Sharing and import it.
+
+Turn auto-download on once (idempotent; the setting lives in Suwayomi's database):
+```sh
+curl -s http://plex-server.tail2813f4.ts.net:4567/api/graphql -H 'content-type: application/json' \
+  -d '{"query":"mutation { setSettings(input:{settings:{autoDownloadNewChapters:true, autoDownloadNewChaptersLimit:0}}) { settings { autoDownloadNewChapters } } }"}'
+```
 
 ## Movie recommendations (Trakt)
 
@@ -68,7 +107,7 @@ moved or restored stack keeps them. Only a fresh install needs them again:
 
 ## Files
 
-- `compose.yml`, `dashboard/`, `media-index/`, `gluetun-auth.toml`: tracked in dotfiles, no secrets.
+- `compose.yml`, `dashboard/`, `media-index/`, `manga/`, `menubar/`, `gluetun-auth.toml`: tracked in dotfiles, no secrets.
 - `.env`: untracked, this machine's paths and keys. Template: `env.example`.
 - `$DATA_ROOT/<app>/config` (and `$DATA_ROOT/uptime-kuma`): each app's settings and database. Not tracked; this is
   what you copy to move the stack.
@@ -79,8 +118,15 @@ moved or restored stack keeps them. Only a fresh install needs them again:
 - The media disk is always mounted at `/Volumes/plex-media` inside containers, whatever its host path, so the
   paths stored in Radarr, Sonarr, qBittorrent and Plex stay valid on any machine. Downloads (`downloads/`) and
   the libraries share that one disk so imports are instant hardlinks. Top-level folders are lowercase, one per
-  type (`movies tv anime music audiobooks podcasts youtube games other downloads`); folders starting with `_`
+  type (`movies tv anime manga music audiobooks podcasts youtube games other downloads`); folders starting with `_`
   (`_trash`, `_backups`, `_meta`) are bookkeeping, not media, and Media Index skips them.
+
+## Menu-bar icon (Mac)
+
+`menubar/` is a 60-line Swift app that puts a ▶ icon in the menu bar: click opens the dashboard, right-click lists
+Plex, Seerr, Audiobookshelf, Media Index and qBittorrent. `menubar/install.sh` compiles it into
+`~/Applications/Media Menu.app` and loads `~/Library/LaunchAgents/com.yesselman.media-menu.plist` (tracked; declared
+in `setup/declared/agents.txt` for the `server` class). Edit the `pages` list in `MediaMenu.swift` and re-run the script.
 
 ## Everyday commands
 
