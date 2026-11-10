@@ -18,7 +18,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Bazarr | 6767 | English subtitles for foreign-language titles (Radarr/Sonarr auto-tag them `foreign`), synced to the audio |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
-| gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers; full speed only 2–6 am (see *The disk*) |
+| gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); 3 downloads / 2 uploads / 5 active, slow ones don't hold a slot, announces to all trackers; full speed only 2–6 am (see *The disk*) |
 | Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
 | Dashboard | 3000 | Home page: recently added, now playing, requests, a Watch tab of what to stream elsewhere, downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
@@ -27,13 +27,16 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
 | Media Index | 8686 | Poster wall of every title, active or cold, with keep/shrink/delete and cold-storage moves; Storage tab (disk use, cold shelf, suggestions); posters from Radarr/Sonarr, Plex, cover images on disk or TMDB, cached in `~/.local/share/media-index/posters` so cold titles keep theirs (`media-index/`) |
 
-**The disk.** `plex-media` is a Seagate ST8000DM004, a shingled (SMR) drive: after ~30 GB of writes in one go it
-rewrites its zones internally and the whole volume freezes for 20–40 minutes (every `ls` hangs, Plex buffers, `iostat
--d disk4` shows <30 ops/s, no process is busy). It recovers by itself; don't restart or unplug it mid-stall. To keep
-that out of the evening, both qBittorrents (`:8080` and the private one) use the speed scheduler: full speed 2–6 am,
-300 KiB/s the rest of the day (Joe, 2026-11-10). Exception for something wanted now: click the speedometer icon
-in qBittorrent's footer (alternative limits off until the schedule flips it back) or ask. Bulk jobs that write a lot
-(webtoon re-cuts, re-encodes) also go in that window.
+**The disk.** `plex-media` is a Seagate ST8000DM004, a shingled (SMR) drive that slows badly after ~30 GB of writes in
+one go, so both qBittorrents (`:8080` and the private one) use the speed scheduler: full speed 2–6 am, 300 KiB/s the
+rest of the day, at most 3 downloads / 2 uploads / 5 active at once (Joe, 2026-11-10). Seeding is stopped for now;
+start completed torrents again from the WebUI when wanted. Exception for something wanted now: click the speedometer
+icon in qBittorrent's footer (alternative limits off until the schedule flips it back) or ask. Bulk jobs that write a
+lot (webtoon re-cuts, re-encodes) also go in that window. If the whole volume "hangs" (every `ls` and open blocks,
+Plex can't serve files, yet `stat`/`df` work and `iostat -d disk4` shows the disk idle), it is not the drive: a macOS
+"… would like to access files on a removable volume" consent dialog is waiting on the mini's screen and every open()
+queues behind tccd until it is clicked (proof: `sample <user tccd pid> 1 | grep CFUserNotificationReceiveResponse`).
+Answer it over Screen Sharing; don't kill tccd.
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
