@@ -18,7 +18,7 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Bazarr | 6767 | English subtitles for foreign-language titles (Radarr/Sonarr auto-tag them `foreign`), synced to the audio |
 | Prowlarr | 9696 | Indexers, synced to Radarr, Sonarr and Lidarr |
 | FlareSolverr | 8191 (internal only) | Cloudflare challenge helper for Prowlarr |
-| gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers |
+| gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); up to 30 active, slow ones don't hold a slot, announces to all trackers; full speed only 2–6 am (see *The disk*) |
 | Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
 | Dashboard | 3000 | Home page: recently added, now playing, requests, a Watch tab of what to stream elsewhere, downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
@@ -26,6 +26,14 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
 | Media Index | 8686 | Poster wall of every title, active or cold, with keep/shrink/delete and cold-storage moves; Storage tab (disk use, cold shelf, suggestions); posters from Radarr/Sonarr, Plex, cover images on disk or TMDB, cached in `~/.local/share/media-index/posters` so cold titles keep theirs (`media-index/`) |
+
+**The disk.** `plex-media` is a Seagate ST8000DM004, a shingled (SMR) drive: after ~30 GB of writes in one go it
+rewrites its zones internally and the whole volume freezes for 20–40 minutes (every `ls` hangs, Plex buffers, `iostat
+-d disk4` shows <30 ops/s, no process is busy). It recovers by itself; don't restart or unplug it mid-stall. To keep
+that out of the evening, both qBittorrents (`:8080` and the private one) use the speed scheduler: full speed 2–6 am,
+300 KiB/s the rest of the day (Joe, 2026-11-10). Exception for something wanted now: click the speedometer icon
+in qBittorrent's footer (alternative limits off until the schedule flips it back) or ask. Bulk jobs that write a lot
+(webtoon re-cuts, re-encodes) also go in that window.
 
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
@@ -51,18 +59,21 @@ Kavita (`:5003`) is the reader (set up 2026-11-09, admin `jyesselm`, API key `KA
 *Manga* over `/manga/paged/Weeb Central (EN)` and `/manga/mangas/Weeb Central (EN)` (add `/manga/mangas/MangaDex (EN)`
 when something downloads from there), folder watching on so new Suwayomi chapters appear without a scan, metadata
 from Mangabaka, exclude pattern `**/mangas/*/Solo Leveling/**` so a re-cut series (below) is read from `paged/` and
-not twice. The default reading profile is paged left-to-right, automatic scaling, fit-split for spreads, tap or
-swipe to turn, menu auto-closes, black background, webtoon auto-detection off (Joe wants pages, never scrolling). If a series still opens scrolling, Kavita saved a
+not twice. The default reading profile is paged left-to-right, automatic scaling, fit-split, tap or swipe to turn,
+menu auto-closes, black background, webtoon auto-detection off. If a series opens in the wrong mode, Kavita saved a
 per-series *implicit* profile from an earlier read; clear it with `DELETE /api/reading-profile/series/<seriesId>`
-(or the reader's settings → reset). OPDS is on: Kavita → user menu →
-*3rd Party Clients* has the OPDS link for Panels/Paperback (progress syncs with the web reader). Suwayomi's own page
-reads too, without progress sync.
+(or the reader's settings → reset). `POST /api/library/update` needs `fileGroupTypes` as well as `libraryFileTypes`
+or it 400s. OPDS is on: Kavita → user menu → *3rd Party Clients* has the OPDS link for Panels/Paperback (progress
+syncs with the web reader). Suwayomi's own page reads too, without progress sync.
 
-Webtoons in a paged app (Panels, free, no OPDS): each file is one ~720×4000 strip, so a paged reader shows a thin
-column. `manga/webtoon_cut.py` re-cuts a series into 720×1560 pages (iPhone shape) at panel gutters; the copies live in
-`manga/paged/<Source>/<Series>/` (same names as the originals), Kavita reads those and excludes the original folder.
-Solo Leveling is cut (201 chapters, 2.2 GB); new chapters need the script run again on the new files. For Panels,
-copy `manga/paged/Weeb Central (EN)/Solo Leveling` to the phone over File Sharing and import it.
+Webtoons one scene at a time: each Suwayomi file is one ~720×4000 strip, which paged readers show as a thin column
+and Kavita's scroll mode shows as an endless strip; Joe wants one scene per page. `manga/webtoon_cut.py` stitches a
+chapter and cuts it only at gutters (solid gaps ≥24 px), grouping neighbouring scenes while they fit a 720×1560 page
+(iPhone shape) and giving a taller scene its own tall page, so no panel or bubble is ever sliced (a first version
+that forced a cut every 1560 px did slice them; those copies are in `_trash/manga-paged-fixedcut`). Copies live in
+`manga/paged/<Source>/<Series>/` with the originals' names; Kavita reads those and excludes the original folder.
+Solo Leveling is cut (201 chapters); new chapters need the script run on the new files. For Panels, copy
+`manga/paged/Weeb Central (EN)/Solo Leveling` to the phone over File Sharing and import it.
 
 Turn auto-download on once (idempotent; the setting lives in Suwayomi's database):
 ```sh
