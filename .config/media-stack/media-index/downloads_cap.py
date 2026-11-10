@@ -9,6 +9,8 @@ Radarr or Sonarr dropped a stuck download. Each run, per category:
     to fetch would exceed CAP_GB, the torrents with the most left are stopped and tagged "capped", largest first,
     until the rest fits;
 (3) when there is room again, capped torrents are started again, smallest first.
+It also sets both qBittorrents' queue limits by time of day (LIMITS): the big set while the instance's own speed
+scheduler has the alternative limits off (the 2–6 am full-speed window), the small set the rest of the day.
 
     python3 downloads_cap.py run [--dry-run]
     python3 downloads_cap.py install   # launchd agent, every CHECK_MINUTES
@@ -35,6 +37,9 @@ CAP_GB = {"radarr": 150, "sonarr": 100}
 ORPHAN_AGE_DAYS = 1
 CHECK_MINUTES = 30
 QB = os.environ.get("QB_URL", "http://localhost:8080/api/v2")  # env: in the media-index container
+PRIVATE_QB = os.environ.get("PRIVATE_QB_URL", "http://localhost:8081/api/v2")
+# (max_active_downloads, max_active_uploads, max_active_torrents) in the full-speed window / the rest of the day
+LIMITS = {"night": (10, 5, 15), "day": (3, 2, 5)}
 TAG = "capped"
 LABEL = "com.yesselman.downloads-cap"
 LOG = STATE_DIR / "downloads-cap.log"
@@ -44,10 +49,10 @@ STOPPED = {"stoppedDL", "pausedDL"}
 log = logging.getLogger("downloads-cap")
 
 
-def qb(path: str, params: dict | None = None, post: bool = False) -> object:
-    """Call qBittorrent's web API (localhost is exempt from its login)."""
+def qb(path: str, params: dict | None = None, post: bool = False, base: str = QB) -> object:
+    """Call qBittorrent's web API (the stack's addresses are exempt from its login)."""
     data = urllib.parse.urlencode(params or {})
-    url = f"{QB}/{path}" + ("" if post or not data else f"?{data}")
+    url = f"{base}/{path}" + ("" if post or not data else f"?{data}")
     with urllib.request.urlopen(url, data=data.encode() if post else None, timeout=60) as resp:
         body = resp.read()
     return json.loads(body) if body.startswith(b"[") or body.startswith(b"{") else body.decode()
@@ -128,6 +133,21 @@ def check(category: str, cap_gb: int, dry_run: bool) -> None:
             qb("torrents/removeTags", {"hashes": t["hash"], "tags": TAG}, post=True)
 
 
+def queue_limits(base: str, dry_run: bool) -> None:
+    """Match one instance's queue limits to its speed scheduler: LIMITS["night"] while the alternative limits are off."""
+    prefs = qb("app/preferences", base=base)
+    hour, start, end = time.localtime().tm_hour, prefs["schedule_from_hour"], prefs["schedule_to_hour"]
+    alt_on = prefs["scheduler_enabled"] and (start <= hour < end if start < end else hour >= start or hour < end)
+    downloads, uploads, total = LIMITS["day" if alt_on else "night"]
+    current = (prefs["max_active_downloads"], prefs["max_active_uploads"], prefs["max_active_torrents"])
+    if current == (downloads, uploads, total):
+        return
+    log.info(f"{base}: queue limits {current} -> {downloads} downloads / {uploads} uploads / {total} active")
+    if not dry_run:
+        wanted = {"max_active_downloads": downloads, "max_active_uploads": uploads, "max_active_torrents": total}
+        qb("app/setPreferences", {"json": json.dumps(wanted)}, post=True, base=base)
+
+
 def gb(size: float) -> str:
     return f"{size / 1e9:.1f} GB"
 
@@ -155,6 +175,11 @@ def main() -> None:
     else:
         for category, cap_gb in CAP_GB.items():
             check(category, cap_gb, args.dry_run)
+        for base in (QB, PRIVATE_QB):
+            try:
+                queue_limits(base, args.dry_run)
+            except Exception as e:  # the private stack may be down; the cap check above still ran
+                log.info(f"{base}: queue limits skipped: {e}")
 
 
 if __name__ == "__main__":

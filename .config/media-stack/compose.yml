@@ -334,6 +334,10 @@ services:
       SONARR_URL: http://sonarr:8989
       PLEX_URL: http://host.docker.internal:32400
       QB_URL: http://gluetun:8080/api/v2
+      PRIVATE_QB_URL: http://gluetun:8081/api/v2  # downloads_cap.py sets its queue limits too
+    networks:
+      default:
+        ipv4_address: 172.30.0.249  # in the private qBittorrent's login whitelist (downloads_cap.py)
     volumes:
       - ${DATA_ROOT}/media-index:/data
       - ${MEDIA_ROOT}:/Volumes/plex-media

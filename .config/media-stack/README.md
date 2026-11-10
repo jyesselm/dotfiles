@@ -29,7 +29,9 @@ piece outside it while the server is a Mac, because Docker on macOS can't use Ap
 
 **The disk.** `plex-media` is a Seagate ST8000DM004, a shingled (SMR) drive that slows badly after ~30 GB of writes in
 one go, so both qBittorrents (`:8080` and the private one) use the speed scheduler: full speed 2–6 am, 300 KiB/s the
-rest of the day, at most 3 downloads / 2 uploads / 5 active at once (Joe, 2026-11-10). Seeding is stopped for now;
+rest of the day; `media-index/downloads_cap.py` (every 30 min) also sets both queue limits to match: 10 downloads /
+5 uploads / 15 active while the scheduler has the alternative limits off, 3 / 2 / 5 otherwise (`LIMITS`; it reads
+the private instance at `gluetun:8081`, whitelisted via media-index's fixed 172.30.0.249) (Joe, 2026-11-10). Seeding is stopped for now;
 start completed torrents again from the WebUI when wanted. Exception for something wanted now: click the speedometer
 icon in qBittorrent's footer (alternative limits off until the schedule flips it back) or ask. Bulk jobs that write a
 lot (webtoon re-cuts, re-encodes) also go in that window. If the whole volume "hangs" (every `ls` and open blocks,
