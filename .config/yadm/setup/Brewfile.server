@@ -7,3 +7,6 @@ brew "ffmpeg"
 
 # Drive health checks for the media and backup drives (smartctl).
 brew "smartmontools"
+
+# Keeps the headless Mac awake (already required on the laptop and studio through Brewfile.apps).
+cask "caffeine"

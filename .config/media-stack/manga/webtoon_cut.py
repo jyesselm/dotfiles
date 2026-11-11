@@ -2,8 +2,8 @@
 usage: uv run --with pillow --with numpy python webtoon_cut.py <in.cbz> <out.cbz> [page_height=1560]
 Stitches all strips into one column and cuts at gutters (solid rows at least MIN_GAP tall), so no panel or
 bubble is sliced; only a gutterless stretch taller than four pages is cut at its quietest rows. Neighbouring scenes are grouped while they fit in page_height; a scene taller
-than that gets its own tall page (the reader fits it to the screen). Pages are padded to page_height with the
-gutter colour. Whole series: for f in "mangas/<Source>/<Series>"/*.cbz; do ... "$f" "paged/<Source>/<Series>/$(basename "$f")"; done
+than that gets its own tall page (the reader fits it to the screen). Pages keep their natural height, no padding:
+the reader centres a short page on its own background (padding showed as a white block on Kavita's black). Whole series: for f in "mangas/<Source>/<Series>"/*.cbz; do ... "$f" "paged/<Source>/<Series>/$(basename "$f")"; done
 Kavita's Manga library reads paged/ and excludes the original folder of each re-cut series (see README → Manga)."""
 import io, sys, zipfile
 from PIL import Image, ImageFile
@@ -61,12 +61,8 @@ pages = split
 extra = [n for n in z.namelist() if n not in names]
 with zipfile.ZipFile(dst, "w", zipfile.ZIP_STORED) as out:
     for n, (a, b) in enumerate(pages, 1):
-        bg = tuple(int(v) for v in arr[max(a - 1, 0)].mean(axis=0))   # gutter colour above the scene
         a, b = max(a - MARGIN, 0), min(b + MARGIN, strip.height)
         page = strip.crop((0, a, W, b))
-        if page.height < H:                                            # centre short pages on a full-height canvas
-            canvas = Image.new("RGB", (W, H), bg)
-            canvas.paste(page, (0, (H - page.height) // 2)); page = canvas
         buf = io.BytesIO(); page.save(buf, "JPEG", quality=90)
         out.writestr(f"{n:03d}.jpg", buf.getvalue())
     for n in extra:

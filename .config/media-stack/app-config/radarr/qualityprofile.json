@@ -1431,7 +1431,7 @@
           "modifier": "remux"
         },
         "items": [],
-        "allowed": true
+        "allowed": false
       },
       {
         "quality": {
@@ -1542,7 +1542,7 @@
   {
     "name": "Ultra-HD",
     "upgradeAllowed": false,
-    "cutoff": 31,
+    "cutoff": 19,
     "items": [
       {
         "quality": {
@@ -1878,7 +1878,7 @@
           "modifier": "remux"
         },
         "items": [],
-        "allowed": true
+        "allowed": false
       },
       {
         "quality": {
@@ -2201,7 +2201,7 @@
           "modifier": "remux"
         },
         "items": [],
-        "allowed": true
+        "allowed": false
       },
       {
         "quality": {

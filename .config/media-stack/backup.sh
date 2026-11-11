@@ -31,7 +31,7 @@ CLOUD_DEST="gcrypt:"  # rclone crypt remote over gdrive:media-stack-backups
 CLOUD_KEEP=4
 CLOUD_FOLDERS=(other anime youtube music podcasts audiobooks)  # mirrored to Drive (tv and movies re-download)
 CLOUD_GRACE_DAYS=30
-APPS=(radarr sonarr bazarr lidarr prowlarr seerr plextraktsync audiobookrequest qbittorrent cleanuparr uptime-kuma audiobookshelf romm gamarr media-index)
+APPS=(radarr sonarr bazarr lidarr prowlarr seerr plextraktsync audiobookrequest qbittorrent cleanuparr uptime-kuma audiobookshelf romm gamarr media-index kavita suwayomi sonobarr)
 export PATH="/Applications/OrbStack.app/Contents/MacOS/xbin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # install_job <label> <StartCalendarInterval keys> <program args...>: write a LaunchAgent and (re)load it.
@@ -121,7 +121,9 @@ for app in "${APPS[@]}"; do
     [[ -d "$DATA_ROOT/$app" ]] || continue
     rsync -a --exclude MediaCover --exclude Backups --exclude logs --exclude 'logs.db*' --exclude ipc-socket \
         --exclude '*.db' --exclude '*.db-*' --exclude '*.sqlite*' --exclude 'corrupt-*' --exclude 'config.bak-*' \
-        --exclude 'romm/db' --exclude 'romm/redis' "$DATA_ROOT/$app" .
+        --exclude 'romm/db' --exclude 'romm/redis' --exclude 'suwayomi/cache' --exclude 'suwayomi/webUI' \
+        --exclude 'kavita/config/cache*' --exclude 'kavita/config/covers' --exclude 'kavita/config/temp' \
+        --exclude 'kavita/config/backups' --exclude 'config-stale-*' "$DATA_ROOT/$app" .
 done
 # The apps' SQLite databases are copied with SQLite's backup API from a throwaway container: the apps run inside
 # OrbStack's VM, and opening a live database from macOS breaks its shared-memory locking across the VM boundary
@@ -134,7 +136,9 @@ for app in sys.argv[1:]:
         rel = src.relative_to("/d")
         if src.suffix not in {".db", ".sqlite", ".sqlite3"} or src.name == "logs.db" or not src.is_file():
             continue
-        if skip & set(rel.parts) or any(p.startswith(("corrupt-", "config.bak-")) for p in rel.parts):
+        if src.name.endswith(".mv.db") or rel.parts[:2] == ("suwayomi", "cache"):  # H2 and browser cache, not SQLite
+            continue
+        if skip & set(rel.parts) or any(p.startswith(("corrupt-", "config.bak-", "config-stale-")) for p in rel.parts):
             continue
         out = pathlib.Path("/out", rel)
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -144,6 +148,16 @@ for app in sys.argv[1:]:
         print("db", rel)
 ' "${APPS[@]}" | wc -l | xargs echo "databases copied:"
 docker exec romm-db sh -c 'mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" --single-transaction romm' >romm/romm.sql
+# Suwayomi keeps its library in an H2 database, which can't be copied while it runs; its own backup file (series,
+# categories, read chapters; restore under Settings → Backup) is fetched from its API instead.
+suwayomi=http://localhost:4567
+if url="$(curl -fsS -m 120 "$suwayomi/api/graphql" -H 'content-type: application/json' \
+    -d '{"query":"mutation { createBackup(input:{}) { url } }"}' | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')" && [[ -n "$url" ]] &&
+    mkdir -p suwayomi && curl -fsS -m 120 -o suwayomi/library.tachibk "$suwayomi$url"; then
+    echo "suwayomi library backup: $(du -h suwayomi/library.tachibk | cut -f1)"
+else
+    echo "$(date '+%F %T') couldn't fetch Suwayomi's library backup (container down?)"
+fi
 
 # Plex: preferences and the two library databases (its artwork in Metadata/ and Media/ is rebuilt by a refresh).
 mkdir -p plex/Databases

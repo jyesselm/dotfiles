@@ -39,7 +39,7 @@
     "key": "5",
     "title": "YouTube",
     "type": "movie",
-    "agent": "com.plexapp.agents.none",
+    "agent": "tv.plex.agents.none",
     "paths": [
       "/Volumes/plex-media/youtube"
     ]

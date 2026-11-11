@@ -21,7 +21,7 @@ Radarr/Sonarr with an import-list exclusion so it isn't grabbed again, moves the
 then re-catalogs the drive and has Plex refresh the library. The cold drive then holds the only copy: the next
 `sync` of the regular backup drives removes the title there too.
 
-Or click instead: Media Index's "Cold" button marks a title to move out, and the Drives tab's "Bring back" marks one
+Or click instead: Media Index's "Cold" button marks a title to move out, and "Bring back" marks a cold one
 to copy home (re-added to Radarr/Sonarr, no search; the cold copy stays as a backup). `watch` runs from launchd
 every WATCH_MINUTES and whenever a drive is plugged in; for each plugged-in drive with marked titles it runs
 `queue <drive>` in a one-off media-index container (launchd itself can't write the media disk), which does the

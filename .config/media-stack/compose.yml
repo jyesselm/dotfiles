@@ -199,7 +199,7 @@ services:
       - ${MEDIA_ROOT}:/Volumes/plex-media
 
   # Manga, the Sonarr way: add a series to the library and it keeps pulling new chapters (Tachiyomi sources:
-  # MangaDex and the others you install under Extensions). Chapters are saved as CBZ into manga/<Series>/ for Kavita.
+  # MangaDex and the others you install under Extensions). Chapters are saved as CBZ into manga/mangas/<Source>/<Series>/ for Kavita.
   # Settings → Downloads → "Automatically download new chapters" is turned on once by the GraphQL call in README.md;
   # the variables below overwrite the matching web-UI settings at every start. No login.
   suwayomi:

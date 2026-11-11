@@ -153,7 +153,7 @@ The laptop-only `Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist##cl
 
 ### Media stack on the Plex server
 
-Seerr, Radarr, Sonarr, Prowlarr, qBittorrent behind a NordVPN gluetun tunnel, the Homepage dashboard and Uptime Kuma run in OrbStack from `~/.config/media-stack/compose.yml`; Plex stays native. Setup, everyday commands and the move to Linux are in `~/.config/media-stack/README.md`.
+Seerr, the *arr apps, qBittorrent behind a NordVPN gluetun tunnel, the manga, audiobook and game apps, the dashboard and Media Index run in OrbStack from `~/.config/media-stack/compose.yml`; Plex stays native. Setup, everyday commands and the move to Linux are in `~/.config/media-stack/README.md`.
 
 ## Chrome Home across computers
 

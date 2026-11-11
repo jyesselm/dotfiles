@@ -39,14 +39,14 @@
         "name": "Movies",
         "enabled": true,
         "type": "movie",
-        "lastScan": 1792694400148
+        "lastScan": 1794360600280
       },
       {
         "id": "2",
         "name": "TV Shows",
         "enabled": true,
         "type": "show",
-        "lastScan": 1792694400220
+        "lastScan": 1794360600313
       }
     ],
     "machineId": "ee41ae9cca848b09fa0291f1a8f331587a584325"
@@ -96,8 +96,8 @@
       "activeProfileId": 4,
       "activeProfileName": "HD-1080p",
       "activeDirectory": "/Volumes/plex-media/tv",
-      "activeAnimeProfileId": 4,
-      "activeAnimeProfileName": "HD-1080p",
+      "activeAnimeProfileId": 7,
+      "activeAnimeProfileName": "Anime 1080p",
       "activeAnimeDirectory": "/Volumes/plex-media/anime",
       "is4k": false,
       "isDefault": true,

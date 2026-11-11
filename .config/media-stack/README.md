@@ -2,6 +2,8 @@
 
 Everything that finds, downloads and organizes media runs from `compose.yml` in this folder. Plex is the only
 piece outside it while the server is a Mac, because Docker on macOS can't use Apple's hardware transcoding.
+The server is the Mac mini `plex-server` (`plex-server.tail2813f4.ts.net` on the tailnet, also the Tailscale exit
+node); every port below is open on it. Agents: read `CLAUDE.md` first for the rules that are easy to break.
 
 | Service | Port | Role |
 |---|---|---|
@@ -40,6 +42,20 @@ Plex can't serve files, yet `stat`/`df` work and `iostat -d disk4` shows the dis
 queues behind tccd until it is clicked (proof: `sample <user tccd pid> 1 | grep CFUserNotificationReceiveResponse`).
 Answer it over Screen Sharing; don't kill tccd.
 
+**Plex** itself is the Mac app (`/Applications/Plex Media Server.app`, data in
+`~/Library/Application Support/Plex Media Server/`). The launchd agent `local.plex.autostart` (hand-written,
+untracked, saved in the nightly settings archive) opens it at login once `/Volumes/plex-media/movies` exists, so it
+never starts against a missing disk. Containers reach it at `HOST_ADDR:32400`. Its libraries and playlists are
+listed in `app-config/plex/`. The libraries stay plain: no Kometa, overlays or auto-collections (tried and reverted
+2026-10-22).
+
+**Private stack.** A second compose project, `private` (`~/.config/private-stack/`, own README), runs beside this
+one and is kept out of the dashboard, Media Index and the backups here. It leans on this stack in three ways: its
+Whisparr, Prowlarr, FlareSolverr and qBittorrent (`:8081`) run inside this stack's `gluetun` tunnel, its other
+containers sit on this stack's network at fixed addresses (172.30.0.250–252), and its media is in
+`plex-media/.private/`. So whenever `gluetun` is recreated here (an image update, a changed setting), rejoin them:
+`docker-compose -f ~/.config/private-stack/compose.yml up -d --force-recreate whisparr prowlarr flaresolverr qbittorrent`.
+
 A request flows Seerr → Radarr/Sonarr → Prowlarr → qBittorrent → hardlinked into `movies` / `tv` → Plex. Music is the same
 without Seerr: add artists in Lidarr (or pick them from Sonobarr's suggestions), which files albums into `music/` (Plex
 Music library, Plexamp app). Lidarr only fetches whole albums, so for one song paste its Spotify link into spotDL instead;
@@ -65,7 +81,19 @@ Kavita (`:5003`) is the reader (set up 2026-11-09, admin `jyesselm`, API key `KA
 when something downloads from there), folder watching on so new Suwayomi chapters appear without a scan, metadata
 from Mangabaka, exclude pattern `**/mangas/*/Solo Leveling/**` so a re-cut series (below) is read from `paged/` and
 not twice. The default reading profile is paged left-to-right, automatic scaling, fit-split, tap or swipe to turn,
-menu auto-closes, black background, webtoon auto-detection off. If a series opens in the wrong mode, Kavita saved a
+menu auto-closes, black background, webtoon auto-detection off. Everything reads left to right like a western book, Japanese manga
+included (Joe, 2026-11-10; a right-to-left profile for them was tried and removed).
+**iPad.** Kavita's automatic scaling fits the page to the *width* whenever the window is taller than wide, which
+cuts off the bottom of a manga page on an iPad held upright (the screen is squarer than the page). So the iPad
+(client device 4, "Safari on iOS", in `GET /api/device/client/devices`) has its own profile, *iPad (fit whole
+page)*, with *fit to height*, bound to both libraries. How binding works (found by testing 0.9.1.4): a profile's
+device list only narrows its library or series binding, a device-only profile does nothing; and when a series has
+two profiles, the one with the lower id wins. The reader sends the browser's id as the `X-Device-Id` header; check
+what a device gets with `GET /api/reading-profile/<libraryId>/<seriesId>?skipImplicit=false` and that header set to
+the device's `uiFingerprint`. Each browser is its own device: a new iPad, another browser, or the Home Screen app
+registers separately and must be added to the iPad profile (`POST /api/reading-profile/set-devices?profileId=6`
+with the full id list). Phones keep automatic scaling (fit to width is right for them). On the phone or iPad, open
+`http://plex-server.tail2813f4.ts.net:5003` in Safari and Share → *Add to Home Screen* for a full-screen app. If a series opens in the wrong mode, Kavita saved a
 per-series *implicit* profile from an earlier read; clear it with `DELETE /api/reading-profile/series/<seriesId>`
 (or the reader's settings → reset). `POST /api/library/update` needs `fileGroupTypes` as well as `libraryFileTypes`
 or it 400s. OPDS is on: Kavita → user menu → *3rd Party Clients* has the OPDS link for Panels/Paperback (progress
@@ -75,9 +103,20 @@ Webtoons one scene at a time: each Suwayomi file is one ~720×4000 strip, which 
 and Kavita's scroll mode shows as an endless strip; Joe wants one scene per page. `manga/webtoon_cut.py` stitches a
 chapter and cuts it only at gutters (solid gaps ≥24 px), grouping neighbouring scenes while they fit a 720×1560 page
 (iPhone shape) and giving a taller scene its own tall page, so no panel or bubble is ever sliced (a first version
-that forced a cut every 1560 px did slice them; those copies are in `_trash/manga-paged-fixedcut`). Copies live in
+that forced a cut every 1560 px did slice them; those copies are in `_trash/manga-paged-fixedcut`). Pages keep their
+natural height, no padding: padding showed as a white block on the reader's black background. Copies live in
 `manga/paged/<Source>/<Series>/` with the originals' names; Kavita reads those and excludes the original folder.
-Solo Leveling is cut (201 chapters); new chapters need the script run on the new files. For Panels, copy
+Solo Leveling is cut (201 chapters, chapter 50 with the padding-free script, the rest with the padded one; left as
+is), and so is Solo Leveling: Ragnarok (10 chapters, 2026-11-10, page height 2037 because its strips are 940 wide:
+scale 1560 by width/720). New chapters need the script run on the new files, and a newly cut series needs its own
+exclude pattern (`**/mangas/*/<Series>/**`) in the Manga library. Better still for a page reader: real print editions.
+`manga/volumes/<Series>/` holds digital volumes (`Solo Leveling v01-14 (Digital) (1r0n)`, the Yen Press re-layout of
+the webtoon into 900×1291 pages; `Chainsaw Man v01-05 (Digital) (1r0n)` as a reader test), hardlinked from
+`downloads/manga/`; Kavita reads that folder as its own **Volumes** library so they don't merge with the webtoon
+series of the same name. To add volumes: pick the `(Digital) (1r0n)` release in Prowlarr, add its magnet to
+qBittorrent with only the wanted files (`torrents/filePrio` priority 0 for the rest; force-start, the queue is
+usually full of stalled torrents), hardlink the CBZs in, then `POST /api/library/scan?libraryId=2&force=true`.
+For Panels, copy
 `manga/paged/Weeb Central (EN)/Solo Leveling` to the phone over File Sharing and import it.
 
 Turn auto-download on once (idempotent; the setting lives in Suwayomi's database):
@@ -85,6 +124,30 @@ Turn auto-download on once (idempotent; the setting lives in Suwayomi's database
 curl -s http://plex-server.tail2813f4.ts.net:4567/api/graphql -H 'content-type: application/json' \
   -d '{"query":"mutation { setSettings(input:{settings:{autoDownloadNewChapters:true, autoDownloadNewChaptersLimit:0}}) { settings { autoDownloadNewChapters } } }"}'
 ```
+
+## Anime and subtitles
+
+Anime lives in `anime/` (its own Sonarr root folder and Plex library; Seerr sends anime requests there). The rule
+(Joe, 2026-11-10): Japanese audio with English subtitles.
+
+- **Fetching.** Anime series use Sonarr's quality profile **Anime 1080p** (HD-1080p plus four custom formats scored
+  −10000, so a matching release is rejected): *no Japanese audio* (dub-only), *other-language audio* (French,
+  German, Spanish, Italian, Portuguese, Russian), *other-language release tag* (`MULTi`, `VOSTFR`, `FRENCH`,
+  `GERMAN`… in the name, which Sonarr doesn't read as a language) and *raw (no subtitles)* (`-Raws` groups except
+  Erai-raws, Moozzi2, ReinForce, VCB-Studio). Dual audio (English + Japanese) is fine. Seerr's anime profile points
+  at it; a series added by hand in Sonarr needs the profile picked. Test a release name with
+  `GET /api/v3/parse?title=<name>` (shows the formats it matches). Within one custom format, conditions of the
+  same type are OR and different types are AND, which is why language and name tags are separate formats.
+- **Subtitles.** Sonarr and Radarr auto-tag anything whose original language isn't English `foreign`; Bazarr's
+  profile *English (foreign titles)* is tied to that tag (`serie_tag_enabled` / `movie_tag_enabled`, the tag-based profile switches under Settings → Languages; they
+  were off until 2026-11-10, so newer titles had no profile). Untagged embedded
+  subtitle tracks count as English. Bazarr's providers are weak for anime: `animetosho_xyz` is enabled but does
+  nothing until an AniDB API client name and version are entered in Bazarr's settings (register one in your
+  anidb.net account, under API clients), and OpenSubtitles.com needs an account.
+- **State on 2026-11-10** (445 files probed with `ffprobe`): every Japanese-audio file has English subtitles
+  inside it except Frieren (28 episodes, French release), Parasyte (24, French release), Kaiju No. 8 (12, no
+  subtitles at all) and one Madoka Magica extra. Bazarr lists them under Wanted and retries every 6 h. `anime/FBI`
+  is a Spanish-audio live-action show filed in the wrong folder.
 
 ## Movie recommendations (Trakt)
 
@@ -96,7 +159,7 @@ and searches them on its next list sync. PlexTraktSync also mirrors the Plex wat
 watchlisted in Plex is downloaded too. Clean Library Level stays Disabled, so watching a movie (Trakt then drops it
 from the watchlist) never deletes it.
 
-**Quality: 1080p unless asked.** Seerr, the Trakt list and Sonarr all use the HD-1080p profile, which allows only
+**Quality: 1080p unless asked.** Seerr, the Trakt list and Sonarr all use the HD-1080p profile (anime: Anime 1080p, the same qualities), which allows only
 1080p HDTV/WEB/Blu-ray encodes (no remuxes, no 4K). For a 4K copy, request it in Seerr and open **Advanced** →
 Quality Profile → **Ultra-HD** (or switch the movie's profile in Radarr and search). Ultra-HD takes Bluray-2160p
 and never upgrades past it.
@@ -123,7 +186,10 @@ moved or restored stack keeps them. Only a fresh install needs them again:
 
 ## Files
 
-- `compose.yml`, `dashboard/`, `media-index/`, `manga/`, `menubar/`, `gluetun-auth.toml`: tracked in dotfiles, no secrets.
+- Everything in this folder except `.env` is tracked in dotfiles (yadm) and holds no secrets: `compose.yml`,
+  `gluetun-auth.toml` (lets the dashboard read the VPN's public IP), own code in `dashboard/`, `media-index/`,
+  `manga/`, `menubar/`, `tv-app/`, image tweaks in `spotdl/` and `plextraktsync/`, the scripts `backup.sh` and
+  `export-config.sh`, and the travel kit (`travel-onn.md`, `onn-setup.sh`). `CLAUDE.md` is the short rule list for agents.
 - `.env`: untracked, this machine's paths and keys. Template: `env.example`.
 - `$DATA_ROOT/<app>/config` (and `$DATA_ROOT/uptime-kuma`): each app's settings and database. Not tracked; this is
   what you copy to move the stack.
@@ -152,10 +218,52 @@ docker-compose up -d                 # start / apply changes
 docker-compose pull && docker-compose up -d   # update all images
 docker-compose logs -f gluetun       # watch one service
 docker-compose ps                    # health at a glance (or the dashboard)
+cd media-index && uv run --with pytest pytest -q   # tests for the own code
 ```
+
+An update that recreates `gluetun` needs the private stack rejoined (see *Private stack* above). `dashboard`,
+`media-index` and `spotdl` are built here: after editing their code, `docker-compose up -d --build <service>`.
 
 On the Mac, `docker-compose` comes from OrbStack (on PATH via `.zsh/tools.zsh`); OrbStack starts at login and needs
 Removable Volumes access to reach the disk.
+
+## Scheduled jobs (launchd)
+
+All are user agents in `~/Library/LaunchAgents/`, written by the install command shown (re-run it to change one).
+macOS doesn't let a launchd job read or write `plex-media`, so the ones that touch the disk do it through the
+`media-index` container, which must be up.
+
+| Agent | When | Runs | Install | Log |
+|---|---|---|---|---|
+| `local.plex.autostart` | login | opens Plex once the disk is mounted | by hand | — |
+| `com.yesselman.media-menu` | login, kept alive | menu-bar icon | `menubar/install.sh` | — |
+| `com.yesselman.dashboard-host` | every minute | `dashboard/host-stats.py` | `host-stats.py install` | — |
+| `com.yesselman.cold-moves` | every 10 min and on drive plug-in | `drives.py watch` | `drives.py install` | `cold-moves.log` |
+| `com.yesselman.downloads-cap` | every 30 min | `downloads_cap.py run` (in the container) | `downloads_cap.py install` | `downloads-cap.log` |
+| `com.yesselman.media-shrink` | 01:00, no new file after 08:00 | `shrink.py run --until 8` | `shrink.py install` | `encode.log` |
+| `com.yesselman.music-upgrade` | 03:00 | `music_upgrade.py run` | `music_upgrade.py install` | `music-upgrade.log` |
+| `com.yesselman.media-backup` | 04:00 | `backup.sh` (settings archive) | `backup.sh install` | `backup.log` |
+| `com.yesselman.media-backup-cloud` | Saturday 01:00 | `backup.sh cloud` (media to Google Drive) | `backup.sh install` | `cloud.log` |
+| `com.yesselman.media-backup-remind` | Sunday 10:00 | `backup.sh remind` | `backup.sh install` | `backup.log` |
+
+Python scripts are under `media-index/` unless a folder is given; their logs are in `~/.local/share/media-index/`,
+the backup logs in `~/backups/media-stack/`. Inside the stack, PlexTraktSync syncs every 6 h, Suwayomi checks for
+chapters every 12 h, Cleanuparr's queue cleaner runs every 30 min and Media Index re-indexes the disk daily.
+
+## Troubleshooting
+
+- **Every `ls`/open on `plex-media` hangs, disk idle:** an unanswered macOS consent dialog; see *The disk*.
+- **Plex apps stop listing the server though it runs:** plex.tv's record went stale (seen 2026-10-22). Check
+  `curl -H "X-Plex-Token: $HOMEPAGE_VAR_PLEX_TOKEN" -H "X-Plex-Client-Identifier: check" -H "Accept: application/json" https://plex.tv/api/v2/resources`:
+  the Plex Media Server entry should have `provides: "server"`, not `"sync"`. Re-register without a restart:
+  `PUT http://127.0.0.1:32400/:/prefs?PublishServerOnPlexOnlineKey=0` (with the token), wait a few seconds, then `=1`.
+- **A container shows old files after its host folder was renamed:** OrbStack keeps serving the renamed folder at
+  the old path through container recreates and `orb restart docker`. Only `orb stop && orb start` clears it (all
+  containers down ~1 min; Plex is unaffected). To reset an app's data, move the files out and keep the folder.
+- **spotDL fails with YouTube 403/429:** rebuild it, `docker-compose build --pull spotdl && docker-compose up -d spotdl`.
+- **Private stack's downloads or Whisparr unreachable after an update here:** `gluetun` was recreated; see *Private stack*.
+- **Nightly shrink logs "ffprobe can't read":** Homebrew's `ffmpeg` was upgraded and lost its Removable Volumes
+  permission; see *Media Index*.
 
 ## NordVPN key (once)
 
@@ -263,8 +371,10 @@ cold copy stays as a backup. Marks waiting for an unplugged drive get one remind
 `backup.sh` (launchd, nightly at 04:00) archives every app's settings and databases, Plex's library database and
 `.env` into `settings-YYYY-MM-DD.tar.gz` (~400 MB) in `~/backups/media-stack/` and `plex-media/_backups/settings/`,
 keeping 7 in each, and uploads an encrypted copy to Google Drive (`media-stack-backups/`, newest 4) through the
-rclone remote `gcrypt`. Cover art and Plex artwork are left out; they re-download. To restore an app, stop it and
-copy its folder from the archive back to `$DATA_ROOT` (Plex: its two `.db` files into `Plug-in Support/Databases/`).
+rclone remote `gcrypt`. The apps covered are `APPS` in `backup.sh`; add a new service there when it has settings
+worth keeping. Cover art and Plex artwork are left out; they re-download. To restore an app, stop it and
+copy its folder from the archive back to `$DATA_ROOT` (Plex: its two `.db` files into `Plug-in Support/Databases/`;
+Suwayomi: its library is `suwayomi/library.tachibk`, restored in its web UI under Settings → Backup).
 Database copies are made from a container inside OrbStack's VM: never open a running app's SQLite database from
 macOS (with `sqlite3` or a GUI), which breaks its locking and can corrupt it.
 
@@ -272,6 +382,13 @@ The Drive copy can only be decrypted with `gcrypt`'s passwords, so keep the outp
 in a password manager. On a new machine: `rclone config create gdrive drive scope=drive.file`, paste that
 `[gcrypt]` block into `~/.config/rclone/rclone.conf`, then `rclone copy gcrypt:settings-<date>.tar.gz .`. If
 uploads fail (a notification says so), run `rclone config reconnect gdrive:`.
+
+The media that can't be re-downloaded (`CLOUD_FOLDERS` in `backup.sh`: `other anime youtube music podcasts
+audiobooks`) is also mirrored to Google Drive every Saturday at 01:00 by `backup.sh cloud`, encrypted with file
+names hidden, through the rclone remote `gmedia` (`gmedia:current`). A replaced or deleted file moves to
+`gmedia:deleted/<date>/` and is dropped after 30 days. The upload runs in a container named `media-cloud-upload`
+(a second run won't start while one is going), is held to 5 MB/s between 08:00 and 23:00, and logs to
+`~/backups/media-stack/cloud.log`.
 
 Everything except `downloads/` and `games/` is mirrored on three backup drives (`BACKUPS` in
 `media-index/drives.py`), and each also gets a copy of the settings archives:
@@ -281,7 +398,7 @@ Everything except `downloads/` and `games/` is mirrored on three backup drives (
 | `plex-movie-backups` (3 TB) | `movies` |
 | `plex-tv-backups` (3 TB) | `tv` shows starting 0–9 or A–S, `audiobooks` |
 | `plex-misc-backups` (2 TB) | `tv` shows starting T–Z, `anime`, `other`, `youtube`, `music`, `podcasts`; also `MaP2D_Data` (lab data; the other copy is on `plex-cold-2`) |
-| `plex-cold-1`, `plex-cold-2` (3 TB each; were `plex-offsite-1/-2`) | `other`, `anime`, `youtube`, `music`, `podcasts`, `audiobooks` (what can't be re-downloaded; also on Google Drive), plus cold storage: titles moved off `plex-media` with `drives.py cold` (not in Plex, Radarr or Sonarr; the Drives tab or `drives.py where` says which drive holds one). `plex-cold-2` also keeps a copy of `MaP2D_Data` (lab data; not on `plex-media`, so sync leaves it alone) and `_trash/Movies` (old pre-Radarr library, 1.3 TB) |
+| `plex-cold-1`, `plex-cold-2` (3 TB each; were `plex-offsite-1/-2`) | `other`, `anime`, `youtube`, `music`, `podcasts`, `audiobooks` (what can't be re-downloaded; also on Google Drive), plus cold storage: titles moved off `plex-media` with `drives.py cold` (not in Plex, Radarr or Sonarr; Media Index's Storage tab or `drives.py where` says which drive holds one). `plex-cold-2` also keeps a copy of `MaP2D_Data` (lab data; not on `plex-media`, so sync leaves it alone) and `_trash/Movies` (old pre-Radarr library, 1.3 TB) |
 
 Every Sunday at 10:00 `backup.sh remind` re-catalogs `plex-media` and shows a notification with how much each
 drive is behind. Plug the drive in and run `sync`; it mirrors deletions too and re-catalogs the drive:
@@ -302,7 +419,7 @@ python3 media-index/drives.py status                 # what the reminder checks
 2. **Install** Docker Engine with the compose plugin, clone the dotfiles (`yadm` linux class), and copy
    `env.example` to `.env`.
 3. **Stop the Mac stack** (`docker-compose down`, quit Plex), then copy the app data across:
-   `rsync -a ~/.local/share/{radarr,sonarr,bazarr,lidarr,prowlarr,seerr,plextraktsync,qbittorrent,uptime-kuma,audiobookshelf,romm,gamarr} newhost:~/.local/share/`.
+   `rsync -a ~/.local/share/{radarr,sonarr,bazarr,lidarr,sonobarr,spotdl,prowlarr,seerr,plextraktsync,qbittorrent,cleanuparr,uptime-kuma,audiobookshelf,audiobookrequest,suwayomi,kavita,romm,gamarr,media-index,dashboard} newhost:~/.local/share/`.
 4. **Edit `.env`**: `MEDIA_ROOT=/mnt/plex`, `DATA_ROOT=/home/<you>/.local/share`, `PUID`/`PGID` from `id`
    (usually 1000), keys unchanged.
    Seerr runs as uid 1000: `sudo chown -R 1000:1000 $DATA_ROOT/seerr/config`.

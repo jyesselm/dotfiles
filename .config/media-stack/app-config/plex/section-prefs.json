@@ -87,6 +87,11 @@
   {
     "hidden": "0",
     "enableCinemaTrailers": "true",
+    "country": "US",
+    "originalTitles": "false",
+    "localizedArtwork": "true",
+    "useLocalAssets": "true",
+    "includeAdultContent": "false",
     "enableBIFGeneration": "true",
     "collectionMode": "2",
     "enableCreditsMarkerGeneration": "true",

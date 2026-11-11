@@ -2,23 +2,8 @@
   {
     "path": "/Volumes/plex-media/tv",
     "accessible": true,
-    "freeSpace": 2451804971008,
+    "freeSpace": 3565387677696,
     "unmappedFolders": [
-      {
-        "name": "Anne of Avonlea ",
-        "path": "/Volumes/plex-media/tv/Anne of Avonlea ",
-        "relativePath": "Anne of Avonlea "
-      },
-      {
-        "name": "Anne of Green Gables The Sequel",
-        "path": "/Volumes/plex-media/tv/Anne of Green Gables The Sequel",
-        "relativePath": "Anne of Green Gables The Sequel"
-      },
-      {
-        "name": "Justice League Unlimited",
-        "path": "/Volumes/plex-media/tv/Justice League Unlimited",
-        "relativePath": "Justice League Unlimited"
-      },
       {
         "name": "Supernatural",
         "path": "/Volumes/plex-media/tv/Supernatural",
@@ -30,7 +15,7 @@
   {
     "path": "/Volumes/plex-media/anime",
     "accessible": true,
-    "freeSpace": 2451804971008,
+    "freeSpace": 3565387677696,
     "unmappedFolders": [],
     "id": 4
   }
