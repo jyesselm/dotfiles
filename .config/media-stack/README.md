@@ -97,7 +97,9 @@ with the full id list). Phones keep automatic scaling (fit to width is right for
 per-series *implicit* profile from an earlier read; clear it with `DELETE /api/reading-profile/series/<seriesId>`
 (or the reader's settings → reset). `POST /api/library/update` needs `fileGroupTypes` as well as `libraryFileTypes`
 or it 400s. OPDS is on: Kavita → user menu → *3rd Party Clients* has the OPDS link for Panels/Paperback (progress
-syncs with the web reader). Suwayomi's own page reads too, without progress sync.
+syncs with the web reader). Panels never reached Kavita over the plain `http://…:5003` link (2026-11-11), so Kavita is
+also served over HTTPS on the tailnet (`tailscale serve --bg --https=5443 http://127.0.0.1:5003`; undo with
+`tailscale serve --https=5443 off`): in Panels use `https://plex-server.tail2813f4.ts.net:5443/api/opds/<key>`. Suwayomi's own page reads too, without progress sync.
 
 Webtoons one scene at a time: each Suwayomi file is one ~720×4000 strip, which paged readers show as a thin column
 and Kavita's scroll mode shows as an endless strip; Joe wants one scene per page. `manga/webtoon_cut.py` stitches a
