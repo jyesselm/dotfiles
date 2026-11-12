@@ -105,11 +105,15 @@ chapter and cuts it only at gutters (solid gaps ≥24 px), grouping neighbouring
 (iPhone shape) and giving a taller scene its own tall page, so no panel or bubble is ever sliced (a first version
 that forced a cut every 1560 px did slice them; those copies are in `_trash/manga-paged-fixedcut`). Pages keep their
 natural height, no padding: padding showed as a white block on the reader's black background. Copies live in
-`manga/paged/<Source>/<Series>/` with the originals' names; Kavita reads those and excludes the original folder.
+`manga/paged/<Source>/<Series>/` with the originals' names; Kavita reads those, and `compose.yml` mounts an empty
+folder over each original strip folder in the Kavita container (`tmpfs:` under `kavita`) so it never sees the strips.
 Solo Leveling is cut (201 chapters, chapter 50 with the padding-free script, the rest with the padded one; left as
 is), and so is Solo Leveling: Ragnarok (10 chapters, 2026-11-10, page height 2037 because its strips are 940 wide:
 scale 1560 by width/720). New chapters need the script run on the new files, and a newly cut series needs its own
-exclude pattern (`**/mangas/*/<Series>/**`) in the Manga library. Better still for a page reader: real print editions.
+`tmpfs:` line and `docker-compose up -d kavita`. The library's exclude patterns (`**/mangas/*/<Series>/**`) are still
+set but don't hold: on 2026-11-11 both series flipped between strips and pages from one scan to the next. A cut series has no cover page, so Kavita shows
+its first frame; both got Suwayomi's cover instead (`:4567/api/v1/manga/<id>/thumbnail`, converted to PNG and sent as
+plain base64 in `url` to `POST /api/upload/series` with `lockCover: true`). Better still for a page reader: real print editions.
 `manga/volumes/<Series>/` holds digital volumes (`Solo Leveling v01-14 (Digital) (1r0n)`, the Yen Press re-layout of
 the webtoon into 900×1291 pages; `Chainsaw Man v01-05 (Digital) (1r0n)` as a reader test), hardlinked from
 `downloads/manga/`; Kavita reads that folder as its own **Volumes** library so they don't merge with the webtoon

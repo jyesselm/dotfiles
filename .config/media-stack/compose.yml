@@ -228,6 +228,11 @@ services:
     volumes:
       - ${DATA_ROOT}/kavita/config:/kavita/config
       - ${MEDIA_ROOT}/manga:/manga:ro
+    # Webtoon strips that have a re-cut copy in manga/paged/: an empty folder is mounted over each so Kavita only
+    # sees the paged copy (its exclude patterns don't hold; the series flipped between the two on every scan).
+    tmpfs:
+      - "/manga/mangas/Weeb Central (EN)/Solo Leveling:size=1m"
+      - "/manga/mangas/Weeb Central (EN)/Solo Leveling_ Ragnarok:size=1m"
 
   # Retro game library with in-browser play (EmulatorJS) and per-user saves. ROMs live in
   # plex-media/games/roms/<platform>/ (folder names: docs.romm.app → Supported Platforms). Accounts are made in its web UI.
