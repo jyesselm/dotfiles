@@ -287,8 +287,9 @@ collection called Travel, or held by the drive `plex-travel` once the stick is n
 Radarr/Sonarr, then Plex, then Kavita's series cover (manga; `KAVITA_API_KEY`), then for a download the poster of the library title
 its release name starts with ("Everything" hides downloads already hardlinked into the library, since they are that
 title's files; the Downloads chip shows them all, labelled "in the library" or "not in the library yet"), then a cover image in the title's own
-folder or inside its first audio file (audiobooks, podcasts, album art; square art is shown whole, not cropped), then TMDB
-(`TMDB_API_KEY`); a title with none shows a tinted tile with its name. A tile is one title: the folder under `movies/`, `tv/` and so on, but one book under
+folder or inside its first audio file (audiobooks, podcasts, album art; square art is shown whole, not cropped) or the first
+page of its first `.cbz` (manga Kavita doesn't have), then TMDB (`TMDB_API_KEY`), then for a song the iTunes Store's art for the
+first match by the same artist; a title with none shows a tinted tile with its name. To fix a book by hand, put a `cover.jpg` in its folder. A tile is one title: the folder under `movies/`, `tv/` and so on, but one book under
 `audiobooks/` (the folder holding its files, whatever the author/series nesting), one series under `manga/`, one download
 under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). Each type
 shows what it is reviewed by: a book its length and bitrate (audio is probed like video), a manga series its chapters and

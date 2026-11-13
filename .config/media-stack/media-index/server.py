@@ -17,6 +17,7 @@ import threading
 import time
 import unicodedata
 import urllib.request
+import zipfile
 from collections import defaultdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -476,8 +477,9 @@ _kavita_cache: dict = {"at": 0.0, "series": {}}
 BAZARR = os.environ.get("BAZARR_URL", "http://localhost:6767")
 _bazarr_cache: dict = {"at": 0.0, "missing": {}}
 TMDB_IMAGES = "https://image.tmdb.org/t/p/w342"
+ITUNES = "https://itunes.apple.com/search"
 COVER_NAMES = ("cover", "folder", "poster", "show", "front", "album")
-COVER_TYPES = ("*.jpg", "*.jpeg", "*.png")
+COVER_TYPES = ("*.jpg", "*.jpeg", "*.png", "*.webp")
 MISS_RETRY_S = 6 * 3600
 _arr_paths: dict = {"at": 0.0, "paths": {}}
 _plex_cache: dict = {"at": 0.0, "by_item": {}, "by_key": {}, "travel": set(), "sections": {}, "travel_coll": {}}
@@ -655,7 +657,8 @@ def _poster_from_plex(item: str) -> bytes | None:
 
 def _cover_on_disk(item: str) -> bytes | None:
     """A cover image kept next to the files (cover.jpg, folder.jpg, show.jpg, any image up to three levels down), else
-    the art embedded in the first audio file, scaled to poster width with ffmpeg. For a song, its album's cover."""
+    the art embedded in the first audio file, else the first page of the first comic archive, scaled to poster width
+    with ffmpeg. For a song, its album's cover."""
     path = index.MEDIA_ROOT / item
     if not path.exists():  # not on this disk (cold): never fall back to the parent, or every cold show would share one
         return None
@@ -670,7 +673,28 @@ def _cover_on_disk(item: str) -> bytes | None:
     if found:
         return _scaled(min(found, key=lambda p: (rank.get(p.stem.lower(), len(rank)), len(p.parts), p.name)), cached)
     audio = sorted(p for p in folder.rglob("*") if index.kind_for(p.name) == "audio")
-    return _scaled(audio[0], cached) if audio else None
+    if audio:
+        return _scaled(audio[0], cached)
+    books = sorted(folder.rglob("*.cbz"))
+    return _first_page(books[0], cached) if books else None
+
+
+def _first_page(book: Path, dest: Path) -> bytes | None:
+    """The first image inside a comic archive as a poster at dest; None when it holds none or isn't a zip."""
+    try:
+        with zipfile.ZipFile(book) as pages:
+            images = sorted(n for n in pages.namelist() if n.lower().endswith((".jpg", ".jpeg", ".png", ".webp")))
+            if not images:
+                return None
+            page = dest.with_suffix(".page")
+            POSTERS.mkdir(parents=True, exist_ok=True)
+            page.write_bytes(pages.read(images[0]))
+    except (OSError, zipfile.BadZipFile):
+        return None
+    try:
+        return _scaled(page, dest)
+    finally:
+        page.unlink()
 
 
 def _scaled(source: Path, dest: Path) -> bytes | None:
@@ -770,6 +794,19 @@ def _poster_from_tmdb(item: str) -> bytes | None:
     return _fetch(TMDB_IMAGES + path) if path else None
 
 
+def _poster_from_itunes(item: str) -> bytes | None:
+    """A song's cover from the iTunes Store, for files that carry none: the first match by the same artist."""
+    parts = item.split("/")
+    if parts[0] != index.MUSIC_CATEGORY or len(parts) < 3:
+        return None
+    song = re.sub(r"^\d+(-\d+)?[ .-]+|(\.\w{2,4})+$|\(.*?\)| - .*", "", parts[-1])  # track number, extension, notes
+    raw = _fetch(f"{ITUNES}?{urlencode({'term': f'{parts[1]} {song}', 'entity': 'song', 'limit': 5})}")
+    results = json.loads(raw).get("results", []) if raw else []
+    artist = index.title_key(parts[1])
+    art = next((r.get("artworkUrl100") for r in results if index.title_key(r.get("artistName", "")) == artist), None)
+    return _fetch(art.replace("100x100", "300x300")) if art else None
+
+
 def poster(item: str) -> bytes | None:
     """A title's poster (250 px wide JPEG) from the cache or the first source that has one, else None.
 
@@ -783,7 +820,7 @@ def poster(item: str) -> bytes | None:
     if time.time() - _misses.get(item, 0) < MISS_RETRY_S:
         return None
     sources = (_poster_from_arr, _poster_from_plex, _poster_from_kavita, _poster_from_download, _cover_on_disk,
-               _poster_from_tmdb)  # fmt: skip
+               _poster_from_tmdb, _poster_from_itunes)  # fmt: skip
     for source in sources:
         data = source(item)
         if data:

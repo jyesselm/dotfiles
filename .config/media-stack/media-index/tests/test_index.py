@@ -96,3 +96,21 @@ def test_shrink_queue_lists_only_worthwhile_files_of_shrink_titles() -> None:
     server.set_decision("TV/B", "keep")
     queue = server.shrink_queue()
     assert [(t["item"], [f["path"] for f in t["files"]]) for t in queue] == [("TV/A", ["TV/A/1.mkv"])]
+
+
+def test_cover_on_disk_uses_a_comic_archives_first_page(tmp_path: Path, monkeypatch) -> None:
+    import subprocess
+    import zipfile
+
+    import server
+
+    series = tmp_path / "manga" / "mangas" / "Akira"
+    series.mkdir(parents=True)
+    page = tmp_path / "001.jpg"
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=red:s=64x96", "-frames:v", "1", str(page)])
+    with zipfile.ZipFile(series / "Ch.1.cbz", "w") as book:
+        book.write(page, "001.jpg")
+    monkeypatch.setattr(index, "MEDIA_ROOT", tmp_path)
+    monkeypatch.setattr(server, "POSTERS", tmp_path / "posters")
+    assert server._cover_on_disk("manga/mangas/Akira")[:2] == b"\xff\xd8"  # a JPEG
+    assert not list((tmp_path / "posters").glob("*.page"))
