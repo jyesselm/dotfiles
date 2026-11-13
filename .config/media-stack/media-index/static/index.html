@@ -131,6 +131,7 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .wall.select .card.picked .check { background: var(--accent); border-color: var(--accent); }
 .wall.select .card.picked .art { outline: 3px solid var(--accent); outline-offset: 2px; }
 .wall .more { grid-column: 1 / -1; }
+.shelf { grid-column: 1 / -1; margin: 10px 0 -8px; font-size: 15px; font-weight: 800; color: var(--text-2); }
 .more { display: block; width: 100%; padding: 12px; border-radius: 12px; background: var(--surface); color: var(--accent); font-weight: 700; border: 1px solid var(--border); }
 .empty { padding: 48px; text-align: center; color: var(--muted); }
 
@@ -260,7 +261,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
       <option value="plays">Most watched</option>
       <option value="shrink">Most saved by re-encoding</option>
       <option value="new">Recently added</option>
-      <option value="name">Name</option>
+      <option value="name">Name (books by author)</option>
     </select>
     <button class="btn" id="viewbtn" title="Posters or rows">☰</button>
     <button class="btn" id="selbtn">Select</button>
@@ -283,6 +284,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
       <button class="chip" data-flag="dupe">Possible duplicate</button>
       <button class="chip" data-flag="old">Old format</button>
       <button class="chip" data-flag="big">Oversized movies</button>
+      <button class="chip" data-flag="nosubs">Missing subtitles</button>
       <span class="count" id="count"></span>
     </div>
     <div id="list"><div class="empty">Loading…</div></div>
@@ -373,6 +375,21 @@ const titleOf = (it) => { const last = it.item.split("/").pop(); return isSong(i
 // What a title is filed under: artist · album for a song, author · series for a book, source for a manga series.
 const groupOf = (it) => it.item.split("/").slice(1, -1).join(" · ");
 const posterUrl = (it) => "/api/poster?item=" + encodeURIComponent(it.item);
+// What a type is reviewed by, as short bits: a book's length and bitrate, a manga's chapters and how much is read,
+// a show's episodes without subtitles.
+const kbps = (it) => it.duration_s && !it.video_files ? Math.round(it.size * 8 / it.duration_s / 1000) : 0;
+const readPct = (it) => it.pages ? Math.round(100 * it.pages_read / it.pages) : null;
+function details(it) {
+  if (it.category === "manga") return [`${it.files} ch`, readPct(it) === null ? "not in Kavita" : readPct(it) + "% read"];
+  const bits = [];
+  if (it.category === "audiobooks" && kbps(it)) bits.push(hours(it.duration_s), kbps(it) + " kbps");
+  if (it.subs_missing) bits.push(`${it.subs_missing} without subs`);
+  return bits;
+}
+const cornerTag = (it) => it.category === "manga" ? (readPct(it) === null ? "" : readPct(it) + "%") : res(it.height) || (it.category === "audiobooks" && it.duration_s ? hours(it.duration_s) : "");
+// The shelf a title sits on when a type is listed by name: the author for a book, the copy/source for a manga series.
+const GROUPED = ["audiobooks", "manga"];
+const shelfOf = (it) => { const parts = it.item.split("/"); return GROUPED.includes(parts[0]) && parts.length > 2 ? parts[1] : ""; };
 const SQUARE_ART = ["audiobooks", "music", "podcasts"];
 const sq = (it) => SQUARE_ART.includes(it.category) ? " sq" : "";
 const posterImg = (it, lazy) => `<img ${lazy ? 'loading="lazy" ' : ""}alt="" src="${posterUrl(it)}" onload="this.parentNode.classList.add('has')" onerror="this.remove()">`;
@@ -452,6 +469,7 @@ const FLAGS = {
   dupe: (it) => (it.duplicates || []).length > 0,
   old: isOld,
   big: isBig,
+  nosubs: (it) => it.subs_missing > 0,
 };
 const SORTS = {
   size: (a, b) => b.size - a.size,
@@ -459,7 +477,7 @@ const SORTS = {
   stale: (a, b) => (a.last_viewed || 0) - (b.last_viewed || 0) || b.size - a.size,
   plays: (a, b) => (b.plays || 0) - (a.plays || 0) || b.size - a.size,
   new: (a, b) => (b.mtime || 0) - (a.mtime || 0),
-  name: (a, b) => a.item.localeCompare(b.item),
+  name: (a, b) => (shelfOf(a) || "\uffff").localeCompare(shelfOf(b) || "\uffff") || a.item.localeCompare(b.item),
 };
 
 function visible() {
@@ -481,7 +499,9 @@ function renderList() {
   const list = $("list");
   if (!rows.length) { list.className = ""; list.innerHTML = `<div class="empty">Nothing here. Try clearing a filter.</div>`; return; }
   list.className = state.grid ? "wall" + (state.picking ? " select" : "") : "list";
-  list.innerHTML = shown.map((it, i) => (state.grid ? cardHtml : rowHtml)(it, i)).join("") +
+  const shelved = state.sort === "name" && GROUPED.includes(state.category);
+  const shelf = (it, i) => !shelved || (i && shelfOf(shown[i - 1]) === shelfOf(it)) ? "" : `<h3 class="shelf">${esc(shelfOf(it) || "Single titles")}</h3>`;
+  list.innerHTML = shown.map((it, i) => shelf(it, i) + (state.grid ? cardHtml : rowHtml)(it, i)).join("") +
     (rows.length > shown.length ? `<button class="more" id="more">Show ${Math.min(PAGE, rows.length - shown.length)} more of ${rows.length - shown.length}</button>` : "");
   bind(list, shown);
   const more = $("more");
@@ -522,10 +542,10 @@ function quickHtml(it) {
 }
 function cardHtml(it, i) {
   const [cat] = it.item.split("/"), d = status(it), label = titleOf(it);
-  const sub = [groupOf(it) || typeLabel(cat).replace(/^\S+ /, ""), watchedText(it), ...statusBits(it)].filter(Boolean);
+  const sub = [...details(it).map(esc), groupOf(it) || typeLabel(cat).replace(/^\S+ /, ""), watchedText(it), ...statusBits(it)].filter(Boolean);
   return `<div class="card ${it.cold ? "cold" : ""} d-${d} ${i === state.sel ? "sel" : ""} ${state.picked.has(it.item) ? "picked" : ""}" data-i="${i}" tabindex="0">
     <div class="art${sq(it)}" style="--h:${hue(label)}">${placeholder(it, label)}${posterImg(it, true)}
-      ${ribbon(it)}${res(it.height) && !it.cold ? `<span class="res">${res(it.height)}</span>` : ""}<span class="size num">${gb(it.size)}</span><span class="check">✓</span>
+      ${ribbon(it)}${cornerTag(it) && !it.cold ? `<span class="res">${cornerTag(it)}</span>` : ""}<span class="size num">${gb(it.size)}</span><span class="check">✓</span>
       <div class="quick">${quickHtml(it)}</div></div>
     <div class="t" title="${esc(label)}">${esc(label)}</div><div class="s">${sub.join(" · ")}</div></div>`;
 }
@@ -535,7 +555,8 @@ function rowHtml(it, i) {
   if (it.files) meta.push(`${it.files} file${it.files === 1 ? "" : "s"}`);
   if (it.height) meta.push(res(it.height));
   if (it.codecs) meta.push(it.codecs.replace(/,/g, ", "));
-  if (it.duration_s) meta.push(hours(it.duration_s));
+  if (it.duration_s && it.category !== "audiobooks") meta.push(hours(it.duration_s));
+  meta.push(...details(it));
   if (watchedText(it)) meta.push(watchedText(it));
   if (it.trashed_at) meta.push(`moved to trash ${ago(it.trashed_at)}`);
   const badges = [];

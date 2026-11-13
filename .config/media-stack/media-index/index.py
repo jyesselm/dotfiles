@@ -237,17 +237,18 @@ def _stat(root: Path, full: Path) -> FileStat:
     return FileStat(rel, item, category, kind_for(full.name), st.st_size, st.st_mtime, st.st_nlink)
 
 
-def probe(full: Path) -> dict[str, object]:
-    """Read duration, height and codec of a video with ffprobe.
+def probe(full: Path, kind: str = "video") -> dict[str, object]:
+    """Read duration, height and codec of a video or audio file with ffprobe.
 
     Args:
         full: Absolute file path.
+        kind: "video" or "audio": which stream describes the file (an mp3's cover art is a video stream too).
 
     Returns:
-        Dict with duration_s, height, codec (values may be None when unreadable).
+        Dict with duration_s, height, codec (values may be None when unreadable; height is None for audio).
     """
     cmd = [
-        "ffprobe", "-v", "error", "-select_streams", "v:0",
+        "ffprobe", "-v", "error", "-select_streams", "v:0" if kind == "video" else "a:0",
         "-show_entries", "format=duration:stream=codec_name,height",
         "-of", "json", str(full),
     ]  # fmt: skip
@@ -266,7 +267,7 @@ def probe(full: Path) -> dict[str, object]:
 
 
 def scan(conn: sqlite3.Connection, root: Path = MEDIA_ROOT) -> None:
-    """Bring the index up to date: add/refresh changed files, drop missing ones, probe new videos.
+    """Bring the index up to date: add/refresh changed files, drop missing ones, probe new video and audio.
 
     Unchanged files (same size and mtime) keep their probe results, so reruns are fast.
 
@@ -313,9 +314,9 @@ def _drop_missing(conn: sqlite3.Connection, seen: set[str]) -> None:
 
 
 def _probe_pending(conn: sqlite3.Connection, root: Path) -> None:
-    pending = [r["path"] for r in conn.execute("select path from files where kind = 'video' and probed = 0")]
+    pending = [tuple(r) for r in conn.execute("select path, kind from files where kind != 'other' and probed = 0")]
     with ThreadPoolExecutor(PROBE_WORKERS) as pool:
-        results = pool.map(lambda p: (p, probe(root / p)), pending)
+        results = pool.map(lambda f: (f[0], probe(root / f[0], f[1])), pending)
         for done, (path, info) in enumerate(results, start=1):
             conn.execute(
                 "update files set duration_s = ?, height = ?, codec = ?, probed = 1 where path = ?",

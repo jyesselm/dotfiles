@@ -288,7 +288,10 @@ Radarr/Sonarr, then Plex, then Kavita's series cover (manga; `KAVITA_API_KEY`), 
 folder or inside its first audio file (audiobooks, podcasts, album art; square art is shown whole, not cropped), then TMDB
 (`TMDB_API_KEY`); a title with none shows a tinted tile with its name. A tile is one title: the folder under `movies/`, `tv/` and so on, but one book under
 `audiobooks/` (the folder holding its files, whatever the author/series nesting), one series under `manga/`, one download
-under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). A title's sheet has two switches under "Where it
+under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). Each type
+shows what it is reviewed by: a book its length and bitrate (audio is probed like video), a manga series its chapters and
+how much is read in Kavita, a show the episodes Bazarr still has no subtitles for (`BAZARR_API_KEY`; flag chip
+"Missing subtitles"). With a type picked and sorted by name, books are shelved by author and manga by copy. A title's sheet has two switches under "Where it
 lives", ❄ Cold storage and 🧳 Travel stick (the travel one adds or removes it in the Plex Travel collection); the hover
 buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),

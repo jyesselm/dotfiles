@@ -121,7 +121,8 @@ def library() -> list[dict]:
     """Everything on plex-media plus the titles that live only on a cold drive, each with the drives holding a copy.
 
     Returns:
-        load_items() rows with "drives" and "cold" added, then one row per cold-only title (size from its catalog).
+        load_items() rows with "drives", "cold" and the review details added, then one row per cold-only title
+        (size from its catalog).
     """
     items = load_items()
     held = {r["item"]: r for r in _drive_data()["items"]}
@@ -137,6 +138,7 @@ def library() -> list[dict]:
             "item": r["item"], "category": r["category"], "size": r["size"], "files": 0, "freeable": 0,
             "video_files": 1, "drives": r["drives"], "cold": True, "shrink_saving": 0,
         })
+    _add_review_details(items)
     travel = _plex_index()["travel"]
     for it in items:
         it["travel"] = drives.TRAVEL_DRIVE in it["drives"] or _plex_key(it["item"]) in travel
@@ -468,6 +470,8 @@ POSTER_W, POSTER_H = 250, 375
 PLEX = os.environ.get("PLEX_URL", "http://localhost:32400")
 KAVITA = os.environ.get("KAVITA_URL", "http://localhost:5003")
 _kavita_cache: dict = {"at": 0.0, "series": {}}
+BAZARR = os.environ.get("BAZARR_URL", "http://localhost:6767")
+_bazarr_cache: dict = {"at": 0.0, "missing": {}}
 TMDB_IMAGES = "https://image.tmdb.org/t/p/w342"
 COVER_NAMES = ("cover", "folder", "poster", "show", "front", "album")
 COVER_TYPES = ("*.jpg", "*.jpeg", "*.png")
@@ -652,8 +656,9 @@ def _scaled(source: Path, dest: Path) -> bytes | None:
     return dest.read_bytes() if done.returncode == 0 and dest.exists() and dest.stat().st_size else None
 
 
-def _kavita_series() -> dict[str, int]:
-    """Kavita's series ids by normalized name, refreshed every 10 minutes; {} without KAVITA_API_KEY or when down."""
+def _kavita_series() -> dict[str, dict]:
+    """Kavita's series (id, pages, pagesRead) by normalized name, refreshed every 10 minutes; {} without
+    KAVITA_API_KEY or when it's down."""
     key = shrink.read_env().get("KAVITA_API_KEY", "")
     if key and time.time() - _kavita_cache["at"] > 600:
         try:
@@ -663,7 +668,7 @@ def _kavita_series() -> dict[str, int]:
             found = json.loads(_fetch(f"{KAVITA}/api/series/all-v2", headers, everything) or b"[]")
         except (OSError, ValueError, KeyError):
             found = []
-        _kavita_cache.update(at=time.time(), series={index.title_key(row["name"]): row["id"] for row in found})
+        _kavita_cache.update(at=time.time(), series={index.title_key(row["name"]): row for row in found})
     return _kavita_cache["series"]
 
 
@@ -671,11 +676,34 @@ def _poster_from_kavita(item: str) -> bytes | None:
     """A manga series' cover from Kavita (the one its reader shows), matched by the series folder's name."""
     if not item.startswith("manga/"):
         return None
-    series_id = _kavita_series().get(index.title_key(item.rsplit("/", 1)[-1]))
-    if series_id is None:
+    series = _kavita_series().get(index.title_key(item.rsplit("/", 1)[-1]))
+    if series is None:
         return None
     key = shrink.read_env().get("KAVITA_API_KEY", "")
-    return _fetch(f"{KAVITA}/api/image/series-cover?seriesId={series_id}&apiKey={key}")
+    return _fetch(f"{KAVITA}/api/image/series-cover?seriesId={series['id']}&apiKey={key}")
+
+
+def _subs_missing() -> dict[str, int]:
+    """Episodes Bazarr still wants subtitles for, by show folder (NFC path), refreshed every 10 minutes; {} without
+    BAZARR_API_KEY or when it's down."""
+    key = shrink.read_env().get("BAZARR_API_KEY", "")
+    if key and time.time() - _bazarr_cache["at"] > 600:
+        raw = _fetch(f"{BAZARR}/api/series?start=0&length=-1", {"X-API-KEY": key})
+        shows = json.loads(raw).get("data", []) if raw else []
+        _bazarr_cache.update(at=time.time(), missing={nfc(s["path"]): s.get("episodeMissingCount", 0) for s in shows})
+    return _bazarr_cache["missing"]
+
+
+def _add_review_details(items: list[dict]) -> None:
+    """What each type is reviewed by, beyond size: a manga series' pages read in Kavita, a show's episodes without
+    the subtitles Bazarr wants."""
+    series, missing = _kavita_series(), _subs_missing()
+    for it in items:
+        if it["category"] == "manga":
+            row = series.get(index.title_key(it["item"].rsplit("/", 1)[-1]), {})
+            it["pages"], it["pages_read"] = row.get("pages", 0), row.get("pagesRead", 0)
+        else:
+            it["subs_missing"] = missing.get(nfc(str(index.MEDIA_ROOT / it["item"])), 0)
 
 
 def _poster_from_tmdb(item: str) -> bytes | None:

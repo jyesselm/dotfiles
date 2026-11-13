@@ -334,6 +334,8 @@ services:
       TMDB_API_KEY: ${TMDB_API_KEY}  # poster fallback for titles Radarr/Sonarr and Plex don't know
       KAVITA_API_KEY: ${KAVITA_API_KEY}  # manga covers
       KAVITA_URL: http://kavita:5000
+      BAZARR_API_KEY: ${BAZARR_API_KEY}  # episodes still missing subtitles
+      BAZARR_URL: http://bazarr:6767
       DRIVE_CATALOG_DIR: /data/drives  # = ~/.local/share/media-index/drives, where drives.py keeps manifests
       # Host scripts (drives.py, downloads_cap.py) reach the services at localhost; in here they use these.
       MEDIA_INDEX_API: http://media-index:8686/api
