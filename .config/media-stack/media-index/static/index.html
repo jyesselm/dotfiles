@@ -379,7 +379,10 @@ const posterUrl = (it) => "/api/poster?item=" + encodeURIComponent(it.item);
 // a show's episodes without subtitles.
 const kbps = (it) => it.duration_s && !it.video_files ? Math.round(it.size * 8 / it.duration_s / 1000) : 0;
 const readPct = (it) => it.pages ? Math.round(100 * it.pages_read / it.pages) : null;
+// A finished download is hardlinked into the library: the same files as that title's own tile.
+const imported = (it) => it.category === "downloads" && it.freeable < 0.05 * it.size && !it.trashed_at;  // stray .nfo and samples aside
 function details(it) {
+  if (it.category === "downloads") return [imported(it) ? "in the library" : "not in the library yet"];
   if (it.category === "manga") return [`${it.files} ch`, readPct(it) === null ? "not in Kavita" : readPct(it) + "% read"];
   const bits = [];
   if (it.category === "audiobooks" && kbps(it)) bits.push(hours(it.duration_s), kbps(it) + " kbps");
@@ -485,7 +488,7 @@ function visible() {
   const rows = state.items.filter((it) =>
     (!state.where || (state.where === "travel" ? !!it.travel : (state.where === "cold") === !!it.cold)) &&
     (!state.view || (!it.cold && status(it) === state.view)) &&
-    (!state.category || it.category === state.category) &&
+    (state.category ? it.category === state.category : !imported(it)) &&
     (!q || it.item.toLowerCase().includes(q)) &&
     [...state.flags].every((f) => FLAGS[f](it)));
   return rows.sort(SORTS[state.sort]);
@@ -564,7 +567,7 @@ function rowHtml(it, i) {
   const m = state.moves[it.item];
   if (m && m.status !== "done") badges.push(`<span class="badge warn">⏳ ${m.direction === "out" ? "→" : "←"} ${esc(m.drive)} · ${esc(m.status)}</span>`);
   if (d !== "undecided" && d !== "trashed") badges.push(`<span class="badge ${d}">${d}</span>`);
-  if (it.shrink_saving > 0) badges.push(`<span class="badge shrink">⇣ ~${gb(it.shrink_saving)} as HEVC</span>`);
+  if (it.shrink_saving > 0) badges.push(`<span class="badge shrink">⇣ ~${gb(it.shrink_saving)} ${it.category === "audiobooks" ? "at 64 kbps" : "as HEVC"}</span>`);
   if ((it.duplicates || []).length) badges.push(`<span class="badge warn">Possible duplicate: ${esc(it.duplicates[0])}</span>`);
   if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
   const title = `<small>${esc(groupOf(it) || cat)}</small>${esc(titleOf(it))}`;

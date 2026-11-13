@@ -61,7 +61,7 @@ def hevc_size_estimate(duration_s: float | None, height: int | None) -> float | 
 
 
 def shrink_saving(row: dict) -> int:
-    """Bytes saved by re-encoding one file, or 0 if it's already efficient or the gain is small.
+    """Bytes saved by re-encoding one video or audiobook file, or 0 if it's already efficient or the gain is small.
 
     Args:
         row: A files row as a dict.
@@ -69,9 +69,12 @@ def shrink_saving(row: dict) -> int:
     Returns:
         Estimated bytes saved.
     """
-    if row["kind"] != "video" or (row["codec"] or "").startswith(EFFICIENT_CODECS):
+    if row["kind"] == "audio" and shrink.is_book(row["item"]) and row["duration_s"]:
+        estimate = row["duration_s"] * shrink.AUDIO_BITRATE / 8  # music is left alone
+    elif row["kind"] != "video" or (row["codec"] or "").startswith(EFFICIENT_CODECS):
         return 0
-    estimate = hevc_size_estimate(row["duration_s"], row["height"])
+    else:
+        estimate = hevc_size_estimate(row["duration_s"], row["height"])
     if estimate is None or estimate > row["size"] * (1 - MIN_SHRINK_SAVING):
         return 0
     return int(row["size"] - estimate)
@@ -617,6 +620,29 @@ def _poster_from_arr(item: str) -> bytes | None:
     return _fetch(f"{base}/mediacover/{arr_id}/poster-250.jpg", {"X-Api-Key": key})
 
 
+RELEASE_RE = re.compile(  # optional site prefix, title, then where the release details start
+    r"^(?:www\.\S+\s+-\s+)?(?P<title>.+?)(?:[. _-]+\(?(?P<tail>S\d{1,2}(E\d+)?|(19|20)\d{2}|\d{3,4}p)\b.*)?$", re.I
+)
+
+
+def _poster_from_download(item: str) -> bytes | None:
+    """A download borrows the poster of the library title its release name starts with, else asks Kavita or TMDB."""
+    parts = item.split("/")
+    if parts[0] != "downloads":
+        return None
+    release = RELEASE_RE.match(parts[-1])
+    title, tail = release["title"], release["tail"] or ""
+    if parts[1] == "manga":
+        return _poster_from_kavita("manga/" + re.sub(r"\s*\(.*", "", title))
+    root = str(index.MEDIA_ROOT) + "/"
+    for path in _arr_index():
+        rel = path[len(root):]
+        if rel.split("/")[0] in drives.PLEX_SECTIONS and index.title_key(rel) == index.title_key(title):
+            return poster(rel)
+    year = f" ({tail[:4]})" if tail[:2] in ("19", "20") else ""
+    return _poster_from_tmdb(("tv/" if tail[:1] in "sS" and tail else "movies/") + title + year)
+
+
 def _poster_from_plex(item: str) -> bytes | None:
     hit = _plex_entry(item)
     if not hit:
@@ -734,7 +760,9 @@ def poster(item: str) -> bytes | None:
         pass
     if time.time() - _misses.get(item, 0) < MISS_RETRY_S:
         return None
-    for source in (_poster_from_arr, _poster_from_plex, _poster_from_kavita, _cover_on_disk, _poster_from_tmdb):
+    sources = (_poster_from_arr, _poster_from_plex, _poster_from_kavita, _poster_from_download, _cover_on_disk,
+               _poster_from_tmdb)  # fmt: skip
+    for source in sources:
         data = source(item)
         if data:
             POSTERS.mkdir(parents=True, exist_ok=True)

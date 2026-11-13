@@ -56,6 +56,10 @@ def test_shrink_saving_skips_hevc_and_estimates_h264() -> None:
     assert server.shrink_saving(h264) == 10 * 10**9 - int(two_hours * 4_000_000 / 8)
     assert server.shrink_saving({**h264, "codec": "hevc"}) == 0
     assert server.shrink_saving({**h264, "size": 4 * 10**9}) == 0  # saving under 30%
+    book = {"kind": "audio", "codec": "mp3", "duration_s": 36000.0, "item": "audiobooks/A/B", "size": 576 * 10**6}
+    assert server.shrink_saving(book) == 288 * 10**6  # 128 kbps -> 64 kbps
+    assert server.shrink_saving({**book, "size": 360 * 10**6}) == 0  # 80 kbps: saving under 30%
+    assert server.shrink_saving({**book, "item": "music/A/B/song.mp3"}) == 0
 
 
 def test_swap_candidate_needs_english_1080p_and_real_saving() -> None:

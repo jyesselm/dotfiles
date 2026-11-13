@@ -1,9 +1,12 @@
-"""Re-encode titles marked Shrink to HEVC with the Mac's hardware encoder. Runs on the macOS host, not in Docker.
+"""Re-encode titles marked Shrink: video to HEVC with the Mac's hardware encoder, audiobooks to 64 kbps AAC.
+
+Runs on the macOS host, not in Docker.
 
 Reads the queue from the media-index API (never the SQLite file, which isn't safe to open across the OrbStack
 boundary). One file at a time: encode to a hidden temp file next to the original, check the duration matches and the
-result is at least MIN_SAVING smaller, move the original into _trash (never deleted), then put the new .mkv in its
-place. Each finished title gets a Radarr/Sonarr rescan and is marked Keep with a "shrunk" note so it leaves the queue.
+result is at least MIN_SAVING smaller, move the original into _trash (never deleted), then put the new file (.mkv;
+a book keeps .m4b or becomes .m4a) in its place. Each finished title gets a Radarr/Sonarr rescan and is marked Keep
+with a "shrunk" note so it leaves the queue.
 
     python3 shrink.py run [--match TEXT] [--limit N] [--until HOUR] [--include-hardlinked] [--retry-failed] [--dry-run]
     python3 shrink.py install     # launchd agent: nightly at 01:00, stops starting new files at 08:00
@@ -36,6 +39,7 @@ LOCK = STATE_DIR / "encode.lock"
 
 # VideoToolbox constant quality. 75 scored VMAF >= 95 ("looks the same") on both a 720p Blu-ray and an SD DivX clip.
 QUALITY = 75
+AUDIO_BITRATE = 64_000  # audiobooks: AAC at this rate, channels kept; the server estimates savings with it too
 MIN_SAVING = 0.2  # keep the original unless the encode is at least 20% smaller
 DURATION_TOLERANCE_S = 1.0
 PROBE_TIMEOUT_S = 120  # a probe blocked by a macOS privacy prompt nobody answers would otherwise hang for hours
@@ -60,7 +64,8 @@ def ffprobe(path: Path) -> dict:
     Returns:
         ffprobe's JSON (keys "streams" and "format"); empty dict when unreadable.
     """
-    cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name", "-of", "json"]
+    entries = "format=duration,bit_rate:stream=codec_type,codec_name"
+    cmd = ["ffprobe", "-v", "error", "-show_entries", entries, "-of", "json"]
     try:
         out = subprocess.run([*cmd, str(path)], capture_output=True, timeout=PROBE_TIMEOUT_S, check=False).stdout
     except subprocess.TimeoutExpired:
@@ -73,22 +78,29 @@ def duration(info: dict) -> float:
     return float(info.get("format", {}).get("duration") or 0)
 
 
-def video_codec(info: dict) -> str:
-    """Codec of the first video stream, "" when there is none."""
-    return next((s["codec_name"] for s in info.get("streams", []) if s.get("codec_type") == "video"), "")
+def codec(info: dict, kind: str) -> str:
+    """Codec of the first stream of that kind ("video" or "audio"), "" when there is none."""
+    return next((s["codec_name"] for s in info.get("streams", []) if s.get("codec_type") == kind), "")
 
 
-def encode_cmd(src: Path, dest: Path, info: dict) -> list[str]:
-    """ffmpeg command: HEVC video at QUALITY, every audio/subtitle/attachment stream copied, into .mkv.
+def encode_cmd(src: Path, dest: Path, info: dict, kind: str = "video") -> list[str]:
+    """ffmpeg command: HEVC video at QUALITY with every other stream copied into .mkv, or a book as AAC.
 
     Args:
         src: Original file.
-        dest: Output .mkv.
+        dest: Output file.
         info: ffprobe of src (MP4 text subtitles can't be copied into MKV, so they become SRT).
+        kind: "video", or "audio" for an audiobook file (tags, chapters and cover art are kept).
 
     Returns:
         The argument list.
     """
+    if kind == "audio":
+        return [
+            "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(src), "-map", "0:a:0", "-map", "0:v?",
+            "-c:v", "copy", "-disposition:v", "attached_pic", "-c:a", "aac_at", "-b:a", str(AUDIO_BITRATE),
+            "-f", "ipod", str(dest),
+        ]  # fmt: skip
     sub_codecs = {s.get("codec_name") for s in info.get("streams", []) if s.get("codec_type") == "subtitle"}
     return [
         "ffmpeg", "-nostdin", "-v", "error", "-y", "-fflags", "+genpts", "-i", str(src),
@@ -99,25 +111,32 @@ def encode_cmd(src: Path, dest: Path, info: dict) -> list[str]:
     ]  # fmt: skip
 
 
-def check_output(src_info: dict, out: Path, src_size: int) -> str:
+def check_output(src_info: dict, out: Path, src_size: int, kind: str = "video") -> str:
     """Why the encode can't replace the original, or "" when it can.
 
     Args:
         src_info: ffprobe of the original.
         out: Encoded file.
         src_size: Original size in bytes.
+        kind: "video" or "audio".
 
     Returns:
         A reason, or "".
     """
     out_info = ffprobe(out)
-    if video_codec(out_info) != "hevc":
-        return "output has no HEVC video"
+    wanted = "hevc" if kind == "video" else "aac"
+    if codec(out_info, kind) != wanted:
+        return f"output has no {wanted} {kind}"
     if abs(duration(out_info) - duration(src_info)) > DURATION_TOLERANCE_S:
         return f"duration {duration(out_info):.1f}s vs original {duration(src_info):.1f}s"
     if out.stat().st_size > src_size * (1 - MIN_SAVING):
         return f"not worth it: {gb(out.stat().st_size)} vs {gb(src_size)}"
     return ""
+
+
+def bitrate(info: dict) -> float:
+    """Overall bits per second, 0 when unknown."""
+    return float(info.get("format", {}).get("bit_rate") or 0)
 
 
 def gb(size: float) -> str:
@@ -133,11 +152,18 @@ def encode_paths(root: Path, rel: str) -> tuple[Path, Path, Path, Path]:
         rel: Original file, relative to root.
 
     Returns:
-        (original, final .mkv, hidden encode output, place in _trash). Plex and the index skip dotfiles.
+        (original, final file, hidden encode output, place in _trash). Plex and the index skip dotfiles.
+        Video ends up as .mkv; an audiobook file (anything under audiobooks/) keeps .m4b or becomes .m4a.
     """
     src = root / rel
-    final = src.with_suffix(".mkv")
-    return src, final, src.with_name(f".{final.stem}.shrinking.mkv"), root / "_trash" / rel
+    suffix = ".mkv" if not is_book(rel) else ".m4b" if src.suffix.lower() == ".m4b" else ".m4a"
+    final = src.with_suffix(suffix)
+    return src, final, src.with_name(f".{final.stem}.shrinking{suffix}"), root / "_trash" / rel
+
+
+def is_book(rel: str) -> bool:
+    """Whether a path relative to the media root is in the audiobook library."""
+    return rel.startswith("audiobooks/")
 
 
 def swap_in_encode(root: Path, rel: str, replace: bool) -> dict:
@@ -158,7 +184,7 @@ def swap_in_encode(root: Path, rel: str, replace: bool) -> dict:
         tmp.unlink()  # our own encode, never an original
         return {"ok": True, "message": "encode discarded"}
     if not src.exists() or trash.exists() or (final != src and final.exists()):
-        return {"ok": False, "message": "original missing, or something is already at the .mkv path or in _trash"}
+        return {"ok": False, "message": "original missing, or something is already at the new path or in _trash"}
     trash.parent.mkdir(parents=True, exist_ok=True)
     src.rename(trash)
     try:
@@ -190,19 +216,20 @@ def shrink_file(rel: str, include_hardlinked: bool, dry_run: bool) -> tuple[str,
     info = ffprobe(src)
     if not info:
         return "failed: ffprobe can't read it", size, size
-    if video_codec(info) in ("hevc", "av1"):
+    kind = "audio" if is_book(rel) else "video"
+    if codec(info, "video") in ("hevc", "av1") if kind == "video" else bitrate(info) <= AUDIO_BITRATE * 1.1:
         return "already", size, size
     if (final != src and final.exists()) or trash.exists():
-        return "failed: something is already at the .mkv path or in _trash", size, size
+        return "failed: something is already at the new path or in _trash", size, size
     if dry_run:
         log.info("  would encode (%s)", gb(size))
         return "dry run", size, size
     started = time.time()
-    proc = subprocess.run(encode_cmd(src, tmp, info), capture_output=True, text=True, check=False)
+    proc = subprocess.run(encode_cmd(src, tmp, info, kind), capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         finish(rel, replace=False)
         return f"failed: ffmpeg: {proc.stderr.strip()[-300:]}", size, size
-    reason = check_output(info, tmp, size)
+    reason = check_output(info, tmp, size, kind)
     new_size = tmp.stat().st_size
     if reason:
         finish(rel, replace=False)

@@ -284,7 +284,9 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 serves a review page on 8686: a poster wall (like Plex) where every title is either **☀ active** on `plex-media` or
 **❄ cold** on a cold drive (the drive is a chip on the card); **🧳 travel** marks what goes on the travel stick: anything in a Plex
 collection called Travel, or held by the drive `plex-travel` once the stick is named that and catalogued. Posters come from
-Radarr/Sonarr, then Plex, then Kavita's series cover (manga; `KAVITA_API_KEY`), then a cover image in the title's own
+Radarr/Sonarr, then Plex, then Kavita's series cover (manga; `KAVITA_API_KEY`), then for a download the poster of the library title
+its release name starts with ("Everything" hides downloads already hardlinked into the library, since they are that
+title's files; the Downloads chip shows them all, labelled "in the library" or "not in the library yet"), then a cover image in the title's own
 folder or inside its first audio file (audiobooks, podcasts, album art; square art is shown whole, not cropped), then TMDB
 (`TMDB_API_KEY`); a title with none shows a tinted tile with its name. A tile is one title: the folder under `movies/`, `tv/` and so on, but one book under
 `audiobooks/` (the folder holding its files, whatever the author/series nesting), one series under `manga/`, one download
@@ -297,7 +299,7 @@ buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, an
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
 or press **Select** to mark many at once. The **Storage** tab shows the disk by folder, the cold shelf (both drives as one
 pool, with where the next move goes), queued moves, and shelves of suggestions: never watched and big, not watched in
-3+ years, 4K you could shrink instead, on the shelf to bring back. Mark each title Keep, Shrink (worth re-encoding to HEVC) or Delete. "Move to trash"
+3+ years, 4K you could shrink instead, on the shelf to bring back. Mark each title Keep, Shrink (worth re-encoding: video to HEVC, audiobooks to 64 kbps) or Delete. "Move to trash"
 renames Delete items into `plex-media/_trash/` and unmonitors them in Radarr/Sonarr; restore from the page. Nothing is
 permanently deleted until you empty `_trash` yourself, e.g. `rm -rf /Volumes/plex-media/_trash/*`. Music is reviewed per song:
 pick ♪ Music in the type chips, press `p` (or ▶) to listen, and `1`/`3` keep or delete; while a song plays, moving or deciding plays
@@ -311,7 +313,11 @@ i.e. looks the same, on Blu-ray and DVD-rip samples), copies audio/subtitles, an
 original only if its duration matches within 1 s and it is at least 20% smaller; the original moves to
 `_trash/<same path>`. Old SD and low-bitrate rips usually don't get 20% smaller at that quality, so they're kept as-is.
 After each title it asks Radarr/Sonarr to rescan and sets the title to Keep with a "shrunk" note. Torrent-hardlinked
-files are skipped (`--include-hardlinked` to override). Files that failed or weren't worth it are remembered in
+files are skipped (`--include-hardlinked` to override). **Audiobooks** go through the same queue: a book whose files
+would be at least 30% smaller at 64 kbps (so roughly 96 kbps and up) can be marked Shrink, and each file is re-encoded
+to AAC at 64 kbps (`aac_at`, channels, tags, chapters and cover kept); `.m4b` stays `.m4b`, anything else becomes
+`.m4a`. Music is never offered. Audiobookshelf keeps the book and its progress, since the folder doesn't change (a
+loose `.mp3` in the library root becomes a new book). Files that failed or weren't worth it are remembered in
 `~/.local/share/media-index/encode-skip.json` (delete a line to retry). Log: `~/.local/share/media-index/encode.log`.
 Run from launchd, Homebrew's `ffmpeg`/`ffprobe` need macOS's Removable Volumes permission, which is tied to the exact
 binary: allow both once at the Mac and keep them with `brew pin ffmpeg` (re-allow after any upgrade). Without it the

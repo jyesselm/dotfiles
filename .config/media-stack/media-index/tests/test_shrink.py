@@ -53,8 +53,25 @@ def test_shrink_file_replaces_original_and_moves_it_to_trash(media: Path) -> Non
     assert not src.exists()
     assert (media / "_trash" / "tv" / "Show" / "ep.avi").stat().st_size == size
     new = shrink.ffprobe(media / "tv" / "Show" / "ep.mkv")
-    assert shrink.video_codec(new) == "hevc" and any(s["codec_type"] == "audio" for s in new["streams"])
+    assert shrink.codec(new, "video") == "hevc" and shrink.codec(new, "audio")
     assert not list((media / "tv" / "Show").glob(".*"))  # temp file gone
+
+
+@needs_ffmpeg
+def test_shrink_file_turns_a_book_into_small_aac_and_keeps_its_cover(media: Path) -> None:
+    book = media / "audiobooks" / "Author" / "Book"
+    book.mkdir(parents=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=red:size=64x64", "-frames:v", "1",
+                    str(media / "cover.jpg")], check=True)  # fmt: skip
+    inputs = ["-f", "lavfi", "-i", "sine=duration=20", "-i", str(media / "cover.jpg"), "-map", "0:a", "-map", "1:v"]
+    codecs = ["-c:v", "copy", "-disposition:v", "attached_pic", "-c:a", "mp3", "-b:a", "192k"]
+    subprocess.run(["ffmpeg", "-v", "error", "-y", *inputs, *codecs, str(book / "01.mp3")], check=True)
+    assert shrink.shrink_file("audiobooks/Author/Book/01.mp3", include_hardlinked=False, dry_run=False)[0] == "done"
+    assert (media / "_trash" / "audiobooks" / "Author" / "Book" / "01.mp3").exists()
+    new = shrink.ffprobe(book / "01.m4a")
+    assert shrink.codec(new, "audio") == "aac" and shrink.codec(new, "video") == "mjpeg"
+    assert shrink.bitrate(new) < 100_000
+    assert shrink.shrink_file("audiobooks/Author/Book/01.m4a", include_hardlinked=False, dry_run=False)[0] == "already"
 
 
 @needs_ffmpeg
