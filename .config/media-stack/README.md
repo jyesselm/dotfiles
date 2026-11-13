@@ -293,7 +293,10 @@ folder or inside its first audio file (audiobooks, podcasts, album art; square a
 under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). Each type
 shows what it is reviewed by: a book its length and bitrate (audio is probed like video), a manga series its chapters and
 how much is read in Kavita, a show the episodes Bazarr still has no subtitles for (`BAZARR_API_KEY`; flag chip
-"Missing subtitles"). With a type picked and sorted by name, books are shelved by author and manga by copy. A title's sheet has two switches under "Where it
+"Missing subtitles", behind the "Filters" chip with the other flags). With a type picked and sorted by name, books are
+shelved by author and manga by copy; the sort and posters-or-rows choice are remembered per type chip (books and manga
+start by name). "⚠ Needs attention" lists what looks broken whatever its decision: shows with episodes missing subtitles,
+manga Kavita doesn't have, and downloads still not in the library after 3 days. A title's sheet has two switches under "Where it
 lives", ❄ Cold storage and 🧳 Travel stick (the travel one adds or removes it in the Plex Travel collection); the hover
 buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),

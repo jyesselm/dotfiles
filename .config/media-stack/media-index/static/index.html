@@ -278,14 +278,13 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
     </div>
     <div class="chips" id="types" aria-label="Media type"></div>
     <div class="chips" id="decisions" aria-label="Decision"></div>
-    <div class="chips" id="flags" aria-label="More filters">
+    <div class="chips" id="flags" aria-label="More filters" hidden>
       <button class="chip" data-flag="unwatched">Never watched</button>
       <button class="chip" data-flag="shrink">Can shrink</button>
       <button class="chip" data-flag="dupe">Possible duplicate</button>
       <button class="chip" data-flag="old">Old format</button>
       <button class="chip" data-flag="big">Oversized movies</button>
       <button class="chip" data-flag="nosubs">Missing subtitles</button>
-      <span class="count" id="count"></span>
     </div>
     <div id="list"><div class="empty">Loading…</div></div>
     <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>c</kbd> cold / bring back · <kbd>t</kbd> travel on/off · <kbd>p</kbd> play song · <kbd>Enter</kbd> details</div>
@@ -346,7 +345,18 @@ const TRAVEL = "plex-travel";
 const VIDEO = ["movies", "tv", "anime"];
 const SHELF_MIN_BYTES = 3e9, STALE_S = 3 * 365 * 86400;
 const state = { items: [], summary: null, drives: [], moves: {}, tab: "library", where: "", view: "undecided", category: null, flags: new Set(), q: "", sort: "size",
-  shown: PAGE, sel: 0, open: null, picking: false, picked: new Set(), grid: (() => { try { return localStorage.getItem("grid") !== "0"; } catch { return true; } })() };
+  shown: PAGE, sel: 0, open: null, picking: false, picked: new Set(), grid: true };
+// Sort and posters-or-rows are remembered per type chip ("" is Everything); books and manga start shelved by name.
+const prefs = (() => { try { return JSON.parse(localStorage.getItem("prefs")) || {}; } catch { return {}; } })();
+function usePrefs() {
+  const p = prefs[state.category || ""] || {};
+  state.sort = p.sort || (GROUPED.includes(state.category) ? "name" : "size");
+  state.grid = p.grid !== false;
+}
+function savePrefs() {
+  prefs[state.category || ""] = { sort: state.sort, grid: state.grid };
+  try { localStorage.setItem("prefs", JSON.stringify(prefs)); } catch {}
+}
 const $ = (id) => document.getElementById(id);
 
 const gb = (b) => {
@@ -381,7 +391,17 @@ const kbps = (it) => it.duration_s && !it.video_files ? Math.round(it.size * 8 /
 const readPct = (it) => it.pages ? Math.round(100 * it.pages_read / it.pages) : null;
 // A finished download is hardlinked into the library: the same files as that title's own tile.
 const imported = (it) => it.category === "downloads" && it.freeable < 0.05 * it.size && !it.trashed_at;  // stray .nfo and samples aside
+// Why a title needs a look, "" when it doesn't: the "Needs attention" view lists these whatever their decision.
+const STUCK_DAYS = 3;
+function attention(it) {
+  if (it.cold || it.trashed_at) return "";
+  if (it.subs_missing) return `${it.subs_missing} without subs`;
+  if (it.category === "manga" && readPct(it) === null) return "not in Kavita";
+  if (it.category === "downloads" && !imported(it) && Date.now() / 1000 - it.mtime > STUCK_DAYS * 86400) return `not in the library after ${ago(it.mtime).replace(" ago", "")}`;
+  return "";
+}
 function details(it) {
+  if (state.view === "attention") return [attention(it)];
   if (it.category === "downloads") return [imported(it) ? "in the library" : "not in the library yet"];
   if (it.category === "manga") return [`${it.files} ch`, readPct(it) === null ? "not in Kavita" : readPct(it) + "% read"];
   const bits = [];
@@ -434,7 +454,7 @@ function renderHeader() {
 
   $("types").innerHTML = `<button class="chip ${state.category ? "" : "on"}" data-cat="">Everything</button>` +
     s.categories.map(([name, size]) => `<button class="chip ${state.category === name ? "on" : ""}" data-cat="${esc(name)}">${esc(typeLabel(name))}<b>${gb(size)}</b></button>`).join("");
-  for (const el of $("types").children) el.onclick = () => { state.category = el.dataset.cat || null; reset(); renderHeader(); };
+  for (const el of $("types").children) el.onclick = () => { state.category = el.dataset.cat || null; usePrefs(); syncControls(); reset(); renderHeader(); };
 
   const t = s.decided;
   const chips = [
@@ -444,8 +464,13 @@ function renderHeader() {
     ["delete", "✕ Delete", `${t.delete.items} · ${gb(t.delete.size)}`],
     ["trashed", "🗑 In _trash", `${t.trashed.items} · ${gb(s.trash)}`],
   ];
-  $("decisions").innerHTML = chips.map(([key, label, n]) => `<button class="chip ${key} ${state.view === key ? "on" : ""}" data-view="${key}">${label}<b>${n}</b></button>`).join("");
-  for (const el of $("decisions").children) el.onclick = () => { state.view = state.view === el.dataset.view ? null : el.dataset.view; reset(); renderHeader(); };
+  chips.unshift(["attention", "⚠ Needs attention", `${state.items.filter(attention).length}`]);
+  const open = !$("flags").hidden || state.flags.size > 0, count = $("count")?.textContent || "";
+  $("flags").hidden = !open;
+  $("decisions").innerHTML = chips.map(([key, label, n]) => `<button class="chip ${key} ${state.view === key ? "on" : ""}" data-view="${key}">${label}<b>${n}</b></button>`).join("") +
+    `<button class="chip ${open ? "on" : ""}" id="morefilters">Filters${state.flags.size ? `<b>${state.flags.size}</b>` : ""} ${open ? "▴" : "▾"}</button><span class="count" id="count">${esc(count)}</span>`;
+  for (const el of $("decisions").querySelectorAll("[data-view]")) el.onclick = () => { state.view = state.view === el.dataset.view ? null : el.dataset.view; reset(); renderHeader(); };
+  $("morefilters").onclick = () => { $("flags").hidden = open; if (open) { state.flags.clear(); for (const c of $("flags").children) c.classList.remove("on"); } renderHeader(); reset(); };
 
   $("dock").classList.toggle("on", t.delete.items > 0 && !state.picking);
   $("docktext").textContent = `${t.delete.items} title${t.delete.items === 1 ? "" : "s"} · ${gb(t.delete.size)} marked to delete`;
@@ -487,7 +512,7 @@ function visible() {
   const q = state.q.toLowerCase();
   const rows = state.items.filter((it) =>
     (!state.where || (state.where === "travel" ? !!it.travel : (state.where === "cold") === !!it.cold)) &&
-    (!state.view || (!it.cold && status(it) === state.view)) &&
+    (!state.view || (state.view === "attention" ? attention(it) : !it.cold && status(it) === state.view)) &&
     (state.category ? it.category === state.category : !imported(it)) &&
     (!q || it.item.toLowerCase().includes(q)) &&
     [...state.flags].every((f) => FLAGS[f](it)));
@@ -758,7 +783,7 @@ function renderStorage() {
     <div class="legend">${segs.map((x, i) => `<button data-i="${i}" class="${state.category === x.name ? "on" : ""}"><i style="background:${x.color}"></i>${esc(x.name)} <b class="num">${gb(x.size)}</b></button>`).join("")}</div>`;
   for (const el of $("p-main").querySelectorAll("[data-i]")) {
     const x = segs[el.dataset.i];
-    el.onclick = () => { if (x.free || x.group) return; state.category = x.name; state.where = ""; showTab("library"); reset(); renderHeader(); };
+    el.onclick = () => { if (x.free || x.group) return; state.category = x.name; state.where = ""; usePrefs(); syncControls(); showTab("library"); reset(); renderHeader(); };
     el.onmousemove = (e) => tip(e, `${x.name} · ${gb(x.size)} · ${(x.size / d.total * 100).toFixed(1)}%`);
     el.onmouseleave = () => tip(null);
   }
@@ -847,19 +872,18 @@ $("f-state").onclick = (e) => {
   showTab("library"); reset(); renderHeader();
 };
 $("q").oninput = (e) => { state.q = e.target.value; showTab("library"); reset(); };
-$("sort").onchange = (e) => { state.sort = e.target.value; reset(); };
+$("sort").onchange = (e) => { state.sort = e.target.value; savePrefs(); reset(); };
+const syncControls = () => { $("sort").value = state.sort; $("viewbtn").textContent = state.grid ? "☰" : "▦"; };
 for (const chip of $("flags").querySelectorAll("[data-flag]")) chip.onclick = () => {
   const f = chip.dataset.flag;
   state.flags.has(f) ? state.flags.delete(f) : state.flags.add(f);
-  chip.classList.toggle("on"); reset();
+  chip.classList.toggle("on"); renderHeader(); reset();
 };
 $("viewbtn").onclick = () => {
   state.grid = !state.grid;
-  $("viewbtn").textContent = state.grid ? "☰" : "▦";
-  try { localStorage.setItem("grid", state.grid ? "1" : "0"); } catch {}
-  renderList();
+  savePrefs(); syncControls(); renderList();
 };
-$("viewbtn").textContent = state.grid ? "☰" : "▦";
+usePrefs(); syncControls();
 $("rescan").onclick = async () => { await api("/api/scan", {}); setTimeout(load, 1000); };
 setInterval(async () => { if (Object.values(state.moves).some((m) => m.status === "queued" || m.status === "running")) { await loadMoves(); renderStorage(); } }, 30000);
 
