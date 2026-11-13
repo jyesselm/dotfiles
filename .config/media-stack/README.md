@@ -293,7 +293,8 @@ folder or inside its first audio file (audiobooks, podcasts, album art; square a
 under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). Each type
 shows what it is reviewed by: a book its length and bitrate (audio is probed like video), a manga series its chapters and
 how much is read in Kavita, a show the episodes Bazarr still has no subtitles for (`BAZARR_API_KEY`; flag chip
-"Missing subtitles", behind the "Filters" chip with the other flags). With a type picked and sorted by name, books are
+"Missing subtitles", behind the "Filters" chip with the other flags), an anime its audio languages as Sonarr read
+them from the files (so "Japanese + English" has a dub). With a type picked and sorted by name, books are
 shelved by author and manga by copy; the sort and posters-or-rows choice are remembered per type chip (books and manga
 start by name). "⚠ Needs attention" lists what looks broken whatever its decision: shows with episodes missing subtitles,
 manga Kavita doesn't have, and downloads still not in the library after 3 days. A title's sheet has two switches under "Where it

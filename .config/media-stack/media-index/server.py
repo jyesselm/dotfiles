@@ -720,16 +720,38 @@ def _subs_missing() -> dict[str, int]:
     return _bazarr_cache["missing"]
 
 
+_audio_cache: dict = {"at": 0.0, "languages": {}}
+
+
+def _audio_languages() -> dict[str, list[str]]:
+    """Audio languages of each anime's episode files as Sonarr read them ("jpn", "eng"), by show folder (NFC path),
+    refreshed hourly; what's known so far when Sonarr is down."""
+    if time.time() - _audio_cache["at"] > 3600:
+        languages = {}
+        try:
+            for path, (base, key, series_id) in _arr_index().items():
+                if "/anime/" not in path:
+                    continue
+                files = arr.request(f"{base}/episodefile?seriesId={series_id}", key)
+                tracks = ((f.get("mediaInfo") or {}).get("audioLanguages", "") for f in files)
+                languages[path] = sorted({lang for track in tracks for lang in track.split("/") if lang})
+        except OSError:
+            return _audio_cache["languages"]
+        _audio_cache.update(at=time.time(), languages=languages)
+    return _audio_cache["languages"]
+
+
 def _add_review_details(items: list[dict]) -> None:
     """What each type is reviewed by, beyond size: a manga series' pages read in Kavita, a show's episodes without
-    the subtitles Bazarr wants."""
-    series, missing = _kavita_series(), _subs_missing()
+    the subtitles Bazarr wants, an anime's audio languages."""
+    series, missing, audio = _kavita_series(), _subs_missing(), _audio_languages()
     for it in items:
         if it["category"] == "manga":
             row = series.get(index.title_key(it["item"].rsplit("/", 1)[-1]), {})
             it["pages"], it["pages_read"] = row.get("pages", 0), row.get("pagesRead", 0)
         else:
-            it["subs_missing"] = missing.get(nfc(str(index.MEDIA_ROOT / it["item"])), 0)
+            path = nfc(str(index.MEDIA_ROOT / it["item"]))
+            it["subs_missing"], it["audio"] = missing.get(path, 0), audio.get(path, [])
 
 
 def _poster_from_tmdb(item: str) -> bytes | None:

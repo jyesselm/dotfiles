@@ -400,12 +400,14 @@ function attention(it) {
   if (it.category === "downloads" && !imported(it) && Date.now() / 1000 - it.mtime > STUCK_DAYS * 86400) return `not in the library after ${ago(it.mtime).replace(" ago", "")}`;
   return "";
 }
+const AUDIO_NAMES = { jpn: "Japanese", eng: "English", fre: "French", ita: "Italian", kor: "Korean", und: "unlabelled" };
 function details(it) {
   if (state.view === "attention") return [attention(it)];
   if (it.category === "downloads") return [imported(it) ? "in the library" : "not in the library yet"];
   if (it.category === "manga") return [`${it.files} ch`, readPct(it) === null ? "not in Kavita" : readPct(it) + "% read"];
   const bits = [];
   if (it.category === "audiobooks" && kbps(it)) bits.push(hours(it.duration_s), kbps(it) + " kbps");
+  if (it.audio?.length) bits.push(it.audio.map((l) => AUDIO_NAMES[l] || l).join(" + ") + " audio");
   if (it.subs_missing) bits.push(`${it.subs_missing} without subs`);
   return bits;
 }
