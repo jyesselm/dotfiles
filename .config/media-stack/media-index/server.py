@@ -460,11 +460,14 @@ def _record_swap(item: str, original: Path, release: dict) -> None:
 
 
 # Posters for the grid view, cached by item so titles moved to a cold drive (and dropped from Radarr/Sonarr) keep
-# theirs. Sources, in order: Radarr/Sonarr, Plex artwork, a cover image in the title's own folder (audiobooks,
-# podcasts, YouTube, music albums), TMDB by title and year. warm_posters fetches every one at startup and daily.
+# theirs. Sources, in order: Radarr/Sonarr, Plex artwork, Kavita's series cover (manga), a cover image in the
+# title's own folder or inside its first audio file (audiobooks, podcasts, YouTube, music albums), TMDB by title and
+# year. warm_posters fetches every one at startup and daily.
 POSTERS = index.DB_PATH.parent / "posters"
 POSTER_W, POSTER_H = 250, 375
 PLEX = os.environ.get("PLEX_URL", "http://localhost:32400")
+KAVITA = os.environ.get("KAVITA_URL", "http://localhost:5003")
+_kavita_cache: dict = {"at": 0.0, "series": {}}
 TMDB_IMAGES = "https://image.tmdb.org/t/p/w342"
 COVER_NAMES = ("cover", "folder", "poster", "show", "front", "album")
 COVER_TYPES = ("*.jpg", "*.jpeg", "*.png")
@@ -594,9 +597,9 @@ def set_travel(item: str, on: bool) -> dict:
     return {"ok": True, "message": "on the travel list" if on else "off the travel list"}
 
 
-def _fetch(url: str, headers: dict | None = None) -> bytes | None:
+def _fetch(url: str, headers: dict | None = None, body: bytes | None = None) -> bytes | None:
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=headers or {}), timeout=30) as resp:
+        with urllib.request.urlopen(urllib.request.Request(url, body, headers or {}), timeout=30) as resp:
             return resp.read()
     except OSError:
         return None
@@ -621,27 +624,58 @@ def _poster_from_plex(item: str) -> bytes | None:
 
 
 def _cover_on_disk(item: str) -> bytes | None:
-    """A cover image kept next to the files (cover.jpg, folder.jpg, show.jpg, any image up to three levels down),
-    scaled to poster width with ffmpeg. For a song, its album folder's cover."""
+    """A cover image kept next to the files (cover.jpg, folder.jpg, show.jpg, any image up to three levels down), else
+    the art embedded in the first audio file, scaled to poster width with ffmpeg. For a song, its album's cover."""
     path = index.MEDIA_ROOT / item
-    if path.is_dir():
-        folder = path
-    elif path.is_file():  # a song: its album folder
-        folder = path.parent
-    else:  # not on this disk (cold): never fall back to the parent, or every cold show would share one cover
+    if not path.exists():  # not on this disk (cold): never fall back to the parent, or every cold show would share one
         return None
+    if path.is_file() and not item.startswith(index.MUSIC_CATEGORY + "/"):  # a loose book: only its own embedded art
+        return _scaled(path, _poster_file("art:" + item))
+    folder = path if path.is_dir() else path.parent  # a song: its album folder
     cached = _poster_file("dir:" + str(folder.relative_to(index.MEDIA_ROOT)))
     if cached.exists():
         return cached.read_bytes()
     found = [p for depth in ("", "*/", "*/*/", "*/*/*/") for pat in COVER_TYPES for p in folder.glob(depth + pat)]
-    if not found:
-        return None
     rank = {name: i for i, name in enumerate(COVER_NAMES)}
-    best = min(found, key=lambda p: (rank.get(p.stem.lower(), len(rank)), len(p.parts), p.name))
+    if found:
+        return _scaled(min(found, key=lambda p: (rank.get(p.stem.lower(), len(rank)), len(p.parts), p.name)), cached)
+    audio = sorted(p for p in folder.rglob("*") if index.kind_for(p.name) == "audio")
+    return _scaled(audio[0], cached) if audio else None
+
+
+def _scaled(source: Path, dest: Path) -> bytes | None:
+    """An image, or the cover art inside an audio file, as a poster-width JPEG at dest; None when there is none."""
     POSTERS.mkdir(parents=True, exist_ok=True)
-    done = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(best), "-vf", f"scale={POSTER_W}:-2", "-q:v", "4",
-                           "-f", "mjpeg", str(cached)], capture_output=True)
-    return cached.read_bytes() if done.returncode == 0 and cached.exists() else None
+    cmd = ["ffmpeg", "-v", "error", "-y", "-i", str(source), "-an", "-frames:v", "1", "-vf", f"scale={POSTER_W}:-2",
+           "-q:v", "4", "-f", "mjpeg", str(dest)]
+    done = subprocess.run(cmd, capture_output=True)
+    return dest.read_bytes() if done.returncode == 0 and dest.exists() and dest.stat().st_size else None
+
+
+def _kavita_series() -> dict[str, int]:
+    """Kavita's series ids by normalized name, refreshed every 10 minutes; {} without KAVITA_API_KEY or when down."""
+    key = shrink.read_env().get("KAVITA_API_KEY", "")
+    if key and time.time() - _kavita_cache["at"] > 600:
+        try:
+            login = arr.request(f"{KAVITA}/api/Plugin/authenticate?apiKey={key}&pluginName=media-index", "", {}, "POST")
+            everything = json.dumps({"statements": [], "combination": 1, "limitTo": 0}).encode()
+            headers = {"Authorization": f"Bearer {login['token']}", "Content-Type": "application/json"}
+            found = json.loads(_fetch(f"{KAVITA}/api/series/all-v2", headers, everything) or b"[]")
+        except (OSError, ValueError, KeyError):
+            found = []
+        _kavita_cache.update(at=time.time(), series={index.title_key(row["name"]): row["id"] for row in found})
+    return _kavita_cache["series"]
+
+
+def _poster_from_kavita(item: str) -> bytes | None:
+    """A manga series' cover from Kavita (the one its reader shows), matched by the series folder's name."""
+    if not item.startswith("manga/"):
+        return None
+    series_id = _kavita_series().get(index.title_key(item.rsplit("/", 1)[-1]))
+    if series_id is None:
+        return None
+    key = shrink.read_env().get("KAVITA_API_KEY", "")
+    return _fetch(f"{KAVITA}/api/image/series-cover?seriesId={series_id}&apiKey={key}")
 
 
 def _poster_from_tmdb(item: str) -> bytes | None:
@@ -672,7 +706,7 @@ def poster(item: str) -> bytes | None:
         pass
     if time.time() - _misses.get(item, 0) < MISS_RETRY_S:
         return None
-    for source in (_poster_from_arr, _poster_from_plex, _cover_on_disk, _poster_from_tmdb):
+    for source in (_poster_from_arr, _poster_from_plex, _poster_from_kavita, _cover_on_disk, _poster_from_tmdb):
         data = source(item)
         if data:
             POSTERS.mkdir(parents=True, exist_ok=True)

@@ -101,6 +101,8 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .ph i { font-style: normal; font-size: 34px; line-height: 1; opacity: .6; }
 .ph b { font-size: 12.5px; line-height: 1.25; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* square cover art (books, albums, podcasts) is shown whole on the tinted tile instead of cropped to poster shape */
+.sq img { object-fit: contain !important; } .has .ph { display: none; }
 .card:hover .art { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 36px var(--shadow); }
 .card.cold img { filter: saturate(.55) brightness(.85); }
 .card.cold .art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(16,36,58,.75)); pointer-events: none; }
@@ -367,8 +369,13 @@ const isSong = (it) => it.category === "music" && it.audio_files > 0;
 const isVideo = (it) => it.video_files > 0 && VIDEO.includes(it.category);
 const status = (it) => it.trashed_at ? "trashed" : it.decision || "undecided";
 const coldDrive = (it) => COLD.find((d) => d in (it.drives || {}));
-const titleOf = (it) => { const [cat, ...name] = it.item.split("/"); return isSong(it) ? name[name.length - 1].replace(/\.[^.]+$/, "") : name.join("/") || cat; };
+const titleOf = (it) => { const last = it.item.split("/").pop(); return isSong(it) ? last.replace(/\.[^.]+$/, "") : last; };
+// What a title is filed under: artist · album for a song, author · series for a book, source for a manga series.
+const groupOf = (it) => it.item.split("/").slice(1, -1).join(" · ");
 const posterUrl = (it) => "/api/poster?item=" + encodeURIComponent(it.item);
+const SQUARE_ART = ["audiobooks", "music", "podcasts"];
+const sq = (it) => SQUARE_ART.includes(it.category) ? " sq" : "";
+const posterImg = (it, lazy) => `<img ${lazy ? 'loading="lazy" ' : ""}alt="" src="${posterUrl(it)}" onload="this.parentNode.classList.add('has')" onerror="this.remove()">`;
 const player = new Audio();
 const playing = (it) => it && player.dataset.item === it.item && !player.paused;
 const TYPE_LABELS = { movies: "🎬 Movies", tv: "📺 TV", anime: "🍥 Anime", music: "♪ Music", audiobooks: "📚 Audiobooks", podcasts: "🎙 Podcasts", youtube: "▶ YouTube" };
@@ -515,15 +522,15 @@ function quickHtml(it) {
 }
 function cardHtml(it, i) {
   const [cat] = it.item.split("/"), d = status(it), label = titleOf(it);
-  const sub = [isSong(it) ? it.item.split("/")[1] : typeLabel(cat).replace(/^\S+ /, ""), watchedText(it), ...statusBits(it)].filter(Boolean);
+  const sub = [groupOf(it) || typeLabel(cat).replace(/^\S+ /, ""), watchedText(it), ...statusBits(it)].filter(Boolean);
   return `<div class="card ${it.cold ? "cold" : ""} d-${d} ${i === state.sel ? "sel" : ""} ${state.picked.has(it.item) ? "picked" : ""}" data-i="${i}" tabindex="0">
-    <div class="art" style="--h:${hue(label)}">${placeholder(it, label)}<img loading="lazy" alt="" src="${posterUrl(it)}" onerror="this.remove()">
+    <div class="art${sq(it)}" style="--h:${hue(label)}">${placeholder(it, label)}${posterImg(it, true)}
       ${ribbon(it)}${res(it.height) && !it.cold ? `<span class="res">${res(it.height)}</span>` : ""}<span class="size num">${gb(it.size)}</span><span class="check">✓</span>
       <div class="quick">${quickHtml(it)}</div></div>
     <div class="t" title="${esc(label)}">${esc(label)}</div><div class="s">${sub.join(" · ")}</div></div>`;
 }
 function rowHtml(it, i) {
-  const [cat, ...name] = it.item.split("/"), d = status(it);
+  const [cat] = it.item.split("/"), d = status(it);
   const meta = [];
   if (it.files) meta.push(`${it.files} file${it.files === 1 ? "" : "s"}`);
   if (it.height) meta.push(res(it.height));
@@ -539,7 +546,7 @@ function rowHtml(it, i) {
   if (it.shrink_saving > 0) badges.push(`<span class="badge shrink">⇣ ~${gb(it.shrink_saving)} as HEVC</span>`);
   if ((it.duplicates || []).length) badges.push(`<span class="badge warn">Possible duplicate: ${esc(it.duplicates[0])}</span>`);
   if (it.note) badges.push(`<span class="badge">📝 ${esc(it.note)}</span>`);
-  const title = isSong(it) ? `<small>${esc(name[0])}</small>${esc(titleOf(it))}` : `<small>${esc(cat)}</small>${esc(titleOf(it))}`;
+  const title = `<small>${esc(groupOf(it) || cat)}</small>${esc(titleOf(it))}`;
   return `<div class="row d-${d} ${i === state.sel ? "sel" : ""} ${state.picked.has(it.item) ? "picked" : ""}" data-i="${i}">
     <div><div class="title">${title}</div><div class="meta">${meta.map(esc).join(" · ")}</div>${badges.join("")}</div>
     <div class="size num">${gb(it.size)}${it.freeable < it.size && !it.trashed_at && !it.cold ? `<small title="Hardlinked with a torrent in downloads/">frees ${gb(it.freeable)}</small>` : ""}</div></div>`;
@@ -691,8 +698,8 @@ async function openSheet(it) {
     if (isSong(it)) acts.push(`<button class="btn ghost" data-a="play">${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
   }
   $("sheet-in").innerHTML = `<div class="hero"><img alt="" src="${posterUrl(it)}" onerror="this.remove()"><button class="x" aria-label="Close" data-close>×</button></div>
-    <div class="body"><div class="poster" style="--h:${hue(titleOf(it))}">${placeholder(it, titleOf(it))}<img alt="" src="${posterUrl(it)}" onerror="this.remove()"></div><div>
-      <h1><small>${esc(isSong(it) ? it.item.split("/").slice(1, -1).join(" · ") : cat)}</small>${esc(titleOf(it))}</h1>
+    <div class="body"><div class="poster${sq(it)}" style="--h:${hue(titleOf(it))}">${placeholder(it, titleOf(it))}${posterImg(it)}</div><div>
+      <h1><small>${esc(groupOf(it) || cat)}</small>${esc(titleOf(it))}</h1>
       <div class="meta-line">${chips.join("")}</div>
       <div class="facts">${facts.map(([l, v]) => `<div class="fact"><div class="l">${l}</div><div class="v num">${v}</div></div>`).join("")}</div>
       <div class="where">${where}</div>

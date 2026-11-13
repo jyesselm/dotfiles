@@ -8,7 +8,8 @@ Radarr or Sonarr dropped a stuck download. Each run, per category:
 (2) when the folder's own bytes (files not hardlinked into the library) plus what the active torrents still have
     to fetch would exceed CAP_GB, the torrents with the most left are stopped and tagged "capped", largest first,
     until the rest fits;
-(3) when there is room again, capped torrents are started again, smallest first.
+(3) when there is room again, capped torrents are started again, smallest first. One whose files are already fully
+    allocated on disk is started whatever the total: stopped, it holds the same space and can never be imported.
 It also sets both qBittorrents' queue limits by time of day (LIMITS): the big set while the instance's own speed
 scheduler has the alternative limits off (the 2–6 am full-speed window), the small set the rest of the day.
 
@@ -35,6 +36,7 @@ from shrink import MEDIA_ROOT, STATE_DIR, install_agent
 
 CAP_GB = {"radarr": 150, "sonarr": 100}
 ORPHAN_AGE_DAYS = 1
+ALLOCATED_SLACK = 100e6  # a fully allocated torrent can differ from its listed size by a few bytes
 CHECK_MINUTES = 30
 QB = os.environ.get("QB_URL", "http://localhost:8080/api/v2")  # env: in the media-index container
 PRIVATE_QB = os.environ.get("PRIVATE_QB_URL", "http://localhost:8081/api/v2")
@@ -96,7 +98,9 @@ def check(category: str, cap_gb: int, dry_run: bool) -> None:
         on_disk[entry.name] = size
 
     def still_needs(t: dict) -> int:
-        return max(0, t["total_size"] - on_disk.get(Path(t["content_path"]).name, 0)) if t["content_path"] else 0
+        """Bytes the torrent will still add to the folder; a remainder under ALLOCATED_SLACK counts as none."""
+        missing = t["total_size"] - on_disk.get(Path(t["content_path"]).name, 0) if t["content_path"] else 0
+        return missing if missing > ALLOCATED_SLACK else 0
 
     active = [t for t in torrents if t["state"] in DOWNLOADING]
     capped = [t for t in torrents if t["state"] in STOPPED and TAG in t["tags"].split(", ")]
@@ -122,9 +126,8 @@ def check(category: str, cap_gb: int, dry_run: bool) -> None:
                 notify(f"downloads/{category} is over {cap_gb} GB", f"stopped {len(stop)} download(s): {names}")
         if projected > cap:
             log.info(f"{category}: still {gb(projected - cap)} over the cap with nothing left to stop")
-        return
     for t in sorted(capped, key=still_needs):
-        if projected + still_needs(t) > cap:
+        if still_needs(t) and projected + still_needs(t) > cap:
             break
         projected += still_needs(t)
         log.info(f"{category}: room again, starting {t['name']}")

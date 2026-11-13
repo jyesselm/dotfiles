@@ -2,7 +2,8 @@
 
 An item is a title-sized unit: the folder (or loose file) one level under a top-level folder,
 e.g. "movies/Heat (1995)" or "tv/The Wire". Music is reviewed song by song, so each file under
-"music/" is its own item. Decisions are made per item.
+"music/" is its own item. Audiobooks, manga and downloads keep their titles deeper (item_for).
+Decisions are made per item.
 """
 
 from __future__ import annotations
@@ -23,6 +24,13 @@ DB_PATH = Path(os.environ.get("INDEX_DB", "/data/media-index.db"))
 PLEX_DB_DIR = Path(os.environ.get("PLEX_DB_DIR", "/plex-db"))
 TRASH_NAME = "_trash"
 MUSIC_CATEGORY = "music"
+BOOK_CATEGORY = "audiobooks"
+# Folders whose titles sit deeper than one level: "category/folder" -> path parts that name one title
+# (manga/mangas/<Source>/<Series>, downloads/sonarr/<Release>).
+TITLE_DEPTH = {"manga/mangas": 4, "manga/paged": 4, "manga/volumes": 3}
+TITLE_DEPTH |= {f"downloads/{client}": 3 for client in ("sonarr", "radarr", "lidarr", "manga")}
+BOOK_DEPTH = 4  # audiobooks/<Author>/<Series>/<Book> at the deepest
+DISC_RE = re.compile(r"(cd|dis[ck]|part|pt)?[\s._-]*\d{1,3}", re.I)  # "Disc 01", "CD2", "3": a book's parts
 
 VIDEO_EXTS = {"mkv", "mp4", "avi", "m4v", "mpg", "mpeg", "mov", "wmv", "ts", "webm", "flv"}
 AUDIO_EXTS = {"mp3", "m4b", "m4a", "flac", "aac", "ogg", "wav", "opus"}
@@ -140,14 +148,33 @@ def item_for(rel_path: str) -> tuple[str, str]:
 
     Returns:
         ("movies/Heat (1995)", "movies"); loose files at the root are their own item in "(root)",
-        and each music file is its own item.
+        each music file is its own item, an audiobook is the folder holding its files, and the
+        folders in TITLE_DEPTH are split into the titles inside them.
     """
     parts = rel_path.split("/")
+    category = parts[0]
     if len(parts) == 1:
         return rel_path, "(root)"
-    if parts[0] == MUSIC_CATEGORY:
-        return rel_path, parts[0]
-    return "/".join(parts[:2]), parts[0]
+    if category == MUSIC_CATEGORY:
+        return rel_path, category
+    if category == BOOK_CATEGORY:
+        return _book_for(parts), category
+    depth = TITLE_DEPTH.get("/".join(parts[:2]), 2)
+    return "/".join(parts[:depth]), category
+
+
+def _book_for(parts: list[str]) -> str:
+    """The audiobook a file belongs to: its folder, without disc subfolders, at most BOOK_DEPTH parts deep.
+
+    Authors are filed three ways (Author/Series/Book, Collection/Book, a bare Book folder), so the folder
+    that holds the files is the book, whatever its depth.
+    """
+    folders = parts[:-1]
+    if len(folders) == 1:  # a loose file under audiobooks/
+        return "/".join(parts)
+    while len(folders) > 2 and DISC_RE.fullmatch(folders[-1]):
+        folders = folders[:-1]
+    return "/".join(folders[:BOOK_DEPTH])
 
 
 def kind_for(name: str) -> str:

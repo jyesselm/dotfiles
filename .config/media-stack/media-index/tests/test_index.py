@@ -16,6 +16,20 @@ def test_item_for_groups_one_level_below_category() -> None:
     assert index.item_for("music/Ratatat/LP3/Shempi.mp3") == ("music/Ratatat/LP3/Shempi.mp3", "music")
 
 
+def test_item_for_splits_books_manga_and_downloads_into_titles() -> None:
+    book = "audiobooks/Robert Jordan/The Wheel of Time/01 - The Eye of the World"
+    assert index.item_for(book + "/Disc 02/track.mp3")[0] == book
+    assert index.item_for(book + "/extras/scans/map.jpg")[0] == book
+    assert index.item_for("audiobooks/Artemis/01.mp3")[0] == "audiobooks/Artemis"
+    assert index.item_for("audiobooks/Golden Son.m4b")[0] == "audiobooks/Golden Son.m4b"
+    series = "manga/mangas/Weeb Central (EN)/Claymore"
+    assert index.item_for(series + "/Chapter 1.cbz") == (series, "manga")
+    assert index.item_for("manga/volumes/Chainsaw Man/v01.cbz")[0] == "manga/volumes/Chainsaw Man"
+    assert index.item_for("manga/thumbnails/185.jpg")[0] == "manga/thumbnails"
+    assert index.item_for("downloads/sonarr/Show.S01/e1.mkv")[0] == "downloads/sonarr/Show.S01"
+    assert index.item_for("downloads/Movie (2001)/m.mkv")[0] == "downloads/Movie (2001)"
+
+
 def test_title_key_ignores_year_and_quality() -> None:
     assert index.title_key("movies/Heat (1995)") == "heat"
     assert index.title_key("old/Heat.1995.1080p.BluRay.x264.mkv") == "heat"

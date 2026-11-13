@@ -284,8 +284,11 @@ and check `docker-compose logs gluetun` shows the public IP of a Nord server.
 serves a review page on 8686: a poster wall (like Plex) where every title is either **☀ active** on `plex-media` or
 **❄ cold** on a cold drive (the drive is a chip on the card); **🧳 travel** marks what goes on the travel stick: anything in a Plex
 collection called Travel, or held by the drive `plex-travel` once the stick is named that and catalogued. Posters come from
-Radarr/Sonarr, then Plex, then a cover image in the title's own folder (audiobooks, podcasts, album art), then TMDB
-(`TMDB_API_KEY`); a title with none shows a tinted tile with its name. A title's sheet has two switches under "Where it
+Radarr/Sonarr, then Plex, then Kavita's series cover (manga; `KAVITA_API_KEY`), then a cover image in the title's own
+folder or inside its first audio file (audiobooks, podcasts, album art; square art is shown whole, not cropped), then TMDB
+(`TMDB_API_KEY`); a title with none shows a tinted tile with its name. A tile is one title: the folder under `movies/`, `tv/` and so on, but one book under
+`audiobooks/` (the folder holding its files, whatever the author/series nesting), one series under `manga/`, one download
+under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). A title's sheet has two switches under "Where it
 lives", ❄ Cold storage and 🧳 Travel stick (the travel one adds or removes it in the Plex Travel collection); the hover
 buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
@@ -326,7 +329,11 @@ nothing; what grows the folders is downloads in progress (allocated in full up f
 torrent owns after Radarr/Sonarr dropped a stuck grab. Leftovers untouched for a day go to `_trash/downloads/`
 (empty `_trash` by hand). When the
 folder's own bytes plus what the active torrents still have to fetch would pass the cap, the torrents with the
-most left are stopped and tagged `capped` in qBittorrent, and started again once there is room. Log:
+most left are stopped and tagged `capped` in qBittorrent, and started again once there is room. A capped torrent whose
+files are already fully allocated is started whatever the total: stopped it holds the same space and the folder never
+empties (five anime packs sat stopped that way, 2026-11-12). Cleanuparr only watches Radarr's and Sonarr's queues, so
+a seedless `lidarr` or `audiobooks` torrent can sit at the top of qBittorrent's queue and hold a download slot for
+days; move it to the bottom of the queue or remove it by hand. Log:
 `~/.local/share/media-index/downloads-cap.log`; `python3 media-index/downloads_cap.py run --dry-run` shows a check.
 
 **Music upgrades** to 320 kbps go through Lidarr, run by `media-index/music_upgrade.py` (daily at 03:00). Lidarr only
