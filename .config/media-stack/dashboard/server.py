@@ -264,6 +264,249 @@ def by_service(items: list[dict]) -> list[dict]:
     return order
 
 
+# ---- listen: what to hear next, from Audiobookshelf history and Audible's public catalog ----
+
+ABS = "http://audiobookshelf:80"
+AUDIBLE = "https://api.audible.com/1.0/catalog/products"
+AUDIBLE_FIELDS = "response_groups=product_attrs,product_desc,media,contributors,series,rating,relationships"
+LISTEN_SHELF = 24  # cards per shelf
+listen: dict = {"at": 0, "shelves": None, "building": False}
+
+
+def listen_next() -> list[dict] | None:
+    """The Listen tab's shelves, rebuilt in the background every six hours (about a hundred catalog calls); None
+    until the first build finishes."""
+    if listen["at"] < time.time() - 6 * 3600 and not listen["building"]:
+        listen["building"] = True
+        threading.Thread(target=build_listen, daemon=True).start()
+    return listen["shelves"]
+
+
+def book_key(title: str) -> str:
+    """A title without its subtitle, case or punctuation, so editions of one book match."""
+    return re.sub(r"[^a-z0-9]+", " ", re.split(r"[:(]", title)[0].lower()).strip()
+
+
+def on_shelf(title: str, shelf: dict[str, dict]) -> dict | None:
+    """The shelf's copy of a catalog title; Audible sometimes leads with the series ("The Farseer: Assassin's ...")."""
+    return next((shelf[k] for part in title.split(":") if (k := book_key(part)) in shelf), None)
+
+
+def number(sequence: str | None) -> float | None:
+    try:
+        return float(sequence)
+    except (TypeError, ValueError):
+        return None
+
+
+def shelf_books() -> list[dict]:
+    """Every book in Audiobookshelf with whether it was finished or started."""
+    head = {"Authorization": "Bearer " + ENV.get("ABS_KEY", "")}
+    progress = {p["libraryItemId"]: p["isFinished"] for p in get_json(f"{ABS}/api/me", head, 30)["mediaProgress"]}
+    books = []
+    for lib in get_json(f"{ABS}/api/libraries", head, 30)["libraries"]:
+        if lib["mediaType"] != "book":
+            continue
+        for it in get_json(f"{ABS}/api/libraries/{lib['id']}/items?limit=0", head, 60)["results"]:
+            m = it["media"]["metadata"]
+            series, _, seq = (m.get("seriesName") or "").partition(" #")
+            books.append({"id": it["id"], "title": m.get("title") or "", "author": m.get("authorName") or "",
+                          "series": series, "seq": number(seq.split(",")[0]), "asin": m.get("asin"),
+                          "done": progress.get(it["id"], False), "started": it["id"] in progress})
+    return books
+
+
+def audible(path: str) -> dict:
+    return get_json(f"{AUDIBLE}/{path}{'&' if '?' in path else '?'}{AUDIBLE_FIELDS}", {"User-Agent": "Mozilla/5.0"}, 20)
+
+
+def catalog_card(b: dict, why: str) -> dict:
+    """A book from Audible's catalog that isn't on the shelf: the card asks AudioBookRequest for it."""
+    author = ", ".join(a["name"] for a in (b.get("authors") or [])[:2])
+    ser = (b.get("series") or [{}])[0]
+    return {"title": b.get("title") or "", "author": author, "why": why, "owned": False,
+            "note": f"{ser['title']} #{ser.get('sequence')}" if ser.get("title") else "",
+            "img": (b.get("product_images") or {}).get("500"), "port": 8000,
+            "path": "/search?q=" + quote(f"{b.get('title', '')} {author}")}
+
+
+def shelf_card(b: dict, why: str) -> dict:
+    return {"title": b["title"], "author": b["author"], "why": why, "owned": True,
+            "note": f"{b['series']} #{b['seq']:g}" if b["series"] and b["seq"] is not None else b["series"],
+            "img": f"/cover?id={b['id']}", "port": 13378, "path": f"/item/{b['id']}"}
+
+
+def next_in_series(mine: list[dict], shelf: dict[str, dict]) -> dict | None:
+    """The book after the last one finished in a series: from the shelf if it is there, else from Audible."""
+    last = max(b["seq"] for b in mine if b["done"])
+    waiting = [b for b in mine if not b["done"] and b["seq"] > last]
+    if waiting:
+        return shelf_card(min(waiting, key=lambda b: b["seq"]), f"next after #{last:g}")
+    asin = next((b["asin"] for b in mine if b["done"] and b["asin"]), None)
+    listed = [s for s in (audible(asin)["product"].get("series") or [] if asin else []) if s.get("asin")]
+    ser = next((s for s in listed if book_key(s["title"]) == book_key(mine[0]["series"])), None)
+    if not ser:  # only trust the numbering of the series Audiobookshelf names
+        return None
+    later = sorted((n, r["asin"]) for r in audible(ser["asin"])["product"].get("relationships") or []
+                   if (n := number(r.get("sequence"))) is not None and n > last and n == int(n))
+    for _, child in later[:8]:  # a number has several editions, and a later book may sit under another series name
+        book = audible(child)["product"]
+        if book.get("language") != "english" or not book.get("title"):
+            continue
+        own = on_shelf(book["title"], shelf)
+        if not own:
+            return catalog_card(book, f"next after #{last:g} · not on your shelf")
+        if not own["done"]:
+            return shelf_card(own, f"next after #{last:g}")
+    return None
+
+
+def listeners_liked(done: list[dict]) -> dict[str, dict]:
+    """What Audible's listeners of each finished book also liked: book key -> the catalog book and the finished
+    titles that led to it."""
+    liked: dict[str, dict] = {}
+    for b in done:
+        try:
+            similar = audible(f"{b['asin']}/sims?similarity_type=RawSimilarities&num_results=16")["similar_products"]
+        except OSError:
+            continue
+        for sim in similar:
+            if sim.get("language") == "english" and sim.get("title"):
+                liked.setdefault(book_key(sim["title"]), {"book": sim, "from": []})["from"].append(b["title"])
+    return liked
+
+
+def new_to_you(liked: dict[str, dict], shelf: dict[str, dict], have_series: set[str], because) -> list[dict]:
+    """Liked books that aren't on the shelf, one card per series (its lowest-numbered book), best supported first."""
+    fresh: dict[str, tuple] = {}
+    for key, hit in liked.items():
+        title, ser = hit["book"]["title"], (hit["book"].get("series") or [{}])[0]
+        seq, slot = number(ser.get("sequence")), ser.get("asin") or key
+        side_story = ser.get("title") and (seq is None or seq < 1)  # novellas, companions, omnibus entries
+        if on_shelf(title, shelf) or book_key(ser.get("title") or "") in have_series or side_story or "Dramatized" in title:
+            continue
+        score, why = because(key, "")
+        rating = (hit["book"].get("rating") or {}).get("overall_distribution") or {}
+        seq = seq or 0
+        if slot not in fresh or seq < fresh[slot][0]:
+            fresh[slot] = (seq, score, float(rating.get("display_average_rating") or 0), catalog_card(hit["book"], why))
+    return [f[3] for f in sorted(fresh.values(), key=lambda f: (-f[1], -f[2]))][:LISTEN_SHELF]
+
+
+def carry_on(by_series: dict[str, list[dict]], begun: set[str], shelf: dict[str, dict]) -> list[dict]:
+    cards = []
+    for name in sorted(begun):
+        try:
+            card = next_in_series(by_series[name], shelf)
+        except OSError:
+            card = None
+        if card:
+            cards.append(card)
+    return cards
+
+
+def build_listen() -> None:
+    try:
+        books = [b for b in shelf_books() if b["title"]]
+        done = [b for b in books if b["done"]]
+        by_series: dict[str, list[dict]] = {}
+        for b in books:
+            if b["series"] and b["seq"] is not None:
+                by_series.setdefault(b["series"], []).append(b)
+        begun = {name for name, mine in by_series.items() if any(b["done"] for b in mine)}
+        liked = listeners_liked([b for b in done if b["asin"]])
+        authors: dict[str, int] = {}
+        for b in done:
+            authors[b["author"]] = authors.get(b["author"], 0) + 1
+
+        def because(key: str, author: str) -> tuple[int, str]:
+            sources = list(dict.fromkeys(liked.get(key, {}).get("from", [])))
+            score = 2 * len(sources) + min(authors.get(author, 0), 3)
+            return score, ("listeners of " + " and ".join(sources[:2]) + " liked it" if sources
+                           else f"you finished {authors[author]} by {author}" if author in authors else "")
+
+        unheard = []
+        for b in books:
+            first = b["series"] not in by_series or b is min(by_series[b["series"]], key=lambda x: x["seq"])
+            score, why = because(book_key(b["title"]), b["author"])
+            if score and first and not b["started"] and b["series"] not in begun:
+                unheard.append((score, shelf_card(b, why)))
+        shelf = {book_key(b["title"]): b for b in books}
+        listen["shelves"] = [
+            {"name": "Continue a series", "items": carry_on(by_series, begun, shelf)},
+            {"name": "On your shelf, not started",
+             "items": [c for _, c in sorted(unheard, key=lambda u: -u[0])][:LISTEN_SHELF]},
+            {"name": "New to you", "items": new_to_you(liked, shelf, {book_key(n) for n in by_series}, because)},
+        ]
+        listen["at"] = time.time()
+    finally:
+        listen["building"] = False
+
+
+# ---- search: one box over what is on disk (Media Index), then what Seerr and Audible could fetch ----
+KINDS = {"movies": "Movie", "tv": "TV", "anime": "Anime", "audiobooks": "Audiobook", "manga": "Manga", "music": "Music",
+         "podcasts": "Podcast", "books": "Book", "downloads": "Downloading"}
+SQUARE = ("audiobooks", "music", "podcasts")
+SEERR_STATE = {5: "In Plex", 4: "Partly in Plex", 3: "Requested", 2: "Requested"}
+FOUND = 18  # cards per shelf
+disk: dict = {"at": 0.0, "items": []}
+
+
+def disk_items() -> list[dict]:
+    if time.time() - disk["at"] > 300:
+        disk.update(at=time.time(), items=get_json("http://media-index:8686/api/items", timeout=30))
+    return disk["items"]
+
+
+def disk_title(item: dict) -> str:
+    """A title's folder name without the "03 - " a series folder numbers it with."""
+    return re.sub(r"^\d+(\.\d+)?\s*-\s*", "", item["item"].rsplit("/", 1)[-1])
+
+
+def on_disk(words: list[str]) -> list[dict]:
+    hits = [i for i in disk_items()
+            if not i.get("trashed_at") and all(w in i["item"].split("/", 1)[-1].lower() for w in words)]
+    hits.sort(key=lambda i: (i["category"] == "downloads", len(i["item"])))
+    return [{"title": disk_title(i),
+             "author": " · ".join([KINDS.get(i["category"], i["category"]), *i["item"].split("/")[1:-1]]),
+             "why": "on a cold drive" if i.get("cold") else "", "img": "/art?item=" + quote(i["item"]),
+             "href": "#library?" + quote(i["item"].rsplit("/", 1)[-1]), "owned": True, "badge": "In your library",
+             "tall": i["category"] not in SQUARE} for i in hits[:FOUND]]
+
+
+def requestable(q: str) -> list[dict]:
+    d = get_json(f"http://seerr:5055/api/v1/search?query={quote(q)}", {"X-Api-Key": ENV.get("SEERR_KEY", "")})
+    out = []
+    for r in d.get("results", []):
+        if r.get("mediaType") not in ("movie", "tv"):
+            continue
+        state = SEERR_STATE.get((r.get("mediaInfo") or {}).get("status"))
+        out.append({"title": r.get("title") or r.get("name") or "", "tall": True, "owned": state == "In Plex",
+                    "author": "Movie" if r["mediaType"] == "movie" else "TV", "badge": state or "Request",
+                    "why": (r.get("releaseDate") or r.get("firstAirDate") or "")[:4], "port": 5055,
+                    "img": "/poster?p=" + quote(r["posterPath"]) if r.get("posterPath") else None,
+                    "path": f"/{r['mediaType']}/{r['id']}"})
+    return out[:FOUND]
+
+
+def search(q: str) -> list[dict]:
+    words = re.findall(r"[a-z0-9]+", q.lower())
+    if not words:
+        return []
+    have = on_disk(words)
+    owned = {book_key(disk_title(i)) for i in disk_items() if i["category"] == "audiobooks"}
+    shelves = [{"name": "In your library", "items": have}]
+    books = f"?keywords={quote(q)}&num_results=12"
+    for name, find in (("Movies and shows", lambda: requestable(q)),
+                       ("Audiobooks to request", lambda: [catalog_card(b, "") for b in audible(books)["products"]
+                                                          if book_key(b["title"]) not in owned])):
+        try:
+            shelves.append({"name": name, "items": find()})
+        except Exception as e:  # one source down: the others still answer
+            print(f"search {name}: {e}", flush=True)
+    return shelves
+
+
 def seerr_title(kind: str, tmdb) -> dict:
     """Seerr's copy of one TMDB movie or show (kind is Trakt's "movie" or "show")."""
     return get_json(f"http://seerr:5055/api/v1/{'movie' if kind == 'movie' else 'tv'}/{tmdb}",
@@ -457,7 +700,7 @@ def collect() -> dict:
             out[name] = None
 
     with ThreadPoolExecutor(8) as ex:
-        jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("playing", now_playing), ("requests", requests_recent), ("watch", watch_next), ("counts", plex_counts), ("queue", queue),
+        jobs = {ex.submit(run, n, f) for n, f in (("recent", plex_recent), ("playing", now_playing), ("requests", requests_recent), ("watch", watch_next), ("listen", listen_next), ("counts", plex_counts), ("queue", queue),
                                                    ("arr", arr_counts), ("torrents", torrents), ("vpn", vpn),
                                                    ("storage", storage), ("nas", nas), ("sites", sites), ("host", host),
                                                    ("containers", containers), ("backups", backups))}
@@ -498,6 +741,29 @@ MIME = {".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/ja
         ".png": "image/png", ".json": "application/json"}
 
 
+def poster_image(q: dict) -> bytes:
+    p, w = q.get("p", [""])[0], q.get("w", ["185"])[0]
+    if not p.startswith("/") or ".." in p or w not in ("185", "1280"):
+        raise ValueError(p)
+    return poster(p, w)
+
+
+def cover_image(q: dict) -> bytes:
+    """A shelf book's cover, same-origin as a JPEG: the iPad would not load Audiobookshelf's own."""
+    book = q.get("id", [""])[0]
+    if not re.fullmatch(r"[\w-]+", book):
+        raise ValueError(book)
+    return get(f"{ABS}/api/items/{book}/cover?width=400&format=jpeg")
+
+
+def art_image(q: dict) -> bytes:
+    """Media Index's poster for one item on disk, same-origin like the covers."""
+    return get("http://media-index:8686/api/poster?item=" + quote(q.get("item", [""])[0]))
+
+
+IMAGES = {"/poster": poster_image, "/cover": cover_image, "/art": art_image}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -510,12 +776,22 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_image(self, fetch, q: dict):
+        try:
+            return self.send(fetch(q), "image/jpeg", cache="public, max-age=86400")
+        except ValueError:
+            return self.send(b"bad", "text/plain", HTTPStatus.BAD_REQUEST)
+        except Exception:
+            return self.send(b"", "image/jpeg", HTTPStatus.BAD_GATEWAY)
+
     def do_GET(self):
         u = urlparse(self.path)
         if u.path == "/api/state":
             with state_lock:
                 body = json.dumps(state).encode()
             return self.send(body, "application/json")
+        if u.path == "/api/search":
+            return self.send(json.dumps(search(parse_qs(u.query).get("q", [""])[0])).encode(), "application/json")
         if u.path == "/api/title":
             q = parse_qs(u.query)
             kind, tmdb = q.get("type", [""])[0], q.get("tmdb", [""])[0]
@@ -525,15 +801,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(json.dumps(title(kind, tmdb)).encode(), "application/json")
             except Exception:
                 return self.send(b"{}", "application/json", HTTPStatus.BAD_GATEWAY)
-        if u.path == "/poster":
-            q = parse_qs(u.query)
-            p, w = q.get("p", [""])[0], q.get("w", ["185"])[0]
-            if not p.startswith("/") or ".." in p or w not in ("185", "1280"):
-                return self.send(b"bad", "text/plain", HTTPStatus.BAD_REQUEST)
-            try:
-                return self.send(poster(p, w), "image/jpeg", cache="public, max-age=86400")
-            except Exception:
-                return self.send(b"", "image/jpeg", HTTPStatus.BAD_GATEWAY)
+        if u.path in IMAGES:
+            return self.send_image(IMAGES[u.path], parse_qs(u.query))
         f = STATIC / ("index.html" if u.path == "/" else u.path.lstrip("/"))
         if f.is_file() and STATIC in f.resolve().parents:
             cache = "no-store" if f.suffix == ".html" else "public, max-age=86400"

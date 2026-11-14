@@ -39,13 +39,15 @@ button { font: inherit; color: inherit; }
 /* top bar */
 .bar { position: sticky; top: 0; z-index: 10; background: var(--bar); border-bottom: .5px solid var(--hair); }
 .bar .in { max-width: 1100px; margin: 0 auto; padding: 0 16px; height: 52px; display: flex; align-items: center; gap: 16px; }
-.brand { font-weight: 700; letter-spacing: -.02em; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.brand { white-space: nowrap; font-weight: 700; letter-spacing: -.02em; font-size: 16px; display: flex; align-items: center; gap: 8px; }
 .brand i { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg,#e5a00d,#ff9f0a); display: inline-block; }
 nav.tabs { display: flex; gap: 2px; margin: 0 auto; padding: 3px; border-radius: 10px; background: var(--fill); }
 nav.tabs a .i { display: none; }
 nav.tabs a { padding: 5px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 500; color: var(--text-2); transition: all .2s; }
 nav.tabs a.on { background: var(--solid); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .right { display: flex; align-items: center; gap: 8px; }
+.find { width: 170px; padding: 6px 12px; border-radius: 999px; background: var(--fill); border: 0; color: var(--text); font: inherit; font-size: 13px; outline: none; -webkit-appearance: none; }
+.find:focus { box-shadow: 0 0 0 2px var(--blue); }
 .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: var(--fill); font-size: 12.5px; font-weight: 500; color: var(--text-2); border: 0; cursor: default; }
 .pill b { color: var(--text); font-weight: 600; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent); }
@@ -55,6 +57,8 @@ nav.tabs a.on { background: var(--solid); color: var(--text); box-shadow: 0 1px 
 .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 80px; }
 .view { display: none; animation: fade .35s cubic-bezier(.2,.8,.2,1); }
 .view.on { display: block; }
+#library { display: none; background: var(--bg); position: fixed; z-index: 5; left: 0; top: var(--top, 56px); width: 100%; height: calc(100dvh - var(--top, 56px) - var(--bottom, 0px)); border: 0; }
+body.library #library { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } }
 .hero { padding: 40px 4px 24px; }
 .eyebrow { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
@@ -89,6 +93,8 @@ section { margin-bottom: 36px; }
 .poster .art { aspect-ratio: 2/3; border-radius: 12px; overflow: hidden; background: var(--fill); box-shadow: 0 8px 22px rgba(0,0,0,.18); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
 .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
 body:not(.tv) .poster:hover .art { transform: scale(1.04); }
+.poster.book .art { aspect-ratio: 1; }
+.poster.book .s { white-space: normal; }
 .poster .t { font-size: 13px; font-weight: 500; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .err { font-size: 12px; color: var(--text-3); margin: 0 4px; }
 .poster .s { font-size: 12px; color: var(--text-2); }
@@ -232,14 +238,19 @@ body.tv .sheet .btn:focus { box-shadow: 0 0 0 3px #fff; transform: scale(1.06); 
 
 /* phone: bottom tab bar */
 .tabbar { display: none; }
-@media (max-width: 760px) {
+/* the top bar holds eight tabs and the search box only on a wide screen; below that the tabs go to the bottom */
+@media (max-width: 1100px) {
   .bar nav.tabs, .bar .pill.status { display: none; }
+  .right { flex: 1; } .find { flex: 1; width: auto; font-size: 16px; }
   .tabbar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; display: flex; justify-content: space-around; padding: 8px 6px calc(10px + env(safe-area-inset-bottom));
     background: var(--bar); border-top: .5px solid var(--hair); }
-  .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 500; color: var(--text-2); min-width: 56px; }
+  .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 500; color: var(--text-2); flex: 1 1 0; min-width: 0; white-space: nowrap; }
   .tabbar a span.i { font-size: 20px; line-height: 1; }
   .tabbar a.on { color: var(--blue); }
   .wrap { padding-bottom: 100px; }
+}
+@media (max-width: 760px) {
+  .tabbar a { font-size: 9px; letter-spacing: -.02em; }
   h1 { font-size: 30px; } .hero { padding-top: 24px; }
   .glance, .grid3, .grid2, .machines, .stats { grid-template-columns: 1fr 1fr; }
   .glance, .grid2, .machines { grid-template-columns: 1fr; }
@@ -258,6 +269,7 @@ body.tv .sheet .btn:focus { box-shadow: 0 0 0 3px #fff; transform: scale(1.06); 
   <a class="brand" href="#home"><i></i>Plex Server</a>
   <nav class="tabs" id="tabs"></nav>
   <div class="right">
+    <input class="find" id="find" type="search" placeholder="Search everything" enterkeyhint="search" aria-label="Search everything">
     <span class="pill status" id="status"><span class="dot"></span><b>Loading</b></span>
     <button class="pill theme" id="theme" title="Light / dark">◐</button>
   </div>
@@ -284,6 +296,18 @@ body.tv .sheet .btn:focus { box-shadow: 0 0 0 3px #fff; transform: scale(1.06); 
     <h2>At a Glance</h2>
     <div class="glance" id="glance"></div>
   </section>
+</div>
+
+<!-- LISTEN -->
+<div class="view" id="v-listen">
+  <div class="hero"><div class="eyebrow">Audiobooks</div><h1>Listen Next</h1><p class="lead" id="l-lead"></p></div>
+  <div id="l-shelves"></div>
+</div>
+
+<!-- SEARCH: the box in the top bar -->
+<div class="view" id="v-search">
+  <div class="hero"><div class="eyebrow">Search</div><h1 id="s-title"></h1><p class="lead" id="s-lead"></p></div>
+  <div id="s-shelves"></div>
 </div>
 
 <!-- WATCH -->
@@ -321,7 +345,7 @@ body.tv .sheet .btn:focus { box-shadow: 0 0 0 3px #fff; transform: scale(1.06); 
   <div class="hero"><div class="eyebrow">Storage</div><h1 id="st-title"></h1><div class="lead" id="st-lead"></div></div>
   <section><div class="card" id="st-disk"></div></section>
   <section class="grid2">
-    <div class="card"><h3>Never watched <a class="link" data-port="8686" href="#">Review in Media Index ›</a></h3><ul class="rows" id="st-never"></ul></div>
+    <div class="card"><h3>Never watched <a class="link" href="#library">Review in the Library ›</a></h3><ul class="rows" id="st-never"></ul></div>
     <div>
       <div class="card" id="st-nas" style="margin-bottom:14px"></div>
       <div class="card" id="st-trash"></div>
@@ -348,6 +372,8 @@ body.tv .sheet .btn:focus { box-shadow: 0 0 0 3px #fff; transform: scale(1.06); 
 
 </div>
 
+<!-- LIBRARY: Media Index, in a frame between the two bars (outside .wrap: a view's fade would trap position: fixed) -->
+<iframe id="library" title="Media Index"></iframe>
 <nav class="tabbar glass" id="tabbar"></nav>
 
 <script>
@@ -365,17 +391,38 @@ const $ = (id) => document.getElementById(id);
 // TV (?tv=1, or the Watch app's "PlexTV" user agent): only the Watch view, dark, laid out for a remote
 const TV = new URLSearchParams(location.search).get("tv") === "1" || navigator.userAgent.includes("PlexTV");
 if (TV) document.body.classList.add("tv");
-const TABS = [["home", "Home", "⌂"], ["watch", "Watch", "▶"], ["downloads", "Downloads", "↓"], ["storage", "Storage", "◔"], ["computers", "Computers", "▭"], ["admin", "Admin", "⚙"]];
+const TABS = [["home", "Home", "⌂"], ["watch", "Watch", "▶"], ["listen", "Listen", "🎧"], ["library", "Library", "▦"], ["downloads", "Downloads", "↓"], ["storage", "Storage", "◔"], ["computers", "Computers", "▭"], ["admin", "Admin", "⚙"]];
 for (const id of ["tabs", "tabbar"]) $(id).innerHTML = TABS.map(([k, n, g]) => `<a href="#${k}" data-t="${k}"><span class="i">${g}</span>${n}</a>`).join("");
-function show(t) {
+// Shelves of cards (Listen, Search): a book or title that opens where it lives, or its request page.
+const shelvesHtml = (shelves) => (shelves || []).filter((s) => s.items.length).map((s) =>
+  `<section><h2><span>${esc(s.name)}</span></h2><div class="shelf">${s.items.map((b) =>
+    `<a class="poster ${b.tall ? "" : "book"}" href="${esc(b.href || link(b.port, b.path))}" ${b.href ? "" : `target="_blank" rel="noopener"`}><div class="art">${b.img ? `<img src="${esc(b.img)}" alt="" loading="lazy">` : ""}</div><div class="t">${esc(b.title)}</div><div class="s">${esc(b.author)}${b.note ? " · " + esc(b.note) : ""}</div><div class="s">${esc(b.why)}</div><div class="where"><span class="b ${b.owned ? "plex" : ""}">${esc(b.badge || (b.owned ? "On your shelf" : "Request"))}</span></div></a>`).join("")}</div></section>`).join("");
+function show(hash) {
+  let [t, query] = hash.split("?");  // "#search?dune", "#library?Dune (2021)"
   if (TV) t = "watch";
-  if (!TABS.some(([k]) => k === t)) t = "home";
+  if (t === "search" && query) runSearch(decodeURIComponent(query));
+  else if (!TABS.some(([k]) => k === t)) t = "home";
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("on", v.id === "v-" + t));
   document.querySelectorAll("[data-t]").forEach((a) => a.classList.toggle("on", a.dataset.t === t));
-  try { localStorage.setItem("tab", t); } catch {}
+  try { if (t !== "search") localStorage.setItem("tab", t); } catch {}
+  document.body.classList.toggle("library", t === "library");
+  if (t === "library") {
+    const f = $("library"), style = document.documentElement.style;
+    style.setProperty("--top", document.querySelector(".bar").offsetHeight + "px"); style.setProperty("--bottom", $("tabbar").offsetHeight + "px");
+    if (!f.src || query) f.src = link(8686, "/?embed=1" + (query ? "&q=" + query : ""));
+  }
   scrollTo(0, 0);
 }
 addEventListener("hashchange", () => show(location.hash.slice(1)));
+$("find").onkeydown = (e) => { if (e.key === "Enter" && e.target.value.trim()) { location.hash = "#search?" + encodeURIComponent(e.target.value.trim()); e.target.blur(); } };
+async function runSearch(q) {
+  $("find").value = q; $("s-title").textContent = q; $("s-lead").textContent = "Searching…"; $("s-shelves").innerHTML = "";
+  let shelves = [];
+  try { shelves = await (await fetch("/api/search?q=" + encodeURIComponent(q))).json(); } catch {}
+  if ($("s-title").textContent !== q) return;  // a newer search took over
+  $("s-shelves").innerHTML = shelvesHtml(shelves);
+  $("s-lead").textContent = $("s-shelves").innerHTML ? "What you have opens in the Library. Anything else opens its request page." : "Nothing found anywhere.";
+}
 let first = location.hash.slice(1); try { first ||= localStorage.getItem("tab"); } catch {}
 show(first || "home");
 
@@ -389,7 +436,10 @@ if (TV) root.dataset.theme = "dark";
 $("theme").onclick = () => {
   const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+  themeToLibrary();
 };
+const themeToLibrary = () => $("library").contentWindow?.postMessage({ theme: root.dataset.theme }, "*");
+$("library").onload = themeToLibrary;
 document.querySelectorAll("[data-port]").forEach((a) => a.href = link(a.dataset.port));
 $("plex-link").href = link(32400, "/web");
 
@@ -575,6 +625,12 @@ function render(D) {
   $("sites").innerHTML = (D.sites || []).map((s) =>
     `<li><span class="tt"><a href="${s.url}">${esc(s.name)}</a><span class="ss">${esc(s.url.replace(/^https?:\/\/|\/$/g, ""))}</span></span><span class="meta ${s.up ? "" : "warn"}">${s.up ? `<span class="dot"></span> Up · ${s.ms} ms` : `<span class="dot" style="background:var(--red)"></span> Down${s.code ? " · HTTP " + s.code : ""}`}</span></li>`).join("");
 
+  // ---- LISTEN ----
+  const L = D.listen;
+  $("l-lead").textContent = !L ? "Working it out from what you've finished in Audiobookshelf (a minute or two after a restart)."
+    : "From the books you've finished: the next in each series, what's waiting on your shelf, and what listeners of the same books liked. A book you don't have opens its request page.";
+  const lHtml = shelvesHtml(L);
+  if (lHtml !== $("l-shelves").dataset.html) { $("l-shelves").innerHTML = lHtml; $("l-shelves").dataset.html = lHtml; }  // keep the scroll position between refreshes
   // ---- WATCH ----
   watchLists = D.watch || [];
   renderWatch();

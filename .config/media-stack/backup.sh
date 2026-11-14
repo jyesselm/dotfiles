@@ -100,6 +100,8 @@ cloud)
 remind)
     docker exec media-index python drives.py catalog "$MEDIA_ROOT" --name plex-media
     /usr/bin/python3 "$HERE/media-index/drives.py" status --notify
+    week="$(curl -s -m 120 localhost:8686/api/summary | /usr/bin/python3 -c 'import json, sys; print("; ".join(json.load(sys.stdin)["week"]))' || true)"
+    [[ -n "$week" ]] && osascript -e "display notification \"$week\" with title \"Media stack: this week\""
     newest="$(ls -1t "$LOCAL_DEST"/settings-*.tar.gz 2>/dev/null | head -1 || true)"
     if [[ -z "$newest" ]] || (($(date +%s) - $(stat -f %m "$newest") > 2 * 86400)); then
         osascript -e 'display notification "No settings backup in 2 days: see ~/backups/media-stack/backup.log" with title "Media stack backup"'

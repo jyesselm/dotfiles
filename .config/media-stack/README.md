@@ -23,7 +23,7 @@ node); every port below is open on it. Agents: read `CLAUDE.md` first for the ru
 | gluetun + qBittorrent | 8080 | Torrents, only through NordVPN (no tunnel, no internet); 3 downloads / 2 uploads / 5 active, slow ones don't hold a slot, announces to all trackers; full speed only 2–6 am (see *The disk*) |
 | Cleanuparr | 11011 | Removes downloads that stay stalled, blocklists the release and has Radarr/Sonarr search again |
 | PairDrop | 3010 | Send files between devices in the browser (open it on both; Taildrop also works) |
-| Dashboard | 3000 | Home page: recently added, now playing, requests, a Watch tab of what to stream elsewhere, downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
+| Dashboard | 3000 | Home page: recently added, now playing, requests, a Watch tab of what to stream elsewhere, a Listen tab of audiobooks to hear next, a Library tab (Media Index in a frame, `/?embed=1`, so the dashboard is the one place to navigate from), a search box in the top bar over what is on disk, what Seerr can request and Audible's catalog (`search` in `dashboard/server.py`), downloads, storage review, machines, backups, service health (`dashboard/`, own code). Mac stats and Tailscale state come from `python3 dashboard/host-stats.py install` (launchd, every minute) |
 | Uptime Kuma | 3001 | Up/down history and alerts |
 | Gamarr | 5001 | Games: searches Prowlarr, downloads via qBittorrent, hardlinks ROMs into `games/roms` for RomM |
 | RomM (+ MariaDB) | 8090 | Retro game library, play in the browser (`plex-media/games`) |
@@ -77,8 +77,8 @@ new chapter after that is fetched on the 12-hourly library update. Chapters land
 English publisher (Solo Leveling, for one); those come from Weeb Central instead.
 
 Kavita (`:5003`) is the reader (set up 2026-11-09, admin `jyesselm`, API key `KAVITA_API_KEY` in `.env`): one library
-*Manga* over `/manga/paged/Weeb Central (EN)` and `/manga/mangas/Weeb Central (EN)` (add `/manga/mangas/MangaDex (EN)`
-when something downloads from there), folder watching on so new Suwayomi chapters appear without a scan, metadata
+*Manga* over `/manga/paged/Weeb Central (EN)` and `/manga/mangas/Weeb Central (EN)` and `/manga/mangas/MangaDex (EN)` (a new source's
+folder has to be added here before Kavita shows its series), folder watching on so new Suwayomi chapters appear without a scan, metadata
 from Mangabaka, exclude pattern `**/mangas/*/Solo Leveling/**` so a re-cut series (below) is read from `paged/` and
 not twice. The default reading profile is paged left-to-right, automatic scaling, fit-split, tap or swipe to turn,
 menu auto-closes, black background, webtoon auto-detection off. Everything reads left to right like a western book, Japanese manga
@@ -109,21 +109,20 @@ that forced a cut every 1560 px did slice them; those copies are in `_trash/mang
 natural height, no padding: padding showed as a white block on the reader's black background. Copies live in
 `manga/paged/<Source>/<Series>/` with the originals' names; Kavita reads those, and `compose.yml` mounts an empty
 folder over each original strip folder in the Kavita container (`tmpfs:` under `kavita`) so it never sees the strips.
-Solo Leveling is cut (201 chapters, chapter 50 with the padding-free script, the rest with the padded one; left as
-is), and so is Solo Leveling: Ragnarok (10 chapters, 2026-11-10, page height 2037 because its strips are 940 wide:
-scale 1560 by width/720). New chapters need the script run on the new files, and a newly cut series needs its own
+Solo Leveling: Ragnarok is cut (10 chapters, 2026-11-10, page height 2037 because its strips are 940 wide:
+scale 1560 by width/720). Solo Leveling was too, until Joe kept only the volumes (2026-11-13: strips and cut copy
+in `_trash/manga`, dropped from Suwayomi's library; the volumes hold the whole main story, the side stories only in part). New chapters need the script run on the new files, and a newly cut series needs its own
 `tmpfs:` line and `docker-compose up -d kavita`. The library's exclude patterns (`**/mangas/*/<Series>/**`) are still
-set but don't hold: on 2026-11-11 both series flipped between strips and pages from one scan to the next. A cut series has no cover page, so Kavita shows
+set but don't hold: on 2026-11-11 both cut series flipped between strips and pages from one scan to the next. A cut series has no cover page, so Kavita shows
 its first frame; both got Suwayomi's cover instead (`:4567/api/v1/manga/<id>/thumbnail`, converted to PNG and sent as
 plain base64 in `url` to `POST /api/upload/series` with `lockCover: true`). Better still for a page reader: real print editions.
 `manga/volumes/<Series>/` holds digital volumes (`Solo Leveling v01-14 (Digital) (1r0n)`, the Yen Press re-layout of
-the webtoon into 900×1291 pages; `Chainsaw Man v01-05 (Digital) (1r0n)` as a reader test), hardlinked from
+the webtoon into 900×1291 pages; `Chainsaw Man v01-05 (Digital) (1r0n)` as a reader test; Saga, whose links are renamed so Kavita sorts them in
+reading order: Book 1–3 as `v01`–`v03`, then `v10`, `v11` and issues 067–070), hardlinked from
 `downloads/manga/`; Kavita reads that folder as its own **Volumes** library so they don't merge with the webtoon
 series of the same name. To add volumes: pick the `(Digital) (1r0n)` release in Prowlarr, add its magnet to
 qBittorrent with only the wanted files (`torrents/filePrio` priority 0 for the rest; force-start, the queue is
 usually full of stalled torrents), hardlink the CBZs in, then `POST /api/library/scan?libraryId=2&force=true`.
-For Panels, copy
-`manga/paged/Weeb Central (EN)/Solo Leveling` to the phone over File Sharing and import it.
 
 Turn auto-download on once (idempotent; the setting lives in Suwayomi's database):
 ```sh
@@ -169,6 +168,15 @@ from the watchlist) never deletes it.
 1080p HDTV/WEB/Blu-ray encodes (no remuxes, no 4K). For a 4K copy, request it in Seerr and open **Advanced** →
 Quality Profile → **Ultra-HD** (or switch the movie's profile in Radarr and search). Ultra-HD takes Bluray-2160p
 and never upgrades past it.
+
+What to hear next is the dashboard's Listen tab (`:3000/#listen`, `listen_next` in `dashboard/server.py`), built from
+the books finished in Audiobookshelf (`ABS_KEY`) and Audible's public catalog, no account needed: **Continue a series**
+(the book after the last one finished; from the shelf, else from Audible's list for that series), **On your shelf, not
+started** (unstarted books and first books of unstarted series, ranked by how many finished books' listeners also liked
+them, then by author) and **New to you** (the same "listeners also liked" picks that aren't owned, one per series). A card
+opens the book in Audiobookshelf, or its search in AudioBookRequest when it isn't owned. Rebuilt every six hours in the
+background (about a hundred catalog calls), so the tab is empty for a minute or two after the dashboard restarts. It only
+knows what Audiobookshelf marks finished; older Audible or Goodreads history isn't wired in yet.
 
 Shows and movies you'll stream on another service go on a Trakt list instead (trakt.tv → profile → Lists):
 **non-plex-watchlist** for yourself, **non-plex-watchlist-together** for things to watch together. Nothing
@@ -267,6 +275,9 @@ chapters every 12 h, Cleanuparr's queue cleaner runs every 30 min and Media Inde
   the old path through container recreates and `orb restart docker`. Only `orb stop && orb start` clears it (all
   containers down ~1 min; Plex is unaffected). To reset an app's data, move the files out and keep the folder.
 - **spotDL fails with YouTube 403/429:** rebuild it, `docker-compose build --pull spotdl && docker-compose up -d spotdl`.
+- **Audiobook requests find no release:** the public indexers file audiobooks under Books or Other, not Audiobook.
+  AudioBookRequest → Settings → Prowlarr → Categories must include `7000` and `8000` besides `3030` (set 2026-11-13).
+  It only searches when a book is requested, and its pick can be the wrong volume of a series: check the name.
 - **Private stack's downloads or Whisparr unreachable after an update here:** `gluetun` was recreated; see *Private stack*.
 - **Nightly shrink logs "ffprobe can't read":** Homebrew's `ffmpeg` was upgraded and lost its Removable Volumes
   permission; see *Media Index*.
@@ -294,13 +305,16 @@ first match by the same artist; a title with none shows a tinted tile with its n
 under `downloads/` (`item_for` in `index.py`); the line under the name shows what it is filed under (author · series). Each type
 shows what it is reviewed by: a book its length and bitrate (audio is probed like video), a manga series its chapters and
 how much is read in Kavita, a show the episodes Bazarr still has no subtitles for (`BAZARR_API_KEY`; flag chip
-"Missing subtitles", behind the "Filters" chip with the other flags), an anime its audio languages as Sonarr read
-them from the files (so "Japanese + English" has a dub). With a type picked and sorted by name, books are
+"Missing subtitles", behind the "Filters" chip with the other flags), a movie or show its audio languages as Radarr and Sonarr read
+them from the files, unless it is English only (so "Japanese + English" has a dub). The Storage tab's shelves include
+"Finished": titles watched all the way through, the best candidates for cold storage. With a type picked and sorted by name, books are
 shelved by author and manga by copy; the sort and posters-or-rows choice are remembered per type chip (books and manga
-start by name). "⚠ Needs attention" lists what looks broken whatever its decision: shows with episodes missing subtitles,
-manga Kavita doesn't have, and downloads still not in the library after 3 days. A title's sheet has two switches under "Where it
+start by name). "⚠ Needs attention" lists what looks broken whatever its decision: shows with episodes missing subtitles
+(and whether they also lack English audio), titles made in English that only have a foreign dub, manga Kavita doesn't have, a
+book pack kept in several ebook formats, and downloads still not in the library after 3 days with the reason (paused by the
+downloads cap at N%, what Sonarr/Radarr/Lidarr's queue says, "the library has its own copy", or that no app is importing it). A title's sheet has two switches under "Where it
 lives", ❄ Cold storage and 🧳 Travel stick (the travel one adds or removes it in the Plex Travel collection); the hover
-buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster for ❄ Cold / Keep (☀ Bring back on a cold one),
+buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster (long-press it on a touch screen) for ❄ Cold / Keep (☀ Bring back on a cold one; under Needs attention, the fix instead: Find subtitles asks Bazarr to search again, Delete this copy marks a download the library already has, and trashing a download also drops its torrent from qBittorrent),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
 or press **Select** to mark many at once. The **Storage** tab shows the disk by folder, the cold shelf (both drives as one
 pool, with where the next move goes), queued moves, and shelves of suggestions: never watched and big, not watched in
@@ -428,7 +442,8 @@ Everything except `downloads/` and `games/` is mirrored on three backup drives (
 | `plex-cold-1`, `plex-cold-2` (3 TB each; were `plex-offsite-1/-2`) | `other`, `anime`, `youtube`, `music`, `podcasts`, `audiobooks` (what can't be re-downloaded; also on Google Drive), plus cold storage: titles moved off `plex-media` with `drives.py cold` (not in Plex, Radarr or Sonarr; Media Index's Storage tab or `drives.py where` says which drive holds one). `plex-cold-2` also keeps a copy of `MaP2D_Data` (lab data; not on `plex-media`, so sync leaves it alone) and `_trash/Movies` (old pre-Radarr library, 1.3 TB) |
 
 Every Sunday at 10:00 `backup.sh remind` re-catalogs `plex-media` and shows a notification with how much each
-drive is behind. Plug the drive in and run `sync`; it mirrors deletions too and re-catalogs the drive:
+drive is behind, then a second one with the week in Media Index (titles added, shrunk and GB saved, stuck downloads, disk
+use: `week` in `/api/summary`, also the "This week" line on the Storage tab). Plug the drive in and run `sync`; it mirrors deletions too and re-catalogs the drive:
 
 ```sh
 python3 media-index/drives.py sync plex-tv-backups   # or plex-movie-backups / plex-misc-backups / plex-cold-1 / -2

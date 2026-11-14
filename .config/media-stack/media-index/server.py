@@ -25,6 +25,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, urlencode, urlparse
 
 import arr
+import downloads_cap
 import drives
 import index
 import shrink
@@ -209,7 +210,31 @@ def summary() -> dict:
         "scan": scan_state,
         "plex_backup": plex_backup,
         "plex_folders": plex_folders,
+        "week": week(items, disk.free / disk.total),
     }
+
+
+SHRUNK_RE = re.compile(r"shrunk (\d{4}-\d\d-\d\d): ([\d.]+) GB -> ([\d.]+) GB")
+STUCK_DAYS = 3  # the page's "Needs attention" uses the same age for a download that isn't in the library
+
+
+def week(items: list[dict], free: float) -> list[str]:
+    """The last seven days in a few lines, for the Storage tab and the Sunday notification (backup.sh remind)."""
+    now = time.time()
+    since = time.strftime("%Y-%m-%d", time.localtime(now - 7 * 86400))
+    live = [i for i in items if not i.get("trashed_at")]
+    shrunk = [m for i in live if (m := SHRUNK_RE.search(i.get("note") or "")) and m[1] >= since]
+    new = [i for i in live if i["category"] in drives.PLEX_SECTIONS and (i["mtime"] or 0) > now - 7 * 86400
+           and not SHRUNK_RE.search(i.get("note") or "")]  # fmt: skip
+    stuck = [i for i in live if i["category"] == "downloads" and i["freeable"] >= 0.05 * i["size"]
+             and i["mtime"] < now - STUCK_DAYS * 86400]  # fmt: skip
+    saved = sum(float(m[2]) - float(m[3]) for m in shrunk)
+    return [
+        f"{len(new)} movies and shows added or updated",
+        f"{len(shrunk)} titles shrunk, {saved:.0f} GB saved",
+        f"{len(stuck)} downloads stuck outside the library",
+        f"disk {1 - free:.0%} full",
+    ]
 
 
 SHRINK_QUEUE_SQL = """
@@ -302,6 +327,8 @@ def _trash_one(item: str) -> dict:
         return {"item": item, "ok": False, "message": "not found on disk"}
     size = sum(f.stat().st_size for f in src.rglob("*") if f.is_file()) if src.is_dir() else src.stat().st_size
     unmonitored = arr.unmonitor(src)
+    if item.startswith("downloads/"):
+        _drop_torrent(src.name)
     dest = TRASH / item
     dest.parent.mkdir(parents=True, exist_ok=True)
     src.rename(dest)
@@ -309,6 +336,17 @@ def _trash_one(item: str) -> dict:
         conn.execute("update decisions set trashed_at = ?, size = ? where item = ?", (time.time(), size, item))
         conn.commit()
     return {"item": item, "ok": True, "message": unmonitored or "moved"}
+
+
+def _drop_torrent(name: str) -> None:
+    """Take a download's torrent out of qBittorrent, files untouched, so it isn't left pointing at a moved folder."""
+    try:
+        torrents = downloads_cap.qb("torrents/info")
+        hashes = [t["hash"] for t in torrents if t["content_path"] and Path(t["content_path"]).name == name]
+        if hashes:
+            downloads_cap.qb("torrents/delete", {"hashes": "|".join(hashes), "deleteFiles": "false"}, post=True)
+    except OSError:
+        pass  # qBittorrent down: the folder still moves, the torrent shows as missing files there
 
 
 def restore(item: str) -> dict:
@@ -475,7 +513,8 @@ PLEX = os.environ.get("PLEX_URL", "http://localhost:32400")
 KAVITA = os.environ.get("KAVITA_URL", "http://localhost:5003")
 _kavita_cache: dict = {"at": 0.0, "series": {}}
 BAZARR = os.environ.get("BAZARR_URL", "http://localhost:6767")
-_bazarr_cache: dict = {"at": 0.0, "missing": {}}
+LIDARR = os.environ.get("LIDARR_URL", "http://localhost:8687") + "/api/v1"
+_bazarr_cache: dict = {"at": 0.0, "missing": {}, "ids": {}}
 TMDB_IMAGES = "https://image.tmdb.org/t/p/w342"
 ITUNES = "https://itunes.apple.com/search"
 COVER_NAMES = ("cover", "folder", "poster", "show", "front", "album")
@@ -504,11 +543,15 @@ def _plex_key(item: str) -> tuple[str, str]:
 def _arr_index() -> dict[str, tuple[str, str, int]]:
     """Library path (NFC) -> (API base, key, id) for everything Radarr and Sonarr manage; refreshed every 10 minutes."""
     if time.time() - _arr_paths["at"] > 600:
-        paths = {}
+        paths, audio, original = {}, {}, {}
         for base, kind, key in arr.ARR.values():
             for entry in arr.request(f"{base}/{kind}", key):
                 paths[nfc(entry["path"])] = (base, key, entry["id"])
-        _arr_paths.update(at=time.time(), paths=paths)
+                original[nfc(entry["path"])] = (entry.get("originalLanguage") or {}).get("name", "")
+                info = (entry.get("movieFile") or {}).get("mediaInfo")
+                if info:
+                    audio[nfc(entry["path"])] = _languages([info.get("audioLanguages", "")])
+        _arr_paths.update(at=time.time(), paths=paths, movie_audio=audio, original=original)
     return _arr_paths["paths"]
 
 
@@ -734,41 +777,108 @@ def _poster_from_kavita(item: str) -> bytes | None:
 
 
 def _subs_missing() -> dict[str, int]:
-    """Episodes Bazarr still wants subtitles for, by show folder (NFC path), refreshed every 10 minutes; {} without
+    """Episodes (or a movie's languages) Bazarr still wants subtitles for, by title folder (NFC path), refreshed
+    every 10 minutes; {} without
     BAZARR_API_KEY or when it's down."""
     key = shrink.read_env().get("BAZARR_API_KEY", "")
     if key and time.time() - _bazarr_cache["at"] > 600:
-        raw = _fetch(f"{BAZARR}/api/series?start=0&length=-1", {"X-API-KEY": key})
-        shows = json.loads(raw).get("data", []) if raw else []
-        _bazarr_cache.update(at=time.time(), missing={nfc(s["path"]): s.get("episodeMissingCount", 0) for s in shows})
+        missing, ids = {}, {}
+        for kind in ("series", "movies"):
+            raw = _fetch(f"{BAZARR}/api/{kind}?start=0&length=-1", {"X-API-KEY": key})
+            for row in json.loads(raw).get("data", []) if raw else []:
+                if kind == "series":
+                    missing[nfc(row["path"])] = row.get("episodeMissingCount", 0)
+                    ids[nfc(row["path"])] = f"series?seriesid={row['sonarrSeriesId']}"
+                else:  # a movie's path is its file
+                    folder = nfc(str(Path(row["path"]).parent))
+                    missing[folder] = len(row.get("missing_subtitles") or [])
+                    ids[folder] = f"movies?radarrid={row['radarrId']}"
+        _bazarr_cache.update(at=time.time(), missing=missing, ids=ids)
     return _bazarr_cache["missing"]
+
+
+def find_subtitles(item: str) -> dict:
+    """Have Bazarr search again for the subtitles a title is missing (the Needs attention button)."""
+    _subs_missing()
+    title = _bazarr_cache["ids"].get(nfc(str(index.MEDIA_ROOT / item)))
+    if not title:
+        return {"ok": False, "message": "Bazarr doesn't know this title"}
+    key = shrink.read_env().get("BAZARR_API_KEY", "")
+    url = f"{BAZARR}/api/{title}&action=search-missing"
+    request = urllib.request.Request(url, method="PATCH", headers={"X-API-KEY": key})
+    try:
+        urllib.request.urlopen(request, timeout=30).close()
+    except OSError as err:
+        return {"ok": False, "message": f"Bazarr: {err}"}
+    return {"ok": True, "message": "Bazarr is searching. What it finds shows here within ten minutes."}
 
 
 _audio_cache: dict = {"at": 0.0, "languages": {}}
 
 
+def _languages(tracks: object) -> list[str]:
+    """The distinct languages in Radarr/Sonarr audioLanguages strings such as "jpn/eng"."""
+    return sorted({lang for track in tracks for lang in track.split("/") if lang})
+
+
 def _audio_languages() -> dict[str, list[str]]:
-    """Audio languages of each anime's episode files as Sonarr read them ("jpn", "eng"), by show folder (NFC path),
-    refreshed hourly; what's known so far when Sonarr is down."""
+    """Audio languages of each movie and show's files as Radarr/Sonarr read them ("jpn", "eng"), by title folder (NFC
+    path). Shows take one Sonarr call each, so they refresh hourly in the background: what's known so far meanwhile."""
     if time.time() - _audio_cache["at"] > 3600:
-        languages = {}
-        try:
-            for path, (base, key, series_id) in _arr_index().items():
-                if "/anime/" not in path:
-                    continue
+        _audio_cache["at"] = time.time()
+        threading.Thread(target=_refresh_show_audio, daemon=True).start()
+    return {**_arr_paths.get("movie_audio", {}), **_audio_cache["languages"]}
+
+
+def _refresh_show_audio() -> None:
+    base, _, key = arr.ARR["sonarr"]
+    languages = {}
+    try:
+        for path, (app, _, series_id) in _arr_index().items():
+            if app == base:
                 files = arr.request(f"{base}/episodefile?seriesId={series_id}", key)
-                tracks = ((f.get("mediaInfo") or {}).get("audioLanguages", "") for f in files)
-                languages[path] = sorted({lang for track in tracks for lang in track.split("/") if lang})
-        except OSError:
-            return _audio_cache["languages"]
-        _audio_cache.update(at=time.time(), languages=languages)
-    return _audio_cache["languages"]
+                languages[path] = _languages((f.get("mediaInfo") or {}).get("audioLanguages", "") for f in files)
+    except OSError:
+        _audio_cache["at"] = 0.0  # Sonarr is down: try again on the next request
+        return
+    _audio_cache["languages"] = languages
+
+
+_download_cache: dict = {"at": 0.0, "why": {}}
+
+
+def _download_reasons() -> dict[str, str]:
+    """Why a download isn't in the library yet, by its path (NFC): qBittorrent's progress while unfinished, else what
+    Sonarr, Radarr or Lidarr's queue says about importing it; refreshed every 10 minutes."""
+    if time.time() - _download_cache["at"] > 600:
+        why = {}
+        queues = [(base, key) for base, _, key in arr.ARR.values()]
+        queues.append((LIDARR, shrink.read_env().get("HOMEPAGE_VAR_LIDARR_KEY", "")))
+        try:
+            for base, key in queues:
+                for row in arr.request(f"{base}/queue?pageSize=500", key)["records"] if key else []:
+                    notes = [m for status in row.get("statusMessages", []) for m in status.get("messages", [])]
+                    if notes and row.get("outputPath"):  # "01. Song.mp3: Album release not requested; ..."
+                        why[nfc(row["outputPath"])] = re.split(r"; | \[", re.sub(r"^.*?\.\w{2,4}: ", "", notes[0]))[0]
+            for torrent in downloads_cap.qb("torrents/info"):
+                if torrent["progress"] < 1 and torrent["content_path"]:
+                    capped = downloads_cap.TAG in torrent["tags"]
+                    state = "paused by the downloads cap" if capped else (
+                        "paused" if torrent["state"] in downloads_cap.STOPPED else "downloading")
+                    why[nfc(torrent["content_path"])] = f"{state} at {torrent['progress']:.0%}"
+        except (OSError, KeyError):
+            return _download_cache["why"]
+        _download_cache.update(at=time.time(), why=why)
+    return _download_cache["why"]
 
 
 def _add_review_details(items: list[dict]) -> None:
     """What each type is reviewed by, beyond size: a manga series' pages read in Kavita, a show's episodes without
-    the subtitles Bazarr wants, an anime's audio languages."""
-    series, missing, audio = _kavita_series(), _subs_missing(), _audio_languages()
+    the subtitles Bazarr wants, a movie or show's audio languages and the language it was made in, why a download
+    isn't in the library."""
+    series, missing, audio, why = _kavita_series(), _subs_missing(), _audio_languages(), _download_reasons()
+    library = {index.title_key(it["item"]) for it in items if it["category"] in drives.PLEX_SECTIONS}
+    original = _arr_paths.get("original", {})
     for it in items:
         if it["category"] == "manga":
             row = series.get(index.title_key(it["item"].rsplit("/", 1)[-1]), {})
@@ -776,6 +886,10 @@ def _add_review_details(items: list[dict]) -> None:
         else:
             path = nfc(str(index.MEDIA_ROOT / it["item"]))
             it["subs_missing"], it["audio"] = missing.get(path, 0), audio.get(path, [])
+            it["original"] = original.get(path, "")
+        if it["category"] == "downloads":
+            title = index.title_key(RELEASE_RE.match(it["item"].rsplit("/", 1)[-1])["title"])
+            it["why"] = why.get(path) or ("the library has its own copy" if title in library else "")
 
 
 def _poster_from_tmdb(item: str) -> bytes | None:
@@ -943,6 +1057,9 @@ def scan_forever() -> None:
         time.sleep(RESCAN_EVERY_S)
 
 
+ITEM_ACTIONS = {"/api/restore": restore, "/api/subtitles": find_subtitles}
+
+
 class Handler(BaseHTTPRequestHandler):
     """JSON API plus the single static page."""
 
@@ -986,8 +1103,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": True})
         elif path == "/api/trash":
             self._json(move_to_trash())
-        elif path == "/api/restore":
-            self._json(restore(body["item"]))
+        elif path in ITEM_ACTIONS:
+            self._json(ITEM_ACTIONS[path](body["item"]))
         elif path == "/api/swap":
             self._json(swap(body["item"], body["release"]))
         elif path == "/api/shrink-finish":

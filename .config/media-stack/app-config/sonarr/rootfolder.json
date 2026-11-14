@@ -2,7 +2,7 @@
   {
     "path": "/Volumes/plex-media/tv",
     "accessible": true,
-    "freeSpace": 3565387677696,
+    "freeSpace": 3538559205376,
     "unmappedFolders": [
       {
         "name": "Supernatural",
@@ -15,7 +15,7 @@
   {
     "path": "/Volumes/plex-media/anime",
     "accessible": true,
-    "freeSpace": 3565387677696,
+    "freeSpace": 3538559008768,
     "unmappedFolders": [],
     "id": 4
   }

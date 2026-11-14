@@ -231,7 +231,6 @@ services:
     # Webtoon strips that have a re-cut copy in manga/paged/: an empty folder is mounted over each so Kavita only
     # sees the paged copy (its exclude patterns don't hold; the series flipped between the two on every scan).
     tmpfs:
-      - "/manga/mangas/Weeb Central (EN)/Solo Leveling:size=1m"
       - "/manga/mangas/Weeb Central (EN)/Solo Leveling_ Ragnarok:size=1m"
 
   # Retro game library with in-browser play (EmulatorJS) and per-user saves. ROMs live in
@@ -336,6 +335,8 @@ services:
       KAVITA_URL: http://kavita:5000
       BAZARR_API_KEY: ${BAZARR_API_KEY}  # episodes still missing subtitles
       BAZARR_URL: http://bazarr:6767
+      HOMEPAGE_VAR_LIDARR_KEY: ${HOMEPAGE_VAR_LIDARR_KEY}  # why a music download wasn't imported
+      LIDARR_URL: http://lidarr:8686
       DRIVE_CATALOG_DIR: /data/drives  # = ~/.local/share/media-index/drives, where drives.py keeps manifests
       # Host scripts (drives.py, downloads_cap.py) reach the services at localhost; in here they use these.
       MEDIA_INDEX_API: http://media-index:8686/api
@@ -384,6 +385,7 @@ services:
       LIDARR_KEY: ${HOMEPAGE_VAR_LIDARR_KEY}
       PROWLARR_KEY: ${HOMEPAGE_VAR_PROWLARR_KEY}
       SEERR_KEY: ${HOMEPAGE_VAR_SEERR_KEY}
+      ABS_KEY: ${HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}  # Listen tab: what was finished
     volumes:
       - ${DATA_ROOT}/dashboard:/host:ro
       - ${HOME}/backups/media-stack:/backups:ro

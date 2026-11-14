@@ -45,6 +45,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 button:disabled { opacity: .45; cursor: default; }
 input, select { font: inherit; color: var(--text); }
 .wrap { max-width: 1280px; margin: 0 auto; padding: 16px 16px 140px; }
+/* inside the dashboard (?embed=1), which has its own name and navigation */
+.embed .brand i, .embed .brand b { display: none; } .embed .wrap { padding-top: 8px; } .embed .bar { top: 4px; }
 .num { font-variant-numeric: tabular-nums; }
 code { font-size: 12px; }
 
@@ -53,15 +55,16 @@ code { font-size: 12px; }
 .brand { font-weight: 800; display: flex; align-items: center; gap: 8px; margin-right: 4px; }
 .brand i { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, var(--accent), #ff9f0a); display: inline-block; }
 .brand span { color: var(--muted); font-weight: 600; font-size: 12.5px; }
-.seg { display: inline-flex; padding: 3px; background: var(--bg); border-radius: 10px; gap: 2px; }
+.seg { display: inline-flex; padding: 3px; background: var(--bg); border-radius: 10px; gap: 2px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .seg button { padding: 6px 11px; border-radius: 8px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.seg button b { font-weight: 600; opacity: .6; margin-left: 5px; font-size: 12px; }
 .seg button.on { background: var(--surface-2); color: var(--text); box-shadow: 0 1px 2px var(--shadow); }
 .seg button.on.cold { color: var(--cold); }
 .seg button.on.warm { color: var(--accent); }
 .seg button.on.travel { color: var(--travel); }
 .search { flex: 1; min-width: 150px; display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--bg); border-radius: 10px; color: var(--muted); }
 .search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; }
-select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-radius: 10px; background: var(--bg); border: 0; }
+select.sort { min-width: 0; color: var(--text-2); font-weight: 600; padding: 7px 10px; border-radius: 10px; background: var(--bg); border: 0; }
 .btn { padding: 7px 13px; border-radius: 10px; background: var(--surface-2); font-weight: 600; border: 1px solid var(--border); white-space: nowrap; }
 .btn:hover { border-color: var(--muted); }
 .btn.on, .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
@@ -72,17 +75,17 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .btn.keep { color: var(--keep); } .btn.keep.on { background: var(--keep-bg); color: var(--keep); }
 .btn.shrink.on { background: var(--shrink-bg); color: var(--shrink); }
 .btn.delete.on { background: var(--delete-bg); color: var(--delete); }
-.pill { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.pill { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--keep); }
 .dot.busy { background: var(--warn); animation: pulse 1.2s infinite; }
 @keyframes pulse { 50% { opacity: .35; } }
 
 /* filter rows */
-.strip { display: flex; gap: 8px 18px; flex-wrap: wrap; align-items: center; padding: 14px 4px 4px; color: var(--text-2); }
-.strip b { color: var(--text); font-size: 16px; font-weight: 800; }
-.strip .sp { flex: 1; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 4px 2px; }
-.chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; font-weight: 600; }
+/* one line each, scrolled sideways when it does not fit, so the posters start near the top */
+.chips { display: flex; gap: 6px; padding: 8px 28px 2px 4px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.chips::-webkit-scrollbar { display: none; }
+.chips[hidden] { display: none; }
+.chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; flex: none; }
 .chip b { font-weight: 600; opacity: .6; margin-left: 4px; }
 .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
 .chip.keep.on { background: var(--keep-bg); color: var(--keep); border-color: transparent; }
@@ -90,11 +93,12 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .chip.delete.on { background: var(--delete-bg); color: var(--delete); border-color: transparent; }
 .chip.trashed.on { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
 .hint { color: var(--muted); font-size: 12.5px; }
-.count { margin-left: auto; color: var(--muted); font-size: 12.5px; }
+.results { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 4px 0; }
+.count { margin-right: auto; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
 
 /* poster wall */
-.wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)); gap: 22px 16px; padding: 14px 4px; }
-.card { position: relative; text-align: left; border-radius: 12px; cursor: pointer; }
+.wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 18px 12px; padding: 14px 4px; }
+.card { position: relative; text-align: left; border-radius: 12px; cursor: pointer; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .card .art { position: relative; aspect-ratio: 2 / 3; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 10px 24px var(--shadow); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; color: rgba(255,255,255,.9); text-shadow: 0 1px 2px rgba(0,0,0,.45); background: linear-gradient(165deg, hsl(var(--h, 220) 36% 36%), hsl(calc(var(--h, 220) + 40) 42% 14%)); }
 /* placeholder behind the poster: a tinted tile with the type's glyph and the title, seen only when no source has art */
 .ph { position: relative; display: grid; gap: 8px; justify-items: center; }
@@ -116,10 +120,16 @@ select.sort { color: var(--text-2); font-weight: 600; padding: 7px 10px; border-
 .card .res { position: absolute; top: 8px; right: 8px; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 10.5px; font-weight: 800; background: rgba(12,14,19,.72); color: #fff; letter-spacing: .04em; }
 .card .size { position: absolute; left: 8px; bottom: 8px; z-index: 1; padding: 3px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; background: rgba(12,14,19,.72); color: #fff; }
 .card .t { margin-top: 9px; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card .s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .s { font-size: 12px; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .card .s .k { color: var(--keep); font-weight: 700; } .card .s .x { color: var(--delete); font-weight: 700; } .card .s .z { color: var(--shrink); font-weight: 700; }
 .card .quick { position: absolute; left: 8px; right: 8px; bottom: 44px; z-index: 2; display: flex; gap: 6px; opacity: 0; transform: translateY(6px); transition: all .2s; }
-.card:hover .quick, .card:focus-within .quick { opacity: 1; transform: none; }
+.card:hover .quick, .card:focus-within .quick, .card.press .quick { opacity: 1; transform: none; }
+/* touch: no hover, so a long press brings the same buttons up, stacked and finger-sized */
+@media (hover: none) {
+  .card:not(.press) .quick { opacity: 0; pointer-events: none; }
+  .card.press .quick { flex-direction: column; bottom: 8px; } .card.press .quick button { flex: none; padding: 10px 0; font-size: 13px; }
+  .card.press .art::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.45); border-radius: inherit; }
+}
 .quick button { flex: 1; padding: 7px 0; border-radius: 9px; font-weight: 800; font-size: 12px; background: rgba(12,14,19,.82); color: #fff; backdrop-filter: blur(6px); white-space: nowrap; }
 .quick button.cold { background: var(--cold); color: var(--cold-fg); }
 .quick button.warm { background: var(--accent); color: var(--accent-fg); }
@@ -239,43 +249,27 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 .opt .t { overflow-wrap: anywhere; font-size: 13px; } .opt .m { color: var(--muted); font-size: 12px; }
 .opt .z { font-weight: 700; text-align: right; } .opt .z small { display: block; color: var(--keep); font-weight: 500; }
 
-@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } #f-state, .search { order: 1; } }
 @media (max-width: 640px) {
   .body { grid-template-columns: 1fr; } .body .poster { width: 130px; } .body h1 { margin-top: 0; }
-  .wall { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 16px 10px; }
+  .wall { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 8px; }
   .bar { position: static; }
 }
+@media (hover: none) { .keys { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="bar">
-    <div class="brand"><i></i>Media Index <span id="diskline"></span></div>
+    <div class="brand"><i></i><b>Media Index</b> <span id="diskline"></span></div>
     <div class="seg" id="tabs"><button class="on" data-tab="library">Library</button><button data-tab="storage">Storage</button></div>
-    <div class="seg" id="f-state"><button class="on" data-v="">All</button><button class="warm" data-v="active">☀ Active</button><button class="cold" data-v="cold">❄ Cold</button><button class="travel" data-v="travel">🧳 Travel</button></div>
+    <div class="seg" id="f-state"><button class="on" data-v="">All</button><button class="warm" data-v="active">☀ Active<b id="gb-active"></b></button><button class="cold" data-v="cold">❄ Cold<b id="gb-cold"></b></button><button class="travel" data-v="travel">🧳 Travel</button></div>
     <label class="search">⌕ <input id="q" placeholder="Search titles  ( / )" aria-label="Search titles"></label>
-    <select class="sort" id="sort" aria-label="Sort">
-      <option value="size">Largest first</option>
-      <option value="stale">Longest unwatched</option>
-      <option value="plays">Most watched</option>
-      <option value="shrink">Most saved by re-encoding</option>
-      <option value="new">Recently added</option>
-      <option value="name">Name (books by author)</option>
-    </select>
-    <button class="btn" id="viewbtn" title="Posters or rows">☰</button>
-    <button class="btn" id="selbtn">Select</button>
-    <span class="pill" id="scan"><span class="dot"></span>…</span>
-    <button class="btn ghost" id="rescan">Rescan</button>
+    <button class="pill" id="scan" title="Scan the disk again"><span class="dot"></span>…</button>
   </div>
 
   <section id="tab-library">
-    <div class="strip">
-      <span><b class="num" id="n-active">–</b> active · <b class="num" id="gb-active">–</b> on plex-media</span>
-      <span><b class="num" id="n-cold">–</b> cold · <b class="num" id="gb-cold">–</b> on the shelf</span>
-      <span class="sp"></span>
-      <span class="hint">Hover a poster for ❄ / ☀ and Keep · click it for details</span>
-    </div>
     <div class="chips" id="types" aria-label="Media type"></div>
     <div class="chips" id="decisions" aria-label="Decision"></div>
     <div class="chips" id="flags" aria-label="More filters" hidden>
@@ -285,6 +279,19 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
       <button class="chip" data-flag="old">Old format</button>
       <button class="chip" data-flag="big">Oversized movies</button>
       <button class="chip" data-flag="nosubs">Missing subtitles</button>
+    </div>
+    <div class="results">
+      <span class="count" id="count"></span>
+      <select class="sort" id="sort" aria-label="Sort">
+        <option value="size">Largest first</option>
+        <option value="stale">Longest unwatched</option>
+        <option value="plays">Most watched</option>
+        <option value="shrink">Most saved by re-encoding</option>
+        <option value="new">Recently added</option>
+        <option value="name">Name (books by author)</option>
+      </select>
+      <button class="btn" id="viewbtn" title="Posters or rows">☰</button>
+      <button class="btn" id="selbtn">Select</button>
     </div>
     <div id="list"><div class="empty">Loading…</div></div>
     <div class="keys"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd> keep · <kbd>2</kbd> shrink · <kbd>3</kbd> delete · <kbd>0</kbd> clear · <kbd>c</kbd> cold / bring back · <kbd>t</kbd> travel on/off · <kbd>p</kbd> play song · <kbd>Enter</kbd> details</div>
@@ -344,6 +351,11 @@ const COLD = ["plex-cold-1", "plex-cold-2"];
 const TRAVEL = "plex-travel";
 const VIDEO = ["movies", "tv", "anime"];
 const SHELF_MIN_BYTES = 3e9, STALE_S = 3 * 365 * 86400;
+// Embedded in the dashboard: no brand, and the dashboard's light/dark choice (sent as a message) over the system's.
+const page = new URLSearchParams(location.search);  // ?q= opens on a search, as the dashboard's search results do
+if (page.get("embed")) document.documentElement.classList.add("embed");
+const setTheme = (t) => { if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; };
+addEventListener("message", (e) => setTheme(e.data?.theme));
 const state = { items: [], summary: null, drives: [], moves: {}, tab: "library", where: "", view: "undecided", category: null, flags: new Set(), q: "", sort: "size",
   shown: PAGE, sel: 0, open: null, picking: false, picked: new Set(), grid: true };
 // Sort and posters-or-rows are remembered per type chip ("" is Everything); books and manga start shelved by name.
@@ -381,7 +393,18 @@ const isSong = (it) => it.category === "music" && it.audio_files > 0;
 const isVideo = (it) => it.video_files > 0 && VIDEO.includes(it.category);
 const status = (it) => it.trashed_at ? "trashed" : it.decision || "undecided";
 const coldDrive = (it) => COLD.find((d) => d in (it.drives || {}));
-const titleOf = (it) => { const last = it.item.split("/").pop(); return isSong(it) ? last.replace(/\.[^.]+$/, "") : last; };
+const rawName = (it) => it.item.split("/").pop();
+// A download's folder is a release name ("Steins.Gate.S01.CUSTOM.MULTi.1080p…"): show the title and season or year.
+const RELEASE_END = /[\s(\[.-]*(?:\b(?:19|20)\d\d\b|\bS\d\d|\bSeason \d|\b\d{3,4}p\b|\b(?:MULTi|REPACK|REMASTERED|BluRay|WEB|WEBRip|Digital|Mp3|Uncut|DC|Extended)\b|\[|\()/i;
+function cleanRelease(name) {
+  let n = name.replace(/\.(mkv|mp4|avi)$/i, "").replace(/^(?:From )?\[[^\]]*\]\s*(?:-\s*)?/, "").replace(/^www\.\S+\s+-\s+/i, "");
+  if (!n.includes(" ")) n = n.replace(/[._]/g, " ");
+  const ep = n.match(/\bS(\d\d)(?:E(\d\d))?\b/i), year = n.match(/\b(?:19|20)\d\d\b/), cut = n.slice(1).search(RELEASE_END);
+  let title = (cut < 0 ? n : n.slice(0, cut + 1)).trim();
+  if (title === title.toLowerCase()) title = title.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  return title + (ep ? (ep[2] ? ` · S${ep[1]}E${ep[2]}` : ` · Season ${+ep[1]}`) : year ? ` (${year[0]})` : "");
+}
+const titleOf = (it) => it.category === "downloads" ? cleanRelease(rawName(it)) : isSong(it) ? rawName(it).replace(/\.[^.]+$/, "") : rawName(it);
 // What a title is filed under: artist · album for a song, author · series for a book, source for a manga series.
 const groupOf = (it) => it.item.split("/").slice(1, -1).join(" · ");
 const posterUrl = (it) => "/api/poster?item=" + encodeURIComponent(it.item);
@@ -393,21 +416,37 @@ const readPct = (it) => it.pages ? Math.round(100 * it.pages_read / it.pages) : 
 const imported = (it) => it.category === "downloads" && it.freeable < 0.05 * it.size && !it.trashed_at;  // stray .nfo and samples aside
 // Why a title needs a look, "" when it doesn't: the "Needs attention" view lists these whatever their decision.
 const STUCK_DAYS = 3;
+// A book pack unpacked as one folder per ebook format: the sibling folders that are named after a format.
+const FORMATS = ["azw3", "epub", "mobi", "pdf"];
+const folderOf = (it) => it.item.slice(0, it.item.lastIndexOf("/") + 1);
+const formatCopies = (it) => !FORMATS.includes(it.item.slice(folderOf(it).length)) ? [] :
+  FORMATS.filter((f) => state.items.some((o) => o.item === folderOf(it) + f && !o.trashed_at));
+const noEnglish = (it) => it.audio?.length && !it.audio.includes("eng") && !it.audio.includes("und");
 function attention(it) {
   if (it.cold || it.trashed_at) return "";
-  if (it.subs_missing) return `${it.subs_missing} without subs`;
+  if (noEnglish(it) && it.original === "English") return `made in English, but only ${audioNames(it)} audio`;
+  if (it.subs_missing) return `${it.subs_missing} without subs` + (noEnglish(it) ? ", no English audio" : "");
   if (it.category === "manga" && readPct(it) === null) return "not in Kavita";
-  if (it.category === "downloads" && !imported(it) && Date.now() / 1000 - it.mtime > STUCK_DAYS * 86400) return `not in the library after ${ago(it.mtime).replace(" ago", "")}`;
+  if (formatCopies(it).length > 1) return `the same books in ${formatCopies(it).length} formats (${formatCopies(it).join(", ")})`;
+  if (it.category === "downloads" && !imported(it) && Date.now() / 1000 - it.mtime > STUCK_DAYS * 86400) return `not in the library after ${ago(it.mtime).replace(" ago", "")}: ${it.why || "no app is importing it"}`;
   return "";
 }
-const AUDIO_NAMES = { jpn: "Japanese", eng: "English", fre: "French", ita: "Italian", kor: "Korean", und: "unlabelled" };
-function details(it) {
+// The one-tap fix for what attention() reports, where there is one.
+function fixFor(it) {
+  if (it.category === "downloads" && it.why === "the library has its own copy") return `<button class="${it.decision === "delete" ? "on" : ""}" data-a="delete">✕ ${it.decision === "delete" ? "Marked to delete" : "Delete this copy"}</button>`;
+  if (it.subs_missing) return `<button data-a="subs">Find subtitles</button>`;
+  return "";
+}
+const AUDIO_NAMES = { jpn: "Japanese", eng: "English", fre: "French", ita: "Italian", kor: "Korean", ger: "German", spa: "Spanish",
+  chi: "Chinese", rus: "Russian", tur: "Turkish", ice: "Icelandic", swe: "Swedish", dan: "Danish", nor: "Norwegian", und: "unlabelled" };
+const audioNames = (it) => it.audio.map((l) => AUDIO_NAMES[l] || l).join(" + ");
+function details(it, short) {
   if (state.view === "attention") return [attention(it)];
   if (it.category === "downloads") return [imported(it) ? "in the library" : "not in the library yet"];
   if (it.category === "manga") return [`${it.files} ch`, readPct(it) === null ? "not in Kavita" : readPct(it) + "% read"];
   const bits = [];
   if (it.category === "audiobooks" && kbps(it)) bits.push(hours(it.duration_s), kbps(it) + " kbps");
-  if (it.audio?.length) bits.push(it.audio.map((l) => AUDIO_NAMES[l] || l).join(" + ") + " audio");
+  if (it.audio?.length && it.audio.join() !== "eng") bits.push(short ? it.audio.map((l) => l === "und" ? "?" : l.toUpperCase()).join("+") : audioNames(it) + " audio");
   if (it.subs_missing) bits.push(`${it.subs_missing} without subs`);
   return bits;
 }
@@ -451,8 +490,9 @@ function renderHeader() {
   $("diskline").textContent = `${gb(d.free)} free of ${gb(d.total)}`;
   renderScan(s.scan, s.plex_backup);
   const active = state.items.filter((it) => !it.cold && !it.trashed_at), cold = state.items.filter((it) => it.cold);
-  $("n-active").textContent = active.length.toLocaleString(); $("gb-active").textContent = gb(active.reduce((a, it) => a + it.size, 0));
-  $("n-cold").textContent = cold.length.toLocaleString(); $("gb-cold").textContent = gb(cold.reduce((a, it) => a + it.size, 0));
+  for (const [id, L] of [["gb-active", active], ["gb-cold", cold]]) {
+    $(id).textContent = gb(L.reduce((a, it) => a + it.size, 0)); $(id).parentNode.title = `${L.length.toLocaleString()} titles`;
+  }
 
   $("types").innerHTML = `<button class="chip ${state.category ? "" : "on"}" data-cat="">Everything</button>` +
     s.categories.map(([name, size]) => `<button class="chip ${state.category === name ? "on" : ""}" data-cat="${esc(name)}">${esc(typeLabel(name))}<b>${gb(size)}</b></button>`).join("");
@@ -467,10 +507,10 @@ function renderHeader() {
     ["trashed", "🗑 In _trash", `${t.trashed.items} · ${gb(s.trash)}`],
   ];
   chips.unshift(["attention", "⚠ Needs attention", `${state.items.filter(attention).length}`]);
-  const open = !$("flags").hidden || state.flags.size > 0, count = $("count")?.textContent || "";
+  const open = !$("flags").hidden || state.flags.size > 0;
   $("flags").hidden = !open;
   $("decisions").innerHTML = chips.map(([key, label, n]) => `<button class="chip ${key} ${state.view === key ? "on" : ""}" data-view="${key}">${label}<b>${n}</b></button>`).join("") +
-    `<button class="chip ${open ? "on" : ""}" id="morefilters">Filters${state.flags.size ? `<b>${state.flags.size}</b>` : ""} ${open ? "▴" : "▾"}</button><span class="count" id="count">${esc(count)}</span>`;
+    `<button class="chip ${open ? "on" : ""}" id="morefilters">Filters${state.flags.size ? `<b>${state.flags.size}</b>` : ""} ${open ? "▴" : "▾"}</button>`;
   for (const el of $("decisions").querySelectorAll("[data-view]")) el.onclick = () => { state.view = state.view === el.dataset.view ? null : el.dataset.view; reset(); renderHeader(); };
   $("morefilters").onclick = () => { $("flags").hidden = open; if (open) { state.flags.clear(); for (const c of $("flags").children) c.classList.remove("on"); } renderHeader(); reset(); };
 
@@ -484,7 +524,7 @@ function renderScan(scan, backup) {
   if (scan.phase === "walking") text = `Scanning… ${(scan.files || 0).toLocaleString()} files`;
   if (scan.phase === "probing") text = `Reading video info… ${scan.done.toLocaleString()} / ${scan.total.toLocaleString()}`;
   if (scan.phase === "done") text = `Scanned ${ago(scan.finished)}` + (backup ? "" : " · no Plex history");
-  $("scan").innerHTML = `<span class="dot ${busy ? "busy" : ""}"></span>${text}`;
+  $("scan").innerHTML = `<span class="dot ${busy ? "busy" : ""}"></span>${text}${busy ? "" : " ↻"}`;
   clearTimeout(renderScan.timer);
   if (busy) renderScan.timer = setTimeout(load, 5000);
 }
@@ -563,6 +603,7 @@ function quickHtml(it) {
   if (m && m.status === "running") return "";
   const queued = m && m.status !== "done";
   if (it.trashed_at) return `<button data-a="restore">↺ Restore</button>`;
+  if (state.view === "attention" && fixFor(it)) return fixFor(it);
   if (it.cold) return queued ? `<button data-a="unmark">⏳ Unmark</button>` : `<button class="warm" data-a="back">☀ Bring back</button>`;
   const keep = `<button data-a="keep">${it.decision === "keep" ? "✓ Kept" : "Keep"}</button>`;
   if (isSong(it)) return `<button data-a="play">${playing(it) ? "⏸ Pause" : "▶ Play"}</button>${keep}`;
@@ -572,12 +613,12 @@ function quickHtml(it) {
 }
 function cardHtml(it, i) {
   const [cat] = it.item.split("/"), d = status(it), label = titleOf(it);
-  const sub = [...details(it).map(esc), groupOf(it) || typeLabel(cat).replace(/^\S+ /, ""), watchedText(it), ...statusBits(it)].filter(Boolean);
+  const sub = [...details(it, true).map(esc), groupOf(it) || (state.category ? "" : typeLabel(cat).replace(/^\S+ /, "")), watchedText(it), ...statusBits(it)].filter(Boolean);
   return `<div class="card ${it.cold ? "cold" : ""} d-${d} ${i === state.sel ? "sel" : ""} ${state.picked.has(it.item) ? "picked" : ""}" data-i="${i}" tabindex="0">
     <div class="art${sq(it)}" style="--h:${hue(label)}">${placeholder(it, label)}${posterImg(it, true)}
       ${ribbon(it)}${cornerTag(it) && !it.cold ? `<span class="res">${cornerTag(it)}</span>` : ""}<span class="size num">${gb(it.size)}</span><span class="check">✓</span>
       <div class="quick">${quickHtml(it)}</div></div>
-    <div class="t" title="${esc(label)}">${esc(label)}</div><div class="s">${sub.join(" · ")}</div></div>`;
+    <div class="t" title="${esc(rawName(it))}">${esc(label)}</div><div class="s">${sub.join(" · ")}</div></div>`;
 }
 function rowHtml(it, i) {
   const [cat] = it.item.split("/"), d = status(it);
@@ -607,15 +648,22 @@ function rowHtml(it, i) {
 function bind(root, shown) {
   for (const el of root.querySelectorAll(".card, .row")) {
     const it = shown[+el.dataset.i];
+    el.addEventListener("touchstart", () => { clearTimeout(press.timer); press.timer = setTimeout(() => { unpress(); el.classList.add("press"); press.el = el; }, 450); }, { passive: true });
+    for (const ev of ["touchend", "touchmove", "touchcancel"]) el.addEventListener(ev, () => clearTimeout(press.timer), { passive: true });
     el.onclick = (e) => {
       const b = e.target.closest("[data-a]");
       if (b) { e.stopPropagation(); act(it, b.dataset.a); return; }
+      if (el === press.el) return unpress();  // the tap that ends a long press, or one to put the buttons away
       if (state.picking) { togglePick(it); return; }
       if (root.id === "list") state.sel = +el.dataset.i;
       openSheet(it);
     };
   }
 }
+// Long press on a touch screen: the card whose quick buttons are up.
+const press = { el: null, timer: 0 };
+function unpress() { press.el?.classList.remove("press"); press.el = null; }
+addEventListener("touchstart", (e) => { if (press.el && !press.el.contains(e.target)) unpress(); }, { passive: true });
 function togglePick(it) {
   state.picked.has(it.item) ? state.picked.delete(it.item) : state.picked.add(it.item);
   for (const el of document.querySelectorAll(`[data-i]`)) {
@@ -633,6 +681,7 @@ async function act(it, a, drive = "") {
   if (a === "clear") return decide(it, null);
   if (a === "play") { play(it); return; }
   if (a === "swap") return openSwap(it);
+  if (a === "subs") { out = await api("/api/subtitles", { item: it.item }); alert(out.message); return; }
   if (a === "restore") { out = await api("/api/restore", { item: it.item }); alert(out.message); return load(); }
   if (a === "out" || a === "back") out = await api("/api/cold-move", { item: it.item, drive, direction: a });
   if (a === "unmark") out = await api("/api/cold-move", { item: it.item, direction: null });
@@ -745,6 +794,7 @@ async function openSheet(it) {
     acts.push(`<button class="btn keep ${d === "keep" ? "on" : ""}" data-a="keep">✓ Keep</button>`);
     if (!isSong(it)) acts.push(`<button class="btn shrink ${d === "shrink" ? "on" : ""}" data-a="shrink" ${it.shrink_saving > 0 ? "" : "disabled title='Already efficient'"}>⇣ Shrink</button>`);
     acts.push(`<button class="btn delete ${d === "delete" ? "on" : ""}" data-a="delete">✕ Delete</button>`);
+    if (it.subs_missing) acts.push(`<button class="btn ghost" data-a="subs">Find subtitles</button>`);
     if (isBig(it)) acts.push(`<button class="btn ghost" data-a="swap">⇄ Find smaller 1080p</button>`);
     if (isSong(it)) acts.push(`<button class="btn ghost" data-a="play">${playing(it) ? "⏸ Pause" : "▶ Play"}</button>`);
   }
@@ -781,6 +831,7 @@ function renderStorage() {
   segs.push({ name: "Free", size: d.free, color: "var(--free)", free: true });
   const total = segs.reduce((a, x) => a + x.size, 0);
   $("p-main").innerHTML = `<h3>plex-media <span class="badge warm">☀ active</span></h3><div class="big num">${gb(d.free)} free</div><div class="sub">of ${gb(d.total)} · ${Math.round(d.used / d.total * 100)}% full${main ? ` · catalogued ${ago(main.catalogued)}` : ""}</div>
+    <div class="sub">This week: ${s.week.map(esc).join(" · ")}</div>
     <div class="meter">${segs.map((x, i) => `<div data-i="${i}" style="flex:${x.size / total};background:${x.color}"></div>`).join("")}</div>
     <div class="legend">${segs.map((x, i) => `<button data-i="${i}" class="${state.category === x.name ? "on" : ""}"><i style="background:${x.color}"></i>${esc(x.name)} <b class="num">${gb(x.size)}</b></button>`).join("")}</div>`;
   for (const el of $("p-main").querySelectorAll("[data-i]")) {
@@ -824,6 +875,7 @@ const roleOf = (d) => {
 // Candidate shelves: each is a reason to move, shrink or bring back something, with the posters right there.
 const SHELVES = [
   ["Never watched, big", "candidates for the shelf", (it) => isVideo(it) && !it.cold && !it.trashed_at && inPlex(it) && !it.watched_files && it.size >= SHELF_MIN_BYTES && it.decision !== "keep", { where: "active", flags: ["unwatched"] }],
+  ["Finished", "watched all the way through", (it) => isVideo(it) && !it.cold && !it.trashed_at && inPlex(it) && it.video_files && it.watched_files >= it.video_files && it.decision !== "keep", { where: "active", sort: "stale" }],
   ["Not watched in 3+ years", "", (it) => isVideo(it) && !it.cold && !it.trashed_at && it.last_viewed && Date.now() / 1000 - it.last_viewed > STALE_S && it.decision !== "keep", { where: "active", sort: "stale" }],
   ["4K you could shrink instead", "keep it, lose the size", (it) => isBig(it) && it.decision !== "keep", { where: "active", flags: ["big"] }],
   ["On the shelf · bring back?", "", (it) => it.cold, { where: "cold" }],
@@ -886,7 +938,7 @@ $("viewbtn").onclick = () => {
   savePrefs(); syncControls(); renderList();
 };
 usePrefs(); syncControls();
-$("rescan").onclick = async () => { await api("/api/scan", {}); setTimeout(load, 1000); };
+$("scan").onclick = async () => { await api("/api/scan", {}); setTimeout(load, 1000); };
 setInterval(async () => { if (Object.values(state.moves).some((m) => m.status === "queued" || m.status === "running")) { await loadMoves(); renderStorage(); } }, 30000);
 
 $("trashbtn").onclick = () => {
@@ -952,6 +1004,7 @@ document.addEventListener("keydown", async (e) => {
   if (wasPlaying && e.key !== "p" && isSong(now) && !playing(now)) play(now);
 });
 
+if (page.get("q")) { state.q = $("q").value = page.get("q"); state.view = null; }
 load();
 </script>
 </body>
