@@ -244,6 +244,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 .sw select { margin-left: auto; }
 .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .acts .btn { padding: 9px 14px; }
+.acts.walk { justify-content: space-between; margin-bottom: 10px; } .acts.walk + .acts .btn { flex: 1 1 0; padding: 14px; font-size: 15px; }
 .opt { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; cursor: pointer; }
 .opt:hover, .opt:has(input:checked) { border-color: var(--accent); background: var(--surface-2); }
 .opt .t { overflow-wrap: anywhere; font-size: 13px; } .opt .m { color: var(--muted); font-size: 12px; }
@@ -291,6 +292,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
         <option value="name">Name (books by author)</option>
       </select>
       <button class="btn" id="viewbtn" title="Posters or rows">☰</button>
+      <button class="btn" id="review" title="Go through these one at a time">▶ Review</button>
       <button class="btn" id="selbtn">Select</button>
     </div>
     <div id="list"><div class="empty">Loading…</div></div>
@@ -357,7 +359,7 @@ if (page.get("embed")) document.documentElement.classList.add("embed");
 const setTheme = (t) => { if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; };
 addEventListener("message", (e) => setTheme(e.data?.theme));
 const state = { items: [], summary: null, drives: [], moves: {}, tab: "library", where: "", view: "undecided", category: null, flags: new Set(), q: "", sort: "size",
-  shown: PAGE, sel: 0, open: null, picking: false, picked: new Set(), grid: true };
+  shown: PAGE, sel: 0, open: null, review: null, picking: false, picked: new Set(), grid: true };
 // Sort and posters-or-rows are remembered per type chip ("" is Everything); books and manga start shelved by name.
 const prefs = (() => { try { return JSON.parse(localStorage.getItem("prefs")) || {}; } catch { return {}; } })();
 function usePrefs() {
@@ -407,7 +409,7 @@ function cleanRelease(name) {
 const titleOf = (it) => it.category === "downloads" ? cleanRelease(rawName(it)) : isSong(it) ? rawName(it).replace(/\.[^.]+$/, "") : rawName(it);
 // What a title is filed under: artist · album for a song, author · series for a book, source for a manga series.
 const groupOf = (it) => it.item.split("/").slice(1, -1).join(" · ");
-const posterUrl = (it) => "/api/poster?item=" + encodeURIComponent(it.item);
+const posterUrl = (it) => "api/poster?item=" + encodeURIComponent(it.item);
 // What a type is reviewed by, as short bits: a book's length and bitrate, a manga's chapters and how much is read,
 // a show's episodes without subtitles.
 const kbps = (it) => it.duration_s && !it.video_files ? Math.round(it.size * 8 / it.duration_s / 1000) : 0;
@@ -467,12 +469,21 @@ const hue = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 const placeholder = (it, label) => `<span class="ph"><i>${glyph(it.item.split("/")[0])}</i><b>${esc(label)}</b></span>`;
 
 async function api(path, body) {
-  const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  // Relative, so the page also works under the dashboard's /library/ pass-through.
+  const r = await fetch(path.slice(1), body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 
+// A failed request (server restarting, a dropped connection) must not leave the page empty: say so and try again.
 async function load() {
-  const [summary, items, moves, drv] = await Promise.all([api("/api/summary"), api("/api/items"), api("/api/cold-moves"), api("/api/drives")]);
+  let summary, items, moves, drv;
+  try {
+    [summary, items, moves, drv] = await Promise.all([api("/api/summary"), api("/api/items"), api("/api/cold-moves"), api("/api/drives")]);
+  } catch {
+    if (!state.items.length) $("list").innerHTML = `<div class="empty">Can't reach Media Index. Trying again…</div>`;
+    clearTimeout(load.retry); load.retry = setTimeout(load, 3000);
+    return;
+  }
   state.summary = summary; state.items = items; state.drives = drv;
   state.moves = Object.fromEntries(moves.map((m) => [m.item, m]));
   renderHeader();
@@ -697,13 +708,22 @@ async function decide(it, decision) {
   await api("/api/decision", { item: it.item, decision, note: it.note || "" });
   state.summary = await api("/api/summary");
   renderHeader(); renderList(); renderStorage();
+  if (state.review && decision) return step(1);
   if ($("sheet").open) openSheet(it);
+}
+// Review: the sheet walks a snapshot of the titles on screen; a decision moves on, so triage is one tap per title.
+function step(by) {
+  const r = state.review;
+  if (!r) return;
+  r.i = Math.max(0, r.i + by);
+  if (r.i >= r.rows.length) { $("sheet").close(); alert("That was the last one."); return; }
+  openSheet(r.rows[r.i]);
 }
 function play(it) {
   if (!isSong(it) || it.trashed_at) return;
   if (playing(it)) player.pause();
   else {
-    if (player.dataset.item !== it.item) { player.src = "/api/audio?item=" + encodeURIComponent(it.item); player.dataset.item = it.item; }
+    if (player.dataset.item !== it.item) { player.src = "api/audio?item=" + encodeURIComponent(it.item); player.dataset.item = it.item; }
     player.play();
   }
 }
@@ -806,10 +826,12 @@ async function openSheet(it) {
       <div class="where">${where}</div>
       ${it.trashed_at || it.cold ? "" : `<input class="note" placeholder="Note (saved with your decision)" value="${esc(it.note || "")}">`}
       ${live.length ? `<div class="live"><div class="l">Where it lives</div>${live.join("")}</div>` : ""}
+      ${state.review ? `<div class="acts walk"><button class="btn ghost" data-step="-1" ${state.review.i ? "" : "disabled"}>‹ Back</button><span class="hint num">${state.review.i + 1} of ${state.review.rows.length}</span><button class="btn" data-step="1">Skip ›</button></div>` : ""}
       <div class="acts">${acts.join("")}</div>${table}
     </div></div>`;
   const inner = $("sheet-in");
   inner.querySelector("[data-close]").onclick = () => dlg.close();
+  for (const b of inner.querySelectorAll("[data-step]")) b.onclick = () => step(+b.dataset.step);
   for (const b of inner.querySelectorAll("[data-a]")) b.onclick = () => act(it, b.dataset.a, inner.querySelector("[data-drive]")?.value || "");
   for (const c of inner.querySelectorAll("[data-sw]")) c.onchange = () => {
     if (c.dataset.sw === "travel") return act(it, "travel");
@@ -819,7 +841,8 @@ async function openSheet(it) {
   if (note) note.onchange = async () => { it.note = note.value; await api("/api/decision", { item: it.item, decision: it.decision || "keep", note: it.note }); load(); };
 }
 $("sheet").onclick = (e) => { if (e.target === $("sheet")) $("sheet").close(); };
-$("sheet").onclose = () => { state.open = null; };
+$("sheet").onclose = () => { state.open = null; state.review = null; };
+$("review").onclick = () => { const rows = visible(); if (rows.length) { state.review = { rows, i: 0 }; openSheet(rows[0]); } };
 
 // ---- storage -----------------------------------------------------------------------------------------------------
 function renderStorage() {
@@ -989,6 +1012,11 @@ function select(i) {
 document.addEventListener("keydown", async (e) => {
   if (e.target.matches("input, select") || $("confirm").open || $("swapdlg").open) return;
   if (e.key === "/") { e.preventDefault(); $("q").focus(); return; }
+  if (state.review) {
+    const cur = state.open, go = { ArrowRight: () => step(1), ArrowLeft: () => step(-1), 1: () => decide(cur, "keep"), 2: () => decide(cur, "shrink"), 3: () => decide(cur, "delete") }[e.key];
+    if (go) { e.preventDefault(); go(); }
+    return;
+  }
   if ($("sheet").open || state.tab !== "library") return;
   const rows = visible().slice(0, state.shown), cur = rows[state.sel];
   const keys = { j: () => select(Math.min(state.sel + 1, rows.length - 1)), k: () => select(Math.max(state.sel - 1, 0)),

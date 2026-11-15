@@ -57,7 +57,7 @@ nav.tabs a.on { background: var(--solid); color: var(--text); box-shadow: 0 1px 
 .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 80px; }
 .view { display: none; animation: fade .35s cubic-bezier(.2,.8,.2,1); }
 .view.on { display: block; }
-#library { display: none; background: var(--bg); position: fixed; z-index: 5; left: 0; top: var(--top, 56px); width: 100%; height: calc(100dvh - var(--top, 56px) - var(--bottom, 0px)); border: 0; }
+#library { display: none; background: var(--bg); position: fixed; z-index: 5; left: 0; top: var(--top, 56px); width: 100%; height: calc(100vh - var(--top, 56px) - var(--bottom, 0px)); height: calc(100dvh - var(--top, 56px) - var(--bottom, 0px)); border: 0; }
 body.library #library { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } }
 .hero { padding: 40px 4px 24px; }
@@ -409,7 +409,7 @@ function show(hash) {
   if (t === "library") {
     const f = $("library"), style = document.documentElement.style;
     style.setProperty("--top", document.querySelector(".bar").offsetHeight + "px"); style.setProperty("--bottom", $("tabbar").offsetHeight + "px");
-    if (!f.src || query) f.src = link(8686, "/?embed=1" + (query ? "&q=" + query : ""));
+    if (!f.src || query) f.src = "library/?embed=1" + (query ? "&q=" + query : "");  // through this server: an http frame is blocked on https
   }
   scrollTo(0, 0);
 }

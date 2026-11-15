@@ -10,6 +10,8 @@ Radarr or Sonarr dropped a stuck download. Each run, per category:
     until the rest fits;
 (3) when there is room again, capped torrents are started again, smallest first. One whose files are already fully
     allocated on disk is started whatever the total: stopped, it holds the same space and can never be imported.
+    At least one download per category always runs (the one nearest done), else stopped torrents holding their
+    allocated space could keep the folder over the cap with nothing able to finish.
 It also sets both qBittorrents' queue limits by time of day (LIMITS): the big set while the instance's own speed
 scheduler has the alternative limits off (the 2–6 am full-speed window), the small set the rest of the day.
 
@@ -109,10 +111,10 @@ def check(category: str, cap_gb: int, dry_run: bool) -> None:
     log.info(
         f"{category}: {gb(used)} on disk, {gb(projected)} once {len(active)} active downloads finish, cap {cap_gb} GB"
     )
+    stop = []
     if projected > cap:
-        stop = []
         for t in sorted(active, key=still_needs, reverse=True):
-            if projected <= cap or not still_needs(t):
+            if projected <= cap or not still_needs(t) or len(stop) == len(active) - 1:  # one always keeps going
                 break
             stop.append(t)
             projected -= still_needs(t)
@@ -126,10 +128,14 @@ def check(category: str, cap_gb: int, dry_run: bool) -> None:
                 notify(f"downloads/{category} is over {cap_gb} GB", f"stopped {len(stop)} download(s): {names}")
         if projected > cap:
             log.info(f"{category}: still {gb(projected - cap)} over the cap with nothing left to stop")
+    # Stopped torrents keep their allocated space, so with none running the folder could sit over the cap forever;
+    # a finished one is hardlinked into the library and stops counting, so one always runs, the nearest to done.
+    running = len(active) - len(stop)
     for t in sorted(capped, key=still_needs):
-        if still_needs(t) and projected + still_needs(t) > cap:
+        if still_needs(t) and projected + still_needs(t) > cap and running:
             break
         projected += still_needs(t)
+        running += 1
         log.info(f"{category}: room again, starting {t['name']}")
         if not dry_run:
             qb("torrents/start", {"hashes": t["hash"]}, post=True)

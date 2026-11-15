@@ -784,8 +784,36 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return self.send(b"", "image/jpeg", HTTPStatus.BAD_GATEWAY)
 
+    def library(self):
+        """Media Index under /library/, so the Library tab is same-origin (a plain-http frame is blocked on https)."""
+        size = int(self.headers.get("Content-Length") or 0)
+        headers = {k: self.headers[k] for k in ("Content-Type", "Range") if self.headers.get(k)}
+        conn = http.client.HTTPConnection("media-index", 8686, timeout=120)
+        try:
+            conn.request(self.command, self.path[len("/library"):], self.rfile.read(size) if size else None, headers)
+            r = conn.getresponse()
+            body = r.read()
+        except OSError:
+            return self.send(b"Media Index is not answering", "text/plain", HTTPStatus.BAD_GATEWAY)
+        finally:
+            conn.close()
+        self.send_response(r.status)
+        for k in ("Content-Type", "Content-Range", "Accept-Ranges", "Cache-Control"):
+            if r.getheader(k):
+                self.send_header(k, r.getheader(k))
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        if self.path.startswith("/library/"):
+            return self.library()
+        self.send(b"not found", "text/plain", HTTPStatus.NOT_FOUND)
+
     def do_GET(self):
         u = urlparse(self.path)
+        if u.path.startswith("/library/"):
+            return self.library()
         if u.path == "/api/state":
             with state_lock:
                 body = json.dumps(state).encode()

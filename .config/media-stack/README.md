@@ -278,6 +278,12 @@ chapters every 12 h, Cleanuparr's queue cleaner runs every 30 min and Media Inde
 - **Audiobook requests find no release:** the public indexers file audiobooks under Books or Other, not Audiobook.
   AudioBookRequest → Settings → Prowlarr → Categories must include `7000` and `8000` besides `3030` (set 2026-11-13).
   It only searches when a book is requested, and its pick can be the wrong volume of a series: check the name.
+  Its pick can also be a GraphicAudio or "Dramatized Adaptation" edition, often split "(1 of 5)": Joe wants the
+  unabridged narration only, so those go to `_trash` (2026-11-14).
+- **Library tab black over https:** the tailnet name serves the dashboard over https, so a plain-http frame or image
+  (`http://host:8686`) is blocked. The dashboard passes Media Index through at `/library/` for that, and the Media
+  Index page uses relative paths so it works both there and on :8686 (2026-11-14). If a request fails while the page
+  loads, it says so and retries every 3 s.
 - **Private stack's downloads or Whisparr unreachable after an update here:** `gluetun` was recreated; see *Private stack*.
 - **Nightly shrink logs "ffprobe can't read":** Homebrew's `ffmpeg` was upgraded and lost its Removable Volumes
   permission; see *Media Index*.
@@ -314,7 +320,8 @@ start by name). "⚠ Needs attention" lists what looks broken whatever its decis
 book pack kept in several ebook formats, and downloads still not in the library after 3 days with the reason (paused by the
 downloads cap at N%, what Sonarr/Radarr/Lidarr's queue says, "the library has its own copy", or that no app is importing it). A title's sheet has two switches under "Where it
 lives", ❄ Cold storage and 🧳 Travel stick (the travel one adds or removes it in the Plex Travel collection); the hover
-buttons and the Select bar ("Mark as" / "Undo") do the same for many at once, and `t` toggles travel from the keyboard. Hover a poster (long-press it on a touch screen) for ❄ Cold / Keep (☀ Bring back on a cold one; under Needs attention, the fix instead: Find subtitles asks Bazarr to search again, Delete this copy marks a download the library already has, and trashing a download also drops its torrent from qBittorrent),
+buttons and the Select bar ("Mark as" / "Undo") do the same for many at once; **▶ Review** walks the titles on screen one
+at a time in the sheet (Keep / Shrink / Delete moves to the next, Skip and Back step, arrow keys and 1/2/3 work too), and `t` toggles travel from the keyboard. Hover a poster (long-press it on a touch screen) for ❄ Cold / Keep (☀ Bring back on a cold one; under Needs attention, the fix instead: Find subtitles asks Bazarr to search again, Delete this copy marks a download the library already has, and trashing a download also drops its torrent from qBittorrent),
 click it for the title sheet (size, plays, where every copy lives, files, Keep / Shrink / Delete, Find smaller 1080p),
 or press **Select** to mark many at once. The **Storage** tab shows the disk by folder, the cold shelf (both drives as one
 pool, with where the next move goes), queued moves, and shelves of suggestions: never watched and big, not watched in
@@ -359,7 +366,9 @@ torrent owns after Radarr/Sonarr dropped a stuck grab. Leftovers untouched for a
 folder's own bytes plus what the active torrents still have to fetch would pass the cap, the torrents with the
 most left are stopped and tagged `capped` in qBittorrent, and started again once there is room. A capped torrent whose
 files are already fully allocated is started whatever the total: stopped it holds the same space and the folder never
-empties (five anime packs sat stopped that way, 2026-11-12). Cleanuparr only watches Radarr's and Sonarr's queues, so
+empties (five anime packs sat stopped that way, 2026-11-12). One download per category always runs, the one nearest
+done, even over the cap: stopped torrents keep their allocated space, so otherwise nothing could finish and free it
+(seven Sonarr downloads sat stopped at 107 GB of 100 that way, 2026-11-14). Cleanuparr only watches Radarr's and Sonarr's queues, so
 a seedless `lidarr` or `audiobooks` torrent can sit at the top of qBittorrent's queue and hold a download slot for
 days; move it to the bottom of the queue or remove it by hand. Log:
 `~/.local/share/media-index/downloads-cap.log`; `python3 media-index/downloads_cap.py run --dry-run` shows a check.
