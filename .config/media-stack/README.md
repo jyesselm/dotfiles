@@ -256,6 +256,7 @@ macOS doesn't let a launchd job read or write `plex-media`, so the ones that tou
 | `com.yesselman.downloads-cap` | every 30 min | `downloads_cap.py run` (in the container) | `downloads_cap.py install` | `downloads-cap.log` |
 | `com.yesselman.media-shrink` | 01:00, no new file after 08:00 | `shrink.py run --until 8` | `shrink.py install` | `encode.log` |
 | `com.yesselman.music-upgrade` | 03:00 | `music_upgrade.py run` | `music_upgrade.py install` | `music-upgrade.log` |
+| `com.yesselman.audiobook-retry` | Sun 02:30 | `audiobook_retry.py run` (piped into the audiobookrequest container) | `audiobook_retry.py install` | `audiobook-retry.log` |
 | `com.yesselman.media-backup` | 04:00 | `backup.sh` (settings archive) | `backup.sh install` | `backup.log` |
 | `com.yesselman.media-backup-cloud` | Saturday 01:00 | `backup.sh cloud` (media to Google Drive) | `backup.sh install` | `cloud.log` |
 | `com.yesselman.media-backup-remind` | Sunday 10:00 | `backup.sh remind` | `backup.sh install` | `backup.log` |
@@ -279,7 +280,9 @@ chapters every 12 h, Cleanuparr's queue cleaner runs every 30 min and Media Inde
   AudioBookRequest → Settings → Prowlarr → Categories must include `7000` and `8000` besides `3030` (set 2026-11-13).
   It only searches when a book is requested, and its pick can be the wrong volume of a series: check the name.
   Its pick can also be a GraphicAudio or "Dramatized Adaptation" edition, often split "(1 of 5)": Joe wants the
-  unabridged narration only, so those go to `_trash` (2026-11-14).
+  unabridged narration only, so those go to `_trash` (2026-11-14). `media-index/audiobook_retry.py` searches the open
+  requests again every Sunday and sends only a release with the same title, author and volume number, not an ebook or
+  dramatized edition, for a book with no torrent yet; its log lists each one still without a release.
 - **Library tab black over https:** the tailnet name serves the dashboard over https, so a plain-http frame or image
   (`http://host:8686`) is blocked. The dashboard passes Media Index through at `/library/` for that, and the Media
   Index page uses relative paths so it works both there and on :8686 (2026-11-14). If a request fails while the page
