@@ -281,8 +281,10 @@ chapters every 12 h, Cleanuparr's queue cleaner runs every 30 min and Media Inde
   It only searches when a book is requested, and its pick can be the wrong volume of a series: check the name.
   Its pick can also be a GraphicAudio or "Dramatized Adaptation" edition, often split "(1 of 5)": Joe wants the
   unabridged narration only, so those go to `_trash` (2026-11-14). `media-index/audiobook_retry.py` searches the open
-  requests again every Sunday and sends only a release with the same title, author and volume number, not an ebook or
-  dramatized edition, for a book with no torrent yet; its log lists each one still without a release.
+  requests again every Sunday and sends only a release with the same title, author and volume number, not an ebook,
+  dramatized edition or anything not in English (Joe wants English only), for a book with no torrent yet; its log lists each one still without a release.
+  A release under 30 kbit/s for the book's length is skipped as a part of it: a "1 of 5" under a plain name got
+  through on 2026-11-15.
 - **Library tab black over https:** the tailnet name serves the dashboard over https, so a plain-http frame or image
   (`http://host:8686`) is blocked. The dashboard passes Media Index through at `/library/` for that, and the Media
   Index page uses relative paths so it works both there and on :8686 (2026-11-14). If a request fails while the page

@@ -1,7 +1,8 @@
 """Weekly retry of audiobook requests AudioBookRequest never got: search again, send only a release that is this exact
 book. AudioBookRequest searches once, when a book is requested, and its pick only sorts by seeders, so it can take the
 wrong volume of a series or a dramatized edition; this pick checks title, author and volume number, skips ebooks,
-GraphicAudio / dramatized / "(1 of 5)" editions, and skips a book that already has a torrent in qBittorrent.
+anything not in English, GraphicAudio / dramatized / "(1 of 5)" editions and files too small for the book's length
+(a part of it), and skips a book that already has a torrent in qBittorrent.
 
     python3 audiobook_retry.py install   # launchd agent, Sundays 02:30 (host, /usr/bin/python3)
     docker exec -i -w /app audiobookrequest /app/.venv/bin/python - run [--dry-run] < audiobook_retry.py
@@ -23,6 +24,14 @@ ROMAN = {"ii": 2, "iii": 3, "iv": 4, "vi": 6, "vii": 7, "viii": 8, "ix": 9}
 NOISE = re.compile(r"\b(?:19|20)\d\d\b|\b\d+\s?(?:kbps|kb|k|mb|gb|hrs?|h|min|m)\b|\bmp3\b|\bm4b\b|\bm4a\b", re.I)
 EBOOK = re.compile(r"\b(epub|mobi|azw3?|pdf|ebook|e-book|cbz|cbr|kindle)\b", re.I)
 DRAMA = re.compile(r"graphic ?audio|dramati[sz]|full[- ]cast|\(\d+ of \d+\)", re.I)
+FOREIGN = re.compile(  # English only: language names, their words for "audiobook", bracketed codes, other scripts
+    r"\b(french|fran[cç]ais|truefrench|vff?|vostfr|tome|livre audio|german|deutsch|h[oö]rbuch|ungek[uü]rzt|spanish"
+    r"|espa[nñ]ol|castellano|latino|audiolibro|italiano?|portugu[eê]se?|dublado|russian|polish|polski|dutch"
+    r"|nederlands|luisterboek|swedish|svenska|ljudbok|danish|norwegian|finnish|hungarian|czech|turkish|japanese"
+    r"|chinese|korean|hindi|arabic)\b| à |[\[(](?:fr|de|es|it|ru|pl|nl|pt|ita|ger|rus|spa|fre)[\])]"
+    r"|[\u0400-\u04ff\u0600-\u06ff\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]", re.I)
+VOLUME = re.compile(r"(?:t|b|bk|v|vol|book|tome|arc)0*(\d{1,2})")  # "T02", "bk3": a volume number glued to its label
+MIN_KBIT = 30  # below this the file is a part of the book: The Way of Kings "1 of 5" came to 22 on 2026-11-15
 STOP = {"a", "an", "the", "of", "and", "book", "volume", "vol", "part", "novel"}
 
 
@@ -35,6 +44,8 @@ def tokens(text: str) -> list[str]:
             t = str(WORDS.index(t))
         elif t in ROMAN:
             t = str(ROMAN[t])
+        elif VOLUME.fullmatch(t):
+            t = VOLUME.fullmatch(t).group(1)
         out.append(t)
     return out
 
@@ -52,9 +63,12 @@ def other_book(book, name: str) -> str | None:
     names = [n.split()[-1].lower() for n in (book.authors or []) + (book.narrators or []) if n.split()]
     if names and not any(close(n, rel) for n in names):
         return "author differs"
-    have = {int(t) for t in tokens(book.title + " " + (book.subtitle or "")) if t.isdigit() and len(t) <= 2}
-    got = {int(t) for t in rel if t.isdigit() and len(t) <= 2}
-    if got != have and not (not have and got <= {1}):
+    def numbers(toks: list[str]) -> set[int]:
+        return {int(t) for t in toks if t.isdigit() and len(t) <= 2}
+
+    in_title, got = numbers(tokens(book.title)), numbers(rel)
+    # The subtitle's "Book 1" is optional in a release name; a number in the title itself is not.
+    if got not in (in_title, in_title | numbers(tokens(book.subtitle or ""))) and not (not in_title and got <= {1}):
         return "other volume"
     return None
 
@@ -65,11 +79,13 @@ def reason_to_skip(book, src) -> str | None:
         return "ebook"
     if DRAMA.search(src.title):
         return "dramatized"
+    if FOREIGN.search(src.title) and not FOREIGN.search(book.title):  # a title may itself say "Tome" or "French"
+        return "other language"
     if (src.seeders or 0) < 2:
         return "no seeders"
     secs = book.runtime_length_min * 60
     kbit = 8 * src.size / secs / 1000 if secs else 64
-    if not 20 <= kbit <= 400 or src.size < 30e6:
+    if not MIN_KBIT <= kbit <= 400 or src.size < 30e6:
         return "wrong size"
     return other_book(book, src.title)
 
@@ -78,14 +94,18 @@ async def run(dry_run: bool) -> None:
     """Search every open request once; send the best-seeded matching release of each."""
     import asyncio
     import json
+    import logging
     import urllib.request
 
     import aiohttp
+    import structlog
     from app.internal.models import Audiobook, AudiobookRequest
     from app.internal.prowlarr.prowlarr import start_download
     from app.internal.query import query_sources
     from app.util.db import get_session
     from sqlmodel import select
+
+    structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL))  # app logs each match
 
     with urllib.request.urlopen(f"{QB}/torrents/info?category=audiobooks", timeout=60) as r:
         torrents = [t["name"] for t in json.load(r)]
