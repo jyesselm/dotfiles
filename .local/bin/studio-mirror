@@ -3,6 +3,8 @@
 # ~/local/data, ~/local/code and ~/Downloads go to swan:/mnt/nrdstor/yesselmanlab/jyesselm/studio/<same path under ~>.
 # A file deleted or changed here is not dropped on nrdstor: rsync parks the old copy under studio-deleted/<date>/.
 # Caches (.cache, node_modules, __pycache__, virtualenvs) are rebuildable and never mirrored (decision O).
+# local/data/rna-knowledge-base is left out: 500,000+ files; it is backed up as archives by its own script
+# (project_organization_and_backup_plan.md there).
 # Runs from the LaunchAgent com.jyesselman.studio-mirror at 02:00; log: ~/.local/state/studio-mirror/mirror.log.
 set -u
 REMOTE=swan
@@ -17,7 +19,7 @@ rc=0
 for d in local/data local/code Downloads; do
   rsync -a --delete --backup --backup-dir="${ROOT}-deleted/$(date +%F)/$d" \
     --exclude .DS_Store --exclude node_modules --exclude __pycache__ --exclude '*.pyc' --exclude .venv --exclude venv \
-    --exclude .cache --exclude .ipynb_checkpoints --exclude .Trash \
+    --exclude .cache --exclude .ipynb_checkpoints --exclude .Trash --exclude /rna-knowledge-base/ \
     --stats "$HOME/$d/" "$REMOTE:$ROOT/$d/" | grep -E 'Number of (regular files transferred|deleted files)|Total transferred file size|rsync error'
   r=${PIPESTATUS[0]}; echo "$d rc=$r"; [ "$r" -ne 0 ] && rc=$r
 done
