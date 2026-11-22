@@ -271,3 +271,8 @@ alias egc='nvim ~/.gitconfig'
 # Share home-gpu's existing desktop (3390), preserving its logged-in session.
 alias home-gpu-desktop='sdl-freerdp /v:100.103.114.116:3390 /u:yesselman +force-console-callbacks /size:1920x1080 +smart-sizing'
 alias home-gpu-rdp=home-gpu-desktop
+
+# macOS Screen Sharing client for home-gpu's existing Wayland desktop.
+if [[ "$OSTYPE" == darwin* ]]; then
+  alias home-gpu-vnc='open vnc://100.103.114.116'
+fi
