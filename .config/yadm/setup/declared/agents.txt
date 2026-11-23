@@ -14,6 +14,7 @@ com.yesselman.search-cli-prewarm  class:laptop,studio
 com.jyesselman.studio-mirror  class:studio
 com.yesselman.media-menu  class:server
 com.jyesselman.rna-knowledge-base  class:studio
+com.jyesselman.rna-knowledge-base-backup  class:studio
 
 # seeded 2026-10-28 from laptop, studio, plex-server; prune by hand
 com.git-repo-checker.active  allowed
