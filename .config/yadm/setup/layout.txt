@@ -18,6 +18,7 @@ local/code/javascript
 local/code/other
 local/code/rust
 local/code/nextflow
+local/data
 local/archive
 local/installs
 local/papers

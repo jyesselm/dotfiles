@@ -1,0 +1,5 @@
+#!/bin/bash
+# RNA knowledge base command line on any computer: reads this computer's database, the OneDrive copy, or the Studio
+# service over the tailnet. The code is the checkout `local/data/rna-knowledge-base` (grc-managed, active.yml); its own
+# wrapper supplies duckdb through uv when python lacks it.
+exec "$HOME/local/data/rna-knowledge-base/rna-knowledge-base" "$@"

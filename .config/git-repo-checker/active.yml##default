@@ -212,6 +212,10 @@ repos:
   remote: https://github.com/jyesselm/kodi-appletv-skin.git
   branch: main
   enabled: true
+- path: local/data/rna-knowledge-base
+  remote: https://github.com/jyesselm/rna-knowledge-base.git
+  branch: main
+  enabled: true
 ignored_repos: []
 approved_accounts:
 - jyesselm

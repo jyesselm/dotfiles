@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.jyesselman.rna-knowledge-base</string>
+  <key>ProgramArguments</key><array><string>/opt/homebrew/Caskroom/mambaforge/base/envs/py3/bin/python3</string><string>-m</string><string>rna_knowledge_base</string><string>serve</string><string>--port</string><string>8770</string></array>
+  <key>WorkingDirectory</key><string>/Users/jyesselman2/local/data/rna-knowledge-base</string>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/rna-knowledge-base.log</string><key>StandardErrorPath</key><string>/tmp/rna-knowledge-base.log</string>
+</dict></plist>
