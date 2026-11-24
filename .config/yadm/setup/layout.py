@@ -18,6 +18,7 @@ HOME_RE = re.compile('(' + '|'.join(re.escape(a + '/' + b) for a, b in HOMES) + 
 KNOWN_ABSOLUTE = {
     '.config/iterm2/com.googlecode.iterm2.plist': 'per-Mac iTerm prefs',
     'Library/LaunchAgents/com.yesselman.search-cli-prewarm.plist##class.laptop': 'launchd does not expand ~',
+    'Library/LaunchAgents/com.jyesselman.rna-knowledge-base.plist##class.studio': 'launchd does not expand ~',
 }
 MAX_SCAN_BYTES = 2 * 1024 * 1024
 

@@ -114,3 +114,6 @@ VLC  source:manual  allowed
 WhatsApp  source:manual  allowed
 Windows App  source:manual  allowed
 XWord  source:manual  allowed
+# studio, adopted 2026-11-24
+Alfred 6  source:manual  allowed
+Plex  source:manual  allowed
