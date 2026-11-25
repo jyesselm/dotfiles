@@ -41,3 +41,4 @@ local.plex.autostart  allowed
 # studio, adopted 2026-11-24
 com.jyesselman.nrdstor-quota-watch  allowed
 com.yesselman.media-menu  allowed
+com.jyesselman.free-space-guard

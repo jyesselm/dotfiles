@@ -1,0 +1,23 @@
+#!/bin/zsh
+# Keeps Time Machine local snapshots from filling the startup disk. Runs every 30 minutes from the LaunchAgent
+# com.jyesselman.free-space-guard. When free space falls under MIN_FREE_GB and no backup is running, it deletes
+# every Time Machine local snapshot (they pin deleted files until macOS thins them), then logs one line to
+# ~/.local/state/free-space-guard/history.tsv and shows a notification. Backups already on the backup disk are
+# not touched. Why: on 2026-11-24 one snapshot pinned 830 GB after a large cleanup and free space fell to 334 GB.
+# DRY_RUN=1 reports what it would delete without deleting.
+set -u
+STATE=$HOME/.local/state/free-space-guard; mkdir -p "$STATE"
+MIN_FREE_GB=${MIN_FREE_GB:-500}
+free_gb() { df -g /System/Volumes/Data | awk 'NR == 2 {print $4}'; }
+before=$(free_gb)
+(( before >= MIN_FREE_GB )) && exit 0
+tmutil status | grep -q 'Running = 1' && exit 0
+dates=(${(f)"$(tmutil listlocalsnapshotdates / | grep -E '^[0-9]{4}-')"})
+(( ${#dates} == 0 )) && exit 0
+if [[ -n "${DRY_RUN:-}" ]]; then
+  echo "free ${before} GB is under ${MIN_FREE_GB} GB; would delete local snapshots: ${dates[*]}"; exit 0
+fi
+for d in $dates; do tmutil deletelocalsnapshots "$d" > /dev/null 2>&1; done
+after=$(free_gb)
+printf '%s\t%s\t%s\t%s\n' "$(date -Iseconds)" "$before" "$after" "${dates[*]}" >> "$STATE/history.tsv"
+osascript -e "display notification \"Free space was ${before} GB; cleared ${#dates} Time Machine local snapshots, now ${after} GB\" with title \"Free space guard\"" 2>/dev/null
