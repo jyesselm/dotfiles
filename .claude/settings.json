@@ -1,48 +1,146 @@
 {
-  "model": "fable",
-  "hooks": {
-    "PreToolUse": [
+  "agentPushNotifEnabled" : true,
+  "alwaysThinkingEnabled" : true,
+  "autoCompactWindow" : 300000,
+  "effortLevel" : "high",
+  "enabledPlugins" : {
+    "clangd-lsp@claude-plugins-official" : true,
+    "cloudflare@cloudflare" : true,
+    "frontend-design@claude-plugins-official" : true,
+    "laravel-simplifier@laravel" : true
+  },
+  "extraKnownMarketplaces" : {
+    "cloudflare" : {
+      "source" : {
+        "repo" : "cloudflare\/skills",
+        "source" : "github"
+      }
+    }
+  },
+  "hooks" : {
+    "Notification" : [
       {
-        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
+        "hooks" : [
           {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/autonomy-guard.sh"
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "PostToolUse" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse" : [
+      {
+        "hooks" : [
+          {
+            "command" : "$HOME\/.claude\/hooks\/autonomy-guard.sh",
+            "type" : "command"
+          }
+        ],
+        "matcher" : "Bash|Edit|Write|MultiEdit|NotebookEdit"
+      },
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "SessionEnd" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "Stop" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "StopFailure" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit" : [
+      {
+        "hooks" : [
+          {
+            "command" : "\/Users\/jyesselman2\/.config\/iterm2\/cc-status",
+            "type" : "command"
           }
         ]
       }
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
+  "model" : "fable",
+  "promptSuggestionEnabled" : false,
+  "skipDangerousModePermissionPrompt" : true,
+  "skipWorkflowUsageWarning" : true,
+  "statusLine" : {
+    "command" : "bash ~\/.claude\/statusline-command.sh",
+    "type" : "command"
   },
-  "enabledPlugins": {
-    "clangd-lsp@claude-plugins-official": true,
-    "laravel-simplifier@laravel": true,
-    "frontend-design@claude-plugins-official": true,
-    "cloudflare@cloudflare": true
+  "switchModelsOnFlag" : true,
+  "tui" : "fullscreen",
+  "voice" : {
+    "enabled" : true,
+    "mode" : "hold"
   },
-  "extraKnownMarketplaces": {
-    "cloudflare": {
-      "source": {
-        "source": "github",
-        "repo": "cloudflare/skills"
-      }
-    }
-  },
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
-  "autoCompactWindow": 300000,
-  "promptSuggestionEnabled": false,
-  "tui": "fullscreen",
-  "voice": {
-    "enabled": true,
-    "mode": "hold"
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true,
-  "switchModelsOnFlag": true,
-  "agentPushNotifEnabled": true,
-  "voiceEnabled": true
+  "voiceEnabled" : true
 }

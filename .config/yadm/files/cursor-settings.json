@@ -65,9 +65,9 @@
         "statusBar.foreground": "#1e1e2e",
         "statusBar.debuggingForeground": "#1e1e2e",
         "statusBar.noFolderForeground": "#1e1e2e",
-        "statusBar.background": "#c678dd",
-        "statusBar.noFolderBackground": "#c678dd",
-        "statusBar.debuggingBackground": "#c678dd"
+        "statusBar.background": "#98c379",
+        "statusBar.noFolderBackground": "#98c379",
+        "statusBar.debuggingBackground": "#98c379"
     },
     "vim.insertModeKeyBindings": [
         {
