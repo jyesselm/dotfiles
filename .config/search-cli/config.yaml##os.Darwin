@@ -11,3 +11,12 @@ live:
   mail_source: thunderbird
   mail_roots: []
   mail_database: ~/.cache/search-cli/thunderbird-v1.sqlite3
+  scopes:
+    work-docs: ~/cloud/Dropbox/documents
+    recommendations: ~/cloud/Dropbox/documents/for-others/recommendations
+    letterhead: ~/cloud/Dropbox/documents/for-others/recommendations/00-templates
+    grant-reviews: ~/cloud/Dropbox/documents/admin/service/grant-reviews
+    teaching: ~/cloud/Dropbox/documents/teaching
+    support-letters: ~/cloud/Dropbox/documents/for-others/letters-of-support
+    archive-documents: ~/local/archive/documents
+    document-catalog: ~/local/data/document-catalog
